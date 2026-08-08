@@ -7,4 +7,5 @@ Supported Algorithms:
 - PBKDF2-HMAC-SHA256
 - X25519
 
-Please use command "make" to run tests.
+Please use command "make" to build tests,
+and the test programs will be generated in ./tests directory.
