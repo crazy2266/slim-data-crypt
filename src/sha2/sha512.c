@@ -40,7 +40,7 @@ static const uint64_t K[80] = {
     0x5fcb6fab3ad6faec, 0x6c44198c4a475817
 };
 
-static void sha512_transform(sha512_ctx *ctx, const uint8_t* block) {
+static void sdc_sha512_transform(sdc_sha512_ctx *ctx, const uint8_t* block) {
     uint64_t W[80];
     uint64_t a, b, c, d, e, f, g, h;
     uint64_t T1, T2;
@@ -86,7 +86,7 @@ static void sha512_transform(sha512_ctx *ctx, const uint8_t* block) {
     ctx->state[7] += h;
 }
 
-void sha512_init(sha512_ctx *ctx) {
+void sdc_sha512_init(sdc_sha512_ctx *ctx) {
     ctx->state[0] = 0x6a09e667f3bcc908;
     ctx->state[1] = 0xbb67ae8584caa73b;
     ctx->state[2] = 0x3c6ef372fe94f82b;
@@ -100,7 +100,7 @@ void sha512_init(sha512_ctx *ctx) {
     ctx->len = 0;
 }
 
-void sha512_update(sha512_ctx *ctx, const uint8_t *data, size_t len) {
+void sdc_sha512_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len) {
     // 更新总位数
     uint64_t bits = (uint64_t)len * 8;
     ctx->count[0] += bits;
@@ -117,13 +117,13 @@ void sha512_update(sha512_ctx *ctx, const uint8_t *data, size_t len) {
         len -= want;
 
         if (ctx->len == 128) {
-            sha512_transform(ctx, ctx->buffer);
+            sdc_sha512_transform(ctx, ctx->buffer);
             ctx->len = 0;
         }
     }
     // 处理完整块
     while (len >= 128) {
-        sha512_transform(ctx, data);
+        sdc_sha512_transform(ctx, data);
         data += 128;
         len -= 128;
     }
@@ -134,13 +134,13 @@ void sha512_update(sha512_ctx *ctx, const uint8_t *data, size_t len) {
     }
 }
 
-void sha512_final(sha512_ctx *ctx, uint8_t out[64]) {
+void sdc_sha512_final(sdc_sha512_ctx *ctx, uint8_t out[64]) {
     size_t i = ctx->len;
     ctx->buffer[i++] = 0x80;
 
     if (ctx->len > 111) {  // 112 位开始放长度，所以如果已有大于 111，需要新块
         memset(ctx->buffer + i, 0, 128 - i);
-        sha512_transform(ctx, ctx->buffer);
+        sdc_sha512_transform(ctx, ctx->buffer);
         i = 0;
     }
     memset(ctx->buffer + i, 0, 112 - i);  // 清到 112 位
@@ -150,16 +150,16 @@ void sha512_final(sha512_ctx *ctx, uint8_t out[64]) {
     uint64_t low  = ctx->count[0];
     store64_be(ctx->buffer + 112, high);
     store64_be(ctx->buffer + 120, low);
-    sha512_transform(ctx, ctx->buffer);
+    sdc_sha512_transform(ctx, ctx->buffer);
 
     for (int j = 0; j < 8; j++) {
         store64_be(out + 8 * j, ctx->state[j]);
     }
 }
 
-void sha512_hash(uint8_t out[64], const uint8_t *in, size_t len) {
-    sha512_ctx ctx;
-    sha512_init(&ctx);
-    sha512_update(&ctx, in, len);
-    sha512_final(&ctx, out);
+void sdc_sha512_hash(uint8_t out[64], const uint8_t *in, size_t len) {
+    sdc_sha512_ctx ctx;
+    sdc_sha512_init(&ctx);
+    sdc_sha512_update(&ctx, in, len);
+    sdc_sha512_final(&ctx, out);
 }

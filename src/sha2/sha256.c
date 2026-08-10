@@ -29,7 +29,7 @@ static const uint32_t K[64] = {
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-static void sha256_transform(sha256_ctx *ctx, const uint8_t* block) {
+static void sdc_sha256_transform(sdc_sha256_ctx *ctx, const uint8_t* block) {
     uint32_t W[64];
     uint32_t a, b, c, d, e, f, g, h;
     uint32_t T1, T2;
@@ -75,7 +75,7 @@ static void sha256_transform(sha256_ctx *ctx, const uint8_t* block) {
     ctx->state[7] += h;
 }
 
-void sha256_init(sha256_ctx *ctx) {
+void sdc_sha256_init(sdc_sha256_ctx *ctx) {
     ctx->state[0] = 0x6a09e667;
     ctx->state[1] = 0xbb67ae85;
     ctx->state[2] = 0x3c6ef372;
@@ -88,7 +88,7 @@ void sha256_init(sha256_ctx *ctx) {
     ctx->len = 0;
 }
 
-void sha256_update(sha256_ctx *ctx, const uint8_t *data, size_t len) {
+void sdc_sha256_update(sdc_sha256_ctx *ctx, const uint8_t *data, size_t len) {
     // 更新总位数
     ctx->count += (uint64_t)len * 8;
     // 处理已有残留
@@ -101,13 +101,13 @@ void sha256_update(sha256_ctx *ctx, const uint8_t *data, size_t len) {
         len -= want;
 
         if (ctx->len == 64) {
-            sha256_transform(ctx, ctx->buffer);
+            sdc_sha256_transform(ctx, ctx->buffer);
             ctx->len = 0;
         }
     }
     // 处理完整块
     while (len >= 64) {
-        sha256_transform(ctx, data);
+        sdc_sha256_transform(ctx, data);
         data += 64;
         len -= 64;
     }
@@ -118,29 +118,29 @@ void sha256_update(sha256_ctx *ctx, const uint8_t *data, size_t len) {
     }
 }
 
-void sha256_final(sha256_ctx *ctx, uint8_t out[32]) {
+void sdc_sha256_final(sdc_sha256_ctx *ctx, uint8_t out[32]) {
     size_t i = ctx->len;
     ctx->buffer[i++] = 0x80;
     
     if (ctx->len > 55) {  // 56 位开始放长度，所以如果已有大于 55，需要新块
         memset(ctx->buffer + i, 0, 64 - i);
-        sha256_transform(ctx, ctx->buffer);
+        sdc_sha256_transform(ctx, ctx->buffer);
         i = 0;
     }
     memset(ctx->buffer + i, 0, 56 - i);  // 清到 56 位
 
     // 长度放在最后 8 字节（大端）
     store64_be(ctx->buffer + 56, ctx->count);
-    sha256_transform(ctx, ctx->buffer);
+    sdc_sha256_transform(ctx, ctx->buffer);
 
     for (int j = 0; j < 8; j++) {
         store32_be(out + 4 * j, ctx->state[j]);
     }
 }
 
-void sha256_hash(uint8_t out[32], const uint8_t *in, size_t len) {
-    sha256_ctx ctx;
-    sha256_init(&ctx);
-    sha256_update(&ctx, in, len);
-    sha256_final(&ctx, out);
+void sdc_sha256_hash(uint8_t out[32], const uint8_t *in, size_t len) {
+    sdc_sha256_ctx ctx;
+    sdc_sha256_init(&ctx);
+    sdc_sha256_update(&ctx, in, len);
+    sdc_sha256_final(&ctx, out);
 }

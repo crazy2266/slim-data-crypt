@@ -1,7 +1,7 @@
 #include "random.h"
 #include <stdio.h>
 
-int random_bytes(uint8_t *out, size_t len) {
+int sdc_random_bytes(uint8_t *out, size_t len) {
     FILE *fp = fopen("/dev/urandom", "rb");
     if (!fp) return -1;
     size_t n = fread(out, 1, len, fp);

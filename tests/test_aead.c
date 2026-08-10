@@ -150,7 +150,7 @@ static void test_encrypt(const char *name,
     printf("\n=== %s ===\n", name);
     printf("plaintext_len=%zu\n", plen);
 
-    xchacha20_poly1305_encrypt(key, nonce, aad, aad_len, plain, plen, ciphertext, tag);
+    sdc_xchacha20_poly1305_encrypt(key, nonce, aad, aad_len, plain, plen, ciphertext, tag);
 
     print_hex("  exp_ct", exp_ct, plen, outcipher_len);
     print_hex("  got_ct", ciphertext, plen, outcipher_len);
@@ -167,7 +167,7 @@ static void test_encrypt(const char *name,
     }
     printf("  [OK] 加密通过\n");
 
-    int ret = xchacha20_poly1305_decrypt(key, nonce, aad, aad_len, ciphertext, plen, tag, decrypted);
+    int ret = sdc_xchacha20_poly1305_decrypt(key, nonce, aad, aad_len, ciphertext, plen, tag, decrypted);
     if (ret != 0 || memcmp(decrypted, plain, plen) != 0) {
         printf("  [FAIL] 解密失败\n");
         return;
@@ -210,11 +210,11 @@ static void bench_aead(const char *name, size_t size, int iterations) {
     memset(plain, 0xAA, size);
 
     // 预热
-    xchacha20_poly1305_encrypt(key, nonce, NULL, 0, plain, size, cipher, tag);
+    sdc_xchacha20_poly1305_encrypt(key, nonce, NULL, 0, plain, size, cipher, tag);
 
     double start = wall_time();
     for (int i = 0; i < iterations; i++) {
-        xchacha20_poly1305_encrypt(key, nonce, NULL, 0, plain, size, cipher, tag);
+        sdc_xchacha20_poly1305_encrypt(key, nonce, NULL, 0, plain, size, cipher, tag);
     }
     double elapsed = wall_time() - start;
 
@@ -231,7 +231,7 @@ static void bench_xchacha20(const char *name, size_t size, int iterations) {
     uint8_t nonce[24] = {0x02};
     uint8_t *in = malloc(size);
     uint8_t *out = malloc(size);
-    xchacha20_ctx ctx;
+    sdc_xchacha20_ctx ctx;
 
     if (!in || !out) {
         free(in);
@@ -242,13 +242,13 @@ static void bench_xchacha20(const char *name, size_t size, int iterations) {
 
     memset(in, 0xAA, size);
 
-    xchacha20_init(&ctx, key, nonce, 0);
-    xchacha20_crypt(&ctx, in, out, size);
+    sdc_xchacha20_init(&ctx, key, nonce, 0);
+    sdc_xchacha20_crypt(&ctx, in, out, size);
 
     double start = wall_time();
     for (int i = 0; i < iterations; i++) {
-        xchacha20_init(&ctx, key, nonce, 0);
-        xchacha20_crypt(&ctx, in, out, size);
+        sdc_xchacha20_init(&ctx, key, nonce, 0);
+        sdc_xchacha20_crypt(&ctx, in, out, size);
     }
     double elapsed = wall_time() - start;
 
@@ -268,7 +268,7 @@ static void run_benchmarks(void) {
     bench_aead("AEAD 16KB", 16384, 200);
     bench_aead("AEAD 64KB", 65536, 50);
     bench_aead("AEAD 32MB", 32*1024*1024, 10);
-    bench_aead("AEAD 4MB", 64*1024*1024, 5);
+    bench_aead("AEAD 64MB", 64*1024*1024, 5);
     bench_xchacha20("XChaCha20 1KB", 1024, 1000);
     bench_xchacha20("XChaCha20 4KB", 4096, 500);
     bench_xchacha20("XChaCha20 16KB", 16384, 200);

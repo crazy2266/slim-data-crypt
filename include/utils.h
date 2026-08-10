@@ -1,12 +1,12 @@
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef SDC_UTILS_H
+#define SDC_UTILS_H
 
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 
-void secure_memzero(void *ptr, size_t len);
-int secure_memcmp(const void *a, const void *b, size_t len);
+void sdc_secure_memzero(void *ptr, size_t len);
+int sdc_secure_memcmp(const void *a, const void *b, size_t len);
 
 static inline uint32_t load32_le(const uint8_t src[4]) {
     uint32_t result;

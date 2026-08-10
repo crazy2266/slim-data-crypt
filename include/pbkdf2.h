@@ -1,5 +1,5 @@
-#ifndef KDF_H
-#define KDF_H
+#ifndef SDC_KDF_H
+#define SDC_KDF_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -20,7 +20,7 @@ extern "C" {
  * @param iterations 迭代次数（推荐 600000）
  * @return 0 成功，-1 失败
  */
-int kdf_pbkdf2_sha256(
+int sdc_kdf_pbkdf2_sha256(
     uint8_t *out, size_t outlen,
     const uint8_t *password, size_t pwdlen,
     const uint8_t *salt, size_t saltlen,

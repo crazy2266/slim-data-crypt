@@ -1,5 +1,5 @@
-#ifndef X25519_H
-#define X25519_H
+#ifndef SDC_X25519_H
+#define SDC_X25519_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -16,7 +16,7 @@ extern "C" {
  * @param pub       对方公钥（32 字节）
  * @return 0 成功，负数错误码
  */
-int x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pub[32]);
+int sdc_x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pub[32]);
 
 /**
  * 生成 X25519 密钥对
@@ -26,10 +26,10 @@ int x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pu
  * @param rng       随机数生成器（可为 NULL，使用默认）
  * @return 0 成功，负数错误码
  */
-int x25519_keygen(uint8_t pub[32], uint8_t priv[32]);
+int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32]);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* X25519_H */
+#endif /* SDC_X25519_H */

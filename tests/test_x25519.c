@@ -52,7 +52,7 @@ int main(void) {
     printf("Testing X25519...\n");
     
     /* 测试1: Alice 计算共享秘密 */
-    if (x25519_exchange(shared_a, rfc_private_a, rfc_public_b) == 0) {
+    if (sdc_x25519_exchange(shared_a, rfc_private_a, rfc_public_b) == 0) {
         if (compare_bytes(shared_a, rfc_shared_secret, 32)) {
             printf("✓ Alice's shared secret correct\n");
             passed++;
@@ -62,7 +62,7 @@ int main(void) {
     }
     
     /* 测试2: Bob 计算共享秘密 */
-    if (x25519_exchange(shared_b, rfc_private_b, rfc_public_a) == 0) {
+    if (sdc_x25519_exchange(shared_b, rfc_private_b, rfc_public_a) == 0) {
         if (compare_bytes(shared_b, rfc_shared_secret, 32)) {
             printf("✓ Bob's shared secret correct\n");
             passed++;

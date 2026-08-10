@@ -27,7 +27,7 @@ int main(void) {
         0x09, 0x11, 0x20, 0x41, 0xd3, 0xa1, 0x97, 0x83
     };
 
-    int ret = kdf_pbkdf2_sha256(out1, 64,
+    int ret = sdc_kdf_pbkdf2_sha256(out1, 64,
                                   password1, sizeof(password1) - 1,
                                   salt1, sizeof(salt1) - 1,
                                   iterations1);
@@ -63,7 +63,7 @@ int main(void) {
         0x47, 0x8f, 0x62, 0xb3, 0x97, 0xf3, 0x3c, 0x8d
     };
 
-    ret = kdf_pbkdf2_sha256(out2, 64,
+    ret = sdc_kdf_pbkdf2_sha256(out2, 64,
                               password2, sizeof(password2) - 1,
                               salt2, sizeof(salt2) - 1,
                               iterations2);

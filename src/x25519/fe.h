@@ -5,7 +5,7 @@
 
 typedef uint64_t fe[5];
 
-#define FE25519(name) _x25519_fe_##name
+#define FE25519(name) _sdc_x25519_fe_##name
 #define fe_0          FE25519(zero)
 #define fe_1          FE25519(one)
 #define fe_copy       FE25519(copy)

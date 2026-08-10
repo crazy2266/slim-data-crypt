@@ -3,7 +3,7 @@
 #include "random.h"
 #include "utils.h"
 
-static void x25519_scalarmult(uint8_t out[32], const uint8_t scalar[32],
+static void sdc_x25519_scalarmult(uint8_t out[32], const uint8_t scalar[32],
         const uint8_t point[32]) 
 {
     fe x1, x2, z2, x3, z3, tmp0, tmp1;
@@ -52,18 +52,18 @@ static void x25519_scalarmult(uint8_t out[32], const uint8_t scalar[32],
     fe_invert(z2, z2);
     fe_mul(x2, x2, z2);
     fe_tobytes(out, x2);
-    secure_memzero(t, sizeof(t));
+    sdc_secure_memzero(t, sizeof(t));
 }
 
-int x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pub[32]) {
+int sdc_x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pub[32]) {
     if (!shared || !priv || !pub) return -1;
-    x25519_scalarmult(shared, priv, pub);
+    sdc_x25519_scalarmult(shared, priv, pub);
     return 0;
 }
 
-int x25519_keygen(uint8_t pub[32], uint8_t priv[32]) {
+int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32]) {
     if (!pub || !priv) return -1;
-    int ret = random_bytes(priv, 32);
+    int ret = sdc_random_bytes(priv, 32);
     if (ret != 0) return ret;
     // clamp 私钥
     priv[0] &= 0xf8;
@@ -71,6 +71,6 @@ int x25519_keygen(uint8_t pub[32], uint8_t priv[32]) {
     priv[31] |= 0x40;
     
     static const uint8_t basepoint[32] = {9};
-    x25519_scalarmult(pub, priv, basepoint);
+    sdc_x25519_scalarmult(pub, priv, basepoint);
     return 0;
 }

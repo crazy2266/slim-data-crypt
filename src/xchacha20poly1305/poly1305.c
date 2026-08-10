@@ -4,7 +4,7 @@
 
 typedef unsigned __int128 u128;
 
-void poly1305_init(poly1305_ctx *ctx, const uint8_t key[32]) {
+void sdc_poly1305_init(sdc_poly1305_ctx *ctx, const uint8_t key[32]) {
     uint64_t t0 = load64_le(key);
     uint64_t t1 = load64_le(key + 8);
 
@@ -23,7 +23,7 @@ void poly1305_init(poly1305_ctx *ctx, const uint8_t key[32]) {
     ctx->final = 0;
 }
 
-static void poly1305_blocks(poly1305_ctx *ctx, const uint8_t *m, size_t bytes) {
+static void sdc_poly1305_blocks(sdc_poly1305_ctx *ctx, const uint8_t *m, size_t bytes) {
     const uint64_t hibit = ctx->final ? 0 : (1ULL << 40);
     uint64_t r0 = ctx->r[0];
     uint64_t r1 = ctx->r[1];
@@ -80,7 +80,7 @@ static void poly1305_blocks(poly1305_ctx *ctx, const uint8_t *m, size_t bytes) {
     ctx->h[2] = h2;
 }
 
-void poly1305_update(poly1305_ctx *ctx, const uint8_t *in, size_t len) {
+void sdc_poly1305_update(sdc_poly1305_ctx *ctx, const uint8_t *in, size_t len) {
     if (ctx->final) return;
 
     if (ctx->leftover) {
@@ -91,7 +91,7 @@ void poly1305_update(poly1305_ctx *ctx, const uint8_t *in, size_t len) {
             return;
         }
         memcpy(ctx->buffer + ctx->leftover, in, want);
-        poly1305_blocks(ctx, ctx->buffer, 16);
+        sdc_poly1305_blocks(ctx, ctx->buffer, 16);
         in += want;
         len -= want;
         ctx->leftover = 0;
@@ -99,7 +99,7 @@ void poly1305_update(poly1305_ctx *ctx, const uint8_t *in, size_t len) {
 
     if (len >= 16) {
         size_t blocks = len / 16;
-        poly1305_blocks(ctx, in, blocks * 16);
+        sdc_poly1305_blocks(ctx, in, blocks * 16);
         in += blocks * 16;
         len -= blocks * 16;
     }
@@ -110,7 +110,7 @@ void poly1305_update(poly1305_ctx *ctx, const uint8_t *in, size_t len) {
     }
 }
 
-void poly1305_final(poly1305_ctx *ctx, uint8_t mac[16]) {
+void sdc_poly1305_final(sdc_poly1305_ctx *ctx, uint8_t mac[16]) {
     uint64_t h0, h1, h2, c;
     uint64_t g0, g1, g2;
     uint64_t t0, t1;
@@ -124,7 +124,7 @@ void poly1305_final(poly1305_ctx *ctx, uint8_t mac[16]) {
             ctx->buffer[i] = 0;
         }
         ctx->final = 1;
-        poly1305_blocks(ctx, ctx->buffer, 16);
+        sdc_poly1305_blocks(ctx, ctx->buffer, 16);
     }
 
     h0 = ctx->h[0];
@@ -185,12 +185,12 @@ void poly1305_final(poly1305_ctx *ctx, uint8_t mac[16]) {
     h1 = (h1 >> 20) | (h2 << 24);
     store64_le(&mac[0], h0);
     store64_le(&mac[8], h1);
-    secure_memzero(ctx, sizeof(poly1305_ctx));
+    sdc_secure_memzero(ctx, sizeof(sdc_poly1305_ctx));  
 }
 
-void poly1305_mac(uint8_t mac[16], const uint8_t *in, size_t len, const uint8_t key[32]) {
-    poly1305_ctx ctx;
-    poly1305_init(&ctx, key);
-    poly1305_update(&ctx, in, len);
-    poly1305_final(&ctx, mac);
+void sdc_poly1305_mac(uint8_t mac[16], const uint8_t *in, size_t len, const uint8_t key[32]) {
+    sdc_poly1305_ctx ctx;
+    sdc_poly1305_init(&ctx, key);
+    sdc_poly1305_update(&ctx, in, len);
+    sdc_poly1305_final(&ctx, mac);
 }

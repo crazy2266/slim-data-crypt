@@ -33,7 +33,7 @@ static void chacha20_4block(uint32x4_t out[16], const uint32x4_t in[16]) {
     }
 }
 
-static void next_block(xchacha20_ctx *ctx) {
+static void next_block(sdc_xchacha20_ctx *ctx) {
     uint32x4_t newlow, carry, out[16];
     chacha20_4block(out, ctx->state);
     for (int j = 0; j < 16; j++) {
@@ -75,7 +75,7 @@ static void hchacha20(uint32x4_t out[8], const uint32x4_t in[16]) {
     out[7] = x[15];
 }
 
-void xchacha20_init(xchacha20_ctx *ctx, const uint8_t key[32],
+void sdc_xchacha20_init(sdc_xchacha20_ctx *ctx, const uint8_t key[32],
                     const uint8_t nonce[24], uint64_t counter) {
     if (!ctx || !key || !nonce) return;
     int i;
@@ -132,7 +132,7 @@ void xchacha20_init(xchacha20_ctx *ctx, const uint8_t key[32],
     ctx->buf_used = 256;
 }
 
-void xchacha20_crypt(xchacha20_ctx *ctx, const uint8_t *in, uint8_t *out, size_t len) {
+void sdc_xchacha20_crypt(sdc_xchacha20_ctx *ctx, const uint8_t *in, uint8_t *out, size_t len) {
     if (!ctx || !in || !out || len == 0) return;
     
     size_t i = 0;
