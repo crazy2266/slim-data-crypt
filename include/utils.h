@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * Some helper functions.
+ */
+
 #ifndef SDC_UTILS_H
 #define SDC_UTILS_H
 
@@ -68,4 +75,4 @@ static inline void store64_be(uint8_t out[8], uint64_t in) {
     out[0] = (uint8_t)(in >> 56);
 }
 
-#endif /* UTILS_H */
+#endif /* SDC_UTILS_H */

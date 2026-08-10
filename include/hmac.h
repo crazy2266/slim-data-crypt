@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * HMAC-SHA256 functions.
+ */
+
 #ifndef SDC_HMAC_H
 #define SDC_HMAC_H
 
@@ -18,4 +25,4 @@ void sdc_hmac_sha256_final(sdc_hmac_sha256_ctx *ctx, uint8_t out[32]);
 void sdc_hmac_sha256(uint8_t out[32], const uint8_t *key, size_t key_len,
                  const uint8_t *data, size_t data_len);
 
-#endif
+#endif /* SDC_HMAC_H */

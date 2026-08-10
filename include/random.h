@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * Random number generation functions.
+ */
+
 #ifndef SDC_RANDOM_H
 #define SDC_RANDOM_H
 

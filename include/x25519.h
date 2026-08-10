@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  * Copyright (c) 2026 crazy2266
  *
- * Field element operations for Curve25519.
+ * X25519 functions for key exchange.
  */
 
 #ifndef SDC_X25519_H

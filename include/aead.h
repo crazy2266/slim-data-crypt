@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * XChaCha20-Poly1305 AEAD cipher.
+ */
+
 #ifndef SDC_AEAD_H
 #define SDC_AEAD_H
 
@@ -87,4 +94,4 @@ int sdc_xchacha20_poly1305_decrypt(
     uint8_t *plaintext
 );
 
-#endif
+#endif /* SDC_AEAD_H */

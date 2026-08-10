@@ -1,5 +1,12 @@
-#ifndef SDC_KDF_H
-#define SDC_KDF_H
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * PBKDF2-HMAC-SHA256 key derivation function.
+ */
+
+#ifndef SDC_PBKDF2_H
+#define SDC_PBKDF2_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -31,4 +38,4 @@ int sdc_kdf_pbkdf2_sha256(
 }
 #endif
 
-#endif /* KDF_H */
+#endif /* SDC_PBKDF2_H */

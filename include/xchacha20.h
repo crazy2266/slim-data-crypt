@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  * Copyright (c) 2026 crazy2266
  *
- * XChaCha20 cipher - 5-block parallel (4 NEON + 1 scalar)
+ * XChaCha20 cipher functions.
  */
 
 #ifndef SDC_XCHACHA20_H
@@ -30,4 +30,4 @@ void sdc_xchacha20_init(sdc_xchacha20_ctx *ctx, const uint8_t key[32],
 void sdc_xchacha20_crypt(sdc_xchacha20_ctx *ctx, const uint8_t *in,
                          uint8_t *out, size_t len);
 
-#endif
+#endif /* SDC_XCHACHA20_H */

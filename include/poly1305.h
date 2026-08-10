@@ -25,4 +25,4 @@ void sdc_poly1305_update(sdc_poly1305_ctx *ctx, const uint8_t *in, size_t len);
 void sdc_poly1305_final(sdc_poly1305_ctx *ctx, uint8_t mac[16]);
 void sdc_poly1305_mac(uint8_t mac[16], const uint8_t *in, size_t len, const uint8_t key[32]);
 
-#endif
+#endif /* SDC_POLY1305_H */

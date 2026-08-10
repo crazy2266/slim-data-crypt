@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * SHA2 hash functions.
+ */
+
 #ifndef SDC_SHA2_H
 #define SDC_SHA2_H
 
@@ -29,4 +36,4 @@ void sdc_sha512_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len);
 void sdc_sha512_final(sdc_sha512_ctx *ctx, uint8_t out[64]);
 void sdc_sha512_hash(uint8_t out[64], const uint8_t *in, size_t len);
 
-#endif
+#endif /* SDC_SHA2_H */
