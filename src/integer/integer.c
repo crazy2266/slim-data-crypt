@@ -13,12 +13,6 @@
 #include "integer.h"
 #include "utils.h"
 
-typedef unsigned __int128 u128;
-
-static uint64_t is_nonzero(uint64_t x) {
-    return (x | (0ULL - x)) >> 63;
-}
-
 /* p1 = p1, p2 = p2 if ctl = 0
    p1 = p2, p2 = p1 if ctl = 1 */
 static void ptr_cswap(uint64_t **p1, uint64_t **p2, uint64_t ctl) {
@@ -67,7 +61,7 @@ uint64_t sdc_int_eq_word(const uint64_t *a, uint64_t word, size_t len) {
     for (size_t i = 1; i < len; i++) {
         result |= a[i];
     }
-    return is_nonzero(result) ^ 1;
+    return is_nonzero64(result) ^ 1;
 }
 
 uint64_t sdc_int_is_odd(const uint64_t *a, size_t len) {
@@ -98,7 +92,7 @@ uint64_t sdc_int_eq(const uint64_t *a, const uint64_t *b, size_t len) {
     while (len--) {
         diff |= a[len] ^ b[len];
     }
-    return is_nonzero(diff) ^ 1;
+    return is_nonzero64(diff) ^ 1;
 }
 
 uint64_t sdc_int_add(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t len) {
@@ -241,7 +235,7 @@ void sdc_int_mont_mul(uint64_t *r, const uint64_t *a, const uint64_t *b,
         r[len - 1] = (uint64_t)zh;
         dh = zh >> 64;
     }
-    sdc_int_sub_ctl(r, n, len, is_nonzero(dh) | sdc_int_gte(r, n, len));
+    sdc_int_sub_ctl(r, n, len, is_nonzero64(dh) | sdc_int_gte(r, n, len));
 }
 
 void sdc_int_from_mont(uint64_t *x, const uint64_t *n, size_t len, uint64_t ninv) {
@@ -381,7 +375,7 @@ static u128 div128_64(u128 dividend, uint64_t divisor, uint64_t *rem) {
     for (int i = 127; i >= 0; i--) {
         r <<= 1;
         r |= (dividend >> i) & 1;
-        uint64_t cond = (r >= d);
+        uint64_t cond = GTE128(r, d);
         u128 mask = -(u128)cond;
         r -= d & mask;
         q |= (u128)cond << i;

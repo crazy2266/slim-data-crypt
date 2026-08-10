@@ -12,6 +12,8 @@
 #include <stddef.h>
 #include <string.h>
 
+typedef unsigned __int128 u128;
+
 void sdc_secure_memzero(void *ptr, size_t len);
 int sdc_secure_memcmp(const void *a, const void *b, size_t len);
 
@@ -73,6 +75,24 @@ static inline void store64_be(uint8_t out[8], uint64_t in) {
     out[2] = (uint8_t)(in >> 40);
     out[1] = (uint8_t)(in >> 48);
     out[0] = (uint8_t)(in >> 56);
+}
+
+static inline uint64_t is_nonzero64(uint64_t x) {
+    return (x | (0ULL - x)) >> 63;
+}
+
+static inline uint64_t GTE128(u128 a, u128 b) {
+    u128 ah = a >> 64;
+    u128 bh = b >> 64;
+    u128 al = a & 0xFFFFFFFFFFFFFFFFULL;
+    u128 bl = b & 0xFFFFFFFFFFFFFFFFULL;
+
+    u128 hgt = (bh - ah) >> 127;
+    u128 lgt = (bl - al) >> 127;
+    u128 heq = is_nonzero64(ah ^ bh) ^ 1;
+    u128 leq = is_nonzero64(al ^ bl) ^ 1;
+    uint64_t result = hgt | (heq & (lgt | leq));
+    return result;
 }
 
 #endif /* SDC_UTILS_H */
