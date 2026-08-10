@@ -6,7 +6,7 @@ Supported Algorithms:
 - XChaCha20-Poly1305
 - PBKDF2-HMAC-SHA256
 - X25519
-- Integer multiplication
+- Integer arithmetic
 
 Please use command "make" to build tests,
 and the test programs will be generated in ./tests directory.
