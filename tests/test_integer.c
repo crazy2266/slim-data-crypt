@@ -172,7 +172,15 @@ static void test_rsa(void) {
         printf("❌ 模逆错误\n\n");
     }
 
-    /* RSA 加密/解密验证 */
+    /*
+     * RSA 加密/解密验证 (测试用例由 python sympy 生成)
+     * 测试用例：
+     * p = 0xcf1d225af516eea21489e59a7fbfdb859b16b9b6aeb5ea53b85de612b57a140f
+     * q = 0xce2547e8a597f6d50385c49c3bbb9baa6be7efd1ffb3d4025e427e8271092279
+     * n = 0xa6c79b087544f5c49ba40b672a84bda9313307d28f1c2fb33c2736890ef6010bb2563be2b04d2bf450ab7a30d93422961afadb576fdd09b0e16f10b550e47917
+     * phi = 0xa6c79b087544f5c49ba40b672a84bda9313307d28f1c2fb33c2736890ef6010a1513d19f159e467d389bcffa1db8ab6613fc31cec1734b5acaceac202a614290
+     * d = 0x3300d3ee903e589299ae5f365b906097ff4dc5d4a4a3500b16183fdb4652011b5e3ac35e4d342c065b6b7afcd85e033ca25bfbb768fda34bcebdc971c4c41da1
+     */
     printf("RSA 加密/解密验证 (512位): \n");
     ninv = sdc_int_calculate_ninv(n[0]);
     print_hex("n", n, len);
