@@ -1,3 +1,14 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2008-2017 Daniel J. Bernstein <djb@cr.yp.to>
+ *
+ * This file is a direct port of the ref10 implementation of Curve25519
+ * by Daniel J. Bernstein.
+ * Original source: https://cr.yp.to/ecdh.html
+ *
+ * Ported to slim-data-crypt by crazy2266.
+ */
+
 #ifndef FE_H
 #define FE_H
 

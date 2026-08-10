@@ -1,3 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2013-2024 Frank Denis <github@pureftpd.org>
+ * Copyright (c) 2026 crazy2266
+ *
+ * XChaCha20 stream cipher - ARM NEON implementation.
+ *
+ * Based on the XChaCha20 construction introduced in libsodium.
+ * Reference: https://github.com/jedisct1/libsodium
+ *
+ * This implementation uses 4-block parallelism with NEON intrinsics.
+ */
+
 #include <string.h>
 #include "xchacha20.h"
 #include "utils.h"

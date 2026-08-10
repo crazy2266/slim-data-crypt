@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * Poly1305 MAC functions.
+ */
+
 #ifndef SDC_POLY1305_H
 #define SDC_POLY1305_H
 

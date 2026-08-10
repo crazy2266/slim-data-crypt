@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * XChaCha20 cipher.
+ */
+
 #ifndef SDC_XCHACHA20_H
 #define SDC_XCHACHA20_H
 

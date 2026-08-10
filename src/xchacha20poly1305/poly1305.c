@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2013-2024 Frank Denis <github@pureftpd.org>
+ *
+ * Ported from libsodium's poly1305_ref implementation.
+ */
+
 #include <string.h>
 #include "poly1305.h"
 #include "utils.h"
