@@ -13,6 +13,8 @@
 #include "integer.h"
 #include "utils.h"
 
+/* ================ Inner helper functions ================ */
+
 /* p1 = p1, p2 = p2 if ctl = 0
    p1 = p2, p2 = p1 if ctl = 1 */
 static void ptr_cswap(uint64_t **p1, uint64_t **p2, uint64_t ctl) {
@@ -23,6 +25,17 @@ static void ptr_cswap(uint64_t **p1, uint64_t **p2, uint64_t ctl) {
     *p1 = (uint64_t *)(val1 ^ diff);
     *p2 = (uint64_t *)(val2 ^ diff);
 }
+
+static inline uint64_t select_u64(uint64_t mask, uint64_t a, uint64_t b) {
+    return (a & mask) | (b & ~mask);
+}
+
+static inline uint64_t gte_u64_mask(uint64_t a, uint64_t b) {
+    u128 diff = (u128)a - (u128)b;
+    return ~(uint64_t)(diff >> 64);
+}
+
+/* ================ Public functions ================ */
 
 void sdc_int_set_word(uint64_t *r, uint64_t val, size_t len) {
     r[0] = val;
@@ -384,6 +397,18 @@ static u128 div128_64(u128 dividend, uint64_t divisor, uint64_t *rem) {
     return q;
 }
 
+static uint64_t rem128_64(u128 dividend, uint64_t divisor) {
+    u128 r = 0;
+    u128 d = divisor;
+    
+    for (int i = 127; i >= 0; i--) {
+        r = (r << 1) | ((dividend >> i) & 1);
+        u128 mask = -(u128)GTE128(r, d);
+        r -= d & mask;
+    }
+    return r;
+}
+
 /* 大数除以单字：quo = a / word, rem = a % word */
 void sdc_int_div_word(uint64_t *quo, const uint64_t *a, uint64_t word, size_t len, uint64_t *rem) {
     u128 remainder = 0;
@@ -394,6 +419,15 @@ void sdc_int_div_word(uint64_t *quo, const uint64_t *a, uint64_t word, size_t le
         remainder = tmp;
     }
     if (rem) *rem = (uint64_t)remainder;
+}
+
+uint64_t sdc_int_mod_word(const uint64_t *a, uint64_t word, size_t len) {
+    u128 rem = 0;
+    for (size_t i = len; i > 0; i--) {
+        u128 val = (rem << 64) | a[i - 1];
+        rem = rem128_64(val, word);
+    }
+    return rem;
 }
 
 void sdc_int_frombytes_le(uint64_t *a, size_t len, const uint8_t *in) {
@@ -424,28 +458,125 @@ void sdc_int_tobytes_be(const uint64_t *a, size_t len, uint8_t *out) {
     }
 }
 
-void sdc_int_modinv(uint64_t *d, const uint64_t *phi, uint64_t e, uint64_t *tmp, size_t len) {
-    uint64_t *q, *r, *k_phi;
-    uint64_t k = 0;
-    uint64_t rem;
+/*
+* Binary extended GCD, constant time w.r.t. the number of iterations
+* (fixed at 2*64 rounds) and control flow (branchless updates).
+*
+* Invariants maintained (classic binary xgcd):
+*   u, v : current remainders (start: u = a mod m, v = m)
+*   x1, x2: coefficients such that u = a*x1 mod m, v = a*x2 mod m
+*
+* We track everything modulo m using 128-bit intermediate arithmetic
+* to avoid overflow, and use branchless conditional swaps/updates.
+*/
+static uint64_t modinv64(uint64_t a, uint64_t m) {
+    if (m == 1) return 0;
 
-    q = tmp;                // uint64_t q[len];
-    r = tmp + len;          // uint64_t r[len];
-    k_phi = tmp + 2 * len;  // uint64_t k_phi[len + 1];
+    uint64_t u = a; // We assume a < m.
+    uint64_t v = m;
+    uint64_t x1 = 1;
+    uint64_t x2 = 0;
 
-    sdc_int_div_word(q, phi, e, len, &rem);
-    sdc_int_set_word(r, 0, len);
-    r[0] = rem;
+    /* Total iterations: enough to guarantee termination for 64-bit values.
+       128 iterations is a safe, fixed, data-independent bound
+       (each iteration halves at least one of u or v when they're even,
+        or reduces max(u,v) when both are odd; 2*64 is a standard safe bound). */
+    const int ITERS = 128;
 
-    for (uint64_t i = 1; i < e; i++) {
-        if ((i * rem + 1) % e == 0) {
-            k = i;
-            break;
+    for (int i = 0; i < ITERS; i++) {
+        uint64_t u_odd_mask = (uint64_t)(-(int64_t)(u & 1));      /* all-ones if u odd */
+        uint64_t v_odd_mask = (uint64_t)(-(int64_t)(v & 1));      /* all-ones if v odd */
+        uint64_t both_odd_mask = u_odd_mask & v_odd_mask;
+
+        uint64_t u_even_mask = ~u_odd_mask;
+        uint64_t v_even_mask = ~v_odd_mask;
+
+        /* Step A: if u is even -> u/=2, x1 = (x1 even ? x1/2 : (x1+m)/2)
+           if v is even -> v/=2, x2 similarly
+           We compute both possibilities and select. */
+
+        /* --- handle u even --- */
+        {
+            uint64_t x1_odd_mask = (uint64_t)(-(int64_t)(x1 & 1));
+            uint64_t x1_half_even = x1 >> 1;
+            uint64_t x1_half_odd = (uint64_t)(((u128)x1 + (u128)m) >> 1);
+            uint64_t x1_half = select_u64(x1_odd_mask, x1_half_odd, x1_half_even);
+
+            uint64_t new_u = u >> 1;
+
+            u  = select_u64(u_even_mask, new_u, u);
+            x1 = select_u64(u_even_mask, x1_half, x1);
+        }
+
+        /* --- handle v even (only relevant if u was NOT selected this round in a mutually
+               exclusive binary-gcd variant; here we do the "both may shrink" variant below) --- */
+        {
+            uint64_t x2_odd_mask = (uint64_t)(-(int64_t)(x2 & 1));
+            uint64_t x2_half_even = x2 >> 1;
+            uint64_t x2_half_odd = (uint64_t)(((u128)x2 + (u128)m) >> 1);
+            uint64_t x2_half = select_u64(x2_odd_mask, x2_half_odd, x2_half_even);
+            uint64_t new_v = v >> 1;
+
+            v  = select_u64(v_even_mask, new_v, v);
+            x2 = select_u64(v_even_mask, x2_half, x2);
+        }
+
+        /* --- handle both odd: subtract smaller from larger --- */
+        {
+            uint64_t u_ge_v_mask = gte_u64_mask(u, v);
+            /* candidate values if u >= v: u -= v, x1 -= x2 (mod m) */
+            uint64_t new_u_sub = u - v;
+            uint64_t new_x1_sub;
+            {
+                /* x1 - x2 mod m */
+                uint64_t diff_mask = gte_u64_mask(x1, x2);
+                uint64_t d1 = x1 - x2;
+                uint64_t d2 = x1 + m - x2;
+                new_x1_sub = select_u64(diff_mask, d1, d2);
+            }
+
+            /* candidate values if v > u: v -= u, x2 -= x1 (mod m) */
+            uint64_t new_v_sub = v - u;
+            uint64_t new_x2_sub;
+            {
+                uint64_t diff_mask = gte_u64_mask(x2, x1);
+                uint64_t d1 = x2 - x1;
+                uint64_t d2 = x2 + m - x1;
+                new_x2_sub = select_u64(diff_mask, d1, d2);
+            }
+
+            uint64_t apply_mask = both_odd_mask; /* only when both odd do we subtract */
+            uint64_t take_u_branch = apply_mask & u_ge_v_mask;
+            uint64_t take_v_branch = apply_mask & ~u_ge_v_mask;
+
+            u  = select_u64(take_u_branch, new_u_sub, u);
+            x1 = select_u64(take_u_branch, new_x1_sub, x1);
+            v  = select_u64(take_v_branch, new_v_sub, v);
+            x2 = select_u64(take_v_branch, new_x2_sub, x2);
         }
     }
 
-    sdc_int_mul_word(k_phi, phi, k, len);
-    k_phi[0]++;  // We can directly add 1 because k*phi is always even.
-    sdc_int_div_word(k_phi, k_phi, e, len + 1, NULL);
-    sdc_int_copy(d, k_phi, len);
+    /* At termination (v == gcd == 1 assumed), x2 holds a*x2 ≡ v(final) ... 
+       Standard binary xgcd converges with u -> gcd, and x1 the corresponding
+       coefficient for u. Since we assume gcd(a,m)=1, u should reach 1 (or v reaches 1
+       depending on parity path); take whichever of u/v equals... */
+
+    /* To keep this fully branch-free and correct regardless of which variable
+       ended up holding 1, select based on (u == 1). */
+    uint64_t u_is_one_mask = (uint64_t)(-(int64_t)(is_nonzero64(u ^ 1) ^ 1));
+    uint64_t result = select_u64(u_is_one_mask, x1 % m, x2 % m);
+    return result;
+}
+
+void sdc_int_modinv(uint64_t *d, const uint64_t *phi, uint64_t e, uint64_t *tmp, size_t len) {
+    uint64_t k = 0;
+    uint64_t rem;
+
+    rem = sdc_int_mod_word(phi, e, len);
+    k = e - modinv64(rem, e);
+
+    sdc_int_mul_word(tmp, phi, k, len);
+    tmp[0]++;  // We can directly add 1 because k*phi is always even.
+    sdc_int_div_word(tmp, tmp, e, len + 1, NULL);
+    sdc_int_copy(d, tmp, len);
 }

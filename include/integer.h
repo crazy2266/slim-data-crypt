@@ -149,7 +149,7 @@ void sdc_int_tobytes_be(const uint64_t *a, size_t len, uint8_t *out);
 /*
  * d = e^{-1} mod phi
  * d,phi should be at least len words long.
- * tmp should be at least (3*len+1) words long.
+ * tmp should be at least (len+1) words long.
  * WARNING: This function is not constant-time,
  *   do not use it in high-frequency scenarios.
  */

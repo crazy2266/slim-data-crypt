@@ -38,7 +38,7 @@ static void test_modinv(void) {
     size_t len = 4;
     uint64_t phi[4] = {0x00000c30, 0, 0, 0};
     uint64_t d[4];
-    uint64_t tmp[13];
+    uint64_t tmp[9];
     uint64_t expected[4] = {0x00000ac1, 0, 0, 0};
     uint64_t check[8];
     uint64_t one[4] = {1, 0, 0, 0};
