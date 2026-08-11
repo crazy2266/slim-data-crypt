@@ -113,7 +113,7 @@ void sdc_int_div_word(uint64_t *quo, const uint64_t *a, uint64_t word, size_t le
  * Convert a byte array to an unsigned integer in little-endian order.
  * a should be at least len words long, and in should be 8*len bytes long.
  */
-void sdc_int_from_bytes_le(uint64_t *a, size_t len, const uint8_t *in);
+void sdc_int_frombytes_le(uint64_t *a, size_t len, const uint8_t *in);
 
 /*
  * Convert a byte array to an unsigned integer in big-endian order.
