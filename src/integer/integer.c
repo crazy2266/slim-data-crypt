@@ -602,25 +602,25 @@ static uint64_t modinv64(uint64_t a, uint64_t m) {
 }
 
 /*
- * Compute d = e^{-1} mod phi, using the fact that e is small.
+ * Mathematical Derivation (independently discovered by the author):
  *
- * Instead of a generic modular inverse (which would require a full
- * constant-time extended GCD over big integers), we use the following
- * mathematical transformation:
+ * We want d such that d * e ≡ 1 (mod φ).
+ * This means d * e = k * φ + 1 for some integer k.
+ * Rearranging: d = (k * φ + 1) / e.
  *
- *   We want d such that:    d * e ≡ 1 (mod phi)
- *   This implies:           d = (k * phi + 1) / e, for some integer k
- *   Rearranging:            k * phi ≡ -1 (mod e)
- *   Solving for k:          k ≡ -phi^{-1} (mod e)
+ * For this to yield an integer, we need:
+ *     k * φ ≡ -1 (mod e)
+ *     k ≡ -φ⁻¹ (mod e)
  *
- * Since e is a small, fixed public exponent (typically 65537),
- * phi^{-1} mod e can be computed efficiently using a 64-bit constant-time
- * modular inverse (modinv64). This is much faster and simpler than
- * performing a full big-integer EGCD.
+ * Since e is a small public exponent (typically 65537), φ⁻¹ mod e
+ * can be computed with a 64-bit constant-time modular inverse.
  *
- * This method is constant-time and specific to RSA key generation
- * with small public exponents. It was independently derived for
- * the slim-data-crypt library.
+ * This avoids a full big-integer extended GCD, which is both
+ * slower and significantly harder to implement in constant time.
+ *
+ * Note: This technique was independently derived during the
+ * development of slim-data-crypt and is specific to RSA key
+ * generation with small public exponents.
  */
 void sdc_int_modinv(uint64_t *d, const uint64_t *phi, uint64_t e, uint64_t *tmp, size_t len) {
     uint64_t k = 0;
