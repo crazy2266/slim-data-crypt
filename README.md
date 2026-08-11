@@ -9,4 +9,4 @@ Supported Algorithms:
 - Integer arithmetic
 
 Please use command "make" to build tests,
-and the test programs will be generated in ./tests directory.
+and the test programs will be generated in ./bin directory.
