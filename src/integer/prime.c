@@ -12,6 +12,8 @@
 
 #if SDC_ENABLE_INTEGER
 
+#define GEN_PRIME_MAX_ATTEMPT 10000
+
 static const uint32_t SMALL_PRIMES[168] = {
     2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
     31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
@@ -66,11 +68,97 @@ static int is_divisible_by_small_prime(const uint64_t *x, size_t len) {
  * For larger numbers, we use a wider set of bases to reduce error probability.
  */
 static int is_prime(const uint64_t *x, size_t len, uint64_t *tmp) {
-    
+    /*
+     * tmp layout:
+     *   tmp[0 .. len-1]     = d, where x - 1 = d * 2^s
+     *   tmp[len .. 2*len-1] = scratch for modular exponentiation
+     */
+    static const uint64_t bases64[] = { 2, 3, 5, 7, 11, 13, 17 };
+    static const uint64_t bases_large[] = {
+        2, 3, 5, 7, 11, 13, 17, 19,
+        23, 29, 31, 37, 41, 43, 47, 53
+    };
+    const uint64_t *bases;
+    size_t base_count;
+    uint64_t *d = tmp;
+    uint64_t *scratch = tmp + len;
+    size_t s, i, j;
+    uint64_t ninv;
+    uint64_t result[len];
+    uint64_t minus_one[len];
+
+    if (len == 0) return 0;
+
+    /* 0 and 1 are not prime. */
+    if (sdc_int_eq_word(x, 0, len) || sdc_int_eq_word(x, 1, len)) return 0;
+
+    /* Even numbers are composite, except for 2. */
+    if (sdc_int_is_even(x, len)) return sdc_int_eq_word(x, 2, len) ? 1 : 0;
+
+    /* Write x - 1 = d * 2^s, with d odd. */
+    sdc_int_sub_word(d, x, 1, len);
+    s = sdc_int_ctz(d, len);
+    sdc_int_shr(d, s, len);
+
+    /* x is odd, so its low word is invertible modulo 2^64. */
+    ninv = sdc_int_calculate_ninv(x[0]);
+
+    if (len == 1) {
+        bases = bases64;
+        base_count = sizeof(bases64) / sizeof(bases64[0]);
+    } else {
+        bases = bases_large;
+        base_count = sizeof(bases_large) / sizeof(bases_large[0]);
+    }
+
+    sdc_int_copy(minus_one, x, len);
+    sdc_int_sub_word(minus_one, minus_one, 1, len);
+
+    for (i = 0; i < base_count; i++) {
+        uint64_t base = bases[i];
+        uint64_t exponent[1] = { 2 };
+        int witness_passed = 0;
+
+        /* For tiny standalone inputs, reduce a base that is >= x. */
+        if (len == 1 && base >= x[0]) base %= x[0];
+        if (base == 0) continue;
+
+        sdc_int_set_word(result, base, len);
+        sdc_int_mont_modexp_u64_vartime(
+            result, result, d, len, x, scratch, len, ninv);
+
+        if (sdc_int_eq_word(result, 1, len) ||
+            sdc_int_eq(result, minus_one, len)) {
+            continue;
+        }
+
+        for (j = 1; j < s; j++) {
+            sdc_int_mont_modexp_u64_vartime(
+                result, result, exponent, 1, x, scratch, len, ninv);
+            if (sdc_int_eq(result, minus_one, len)) {
+                witness_passed = 1;
+                break;
+            }
+            if (sdc_int_eq_word(result, 1, len)) return 0;
+        }
+        if (!witness_passed) return 0;
+    }
+    return 1;
 }
 
 int sdc_int_gen_prime(uint64_t *x, uint64_t *tmp, size_t len) {
-    
+    if (x == NULL || tmp == NULL || len == 0) return -1;
+    int attempt = 0;
+    while (attempt < GEN_PRIME_MAX_ATTEMPT) {
+        attempt++;
+        int ret = int_gen_random_odd(x, len);
+        if (ret != 0) return ret;
+        /* Fast rejection before the expensive Miller-Rabin test. */
+        if (is_divisible_by_small_prime(x, len)) continue;
+        if (is_prime(x, len, tmp)) return 0;
+    }
+    /* Failed to find a prime within the maximum attempts. */
+    return -2;
 }
 
 #endif /* SDC_ENABLE_INTEGER */

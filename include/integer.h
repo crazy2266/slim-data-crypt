@@ -176,9 +176,15 @@ void sdc_int_modinv(uint64_t *d, const uint64_t *phi, uint64_t e, uint64_t *tmp,
  * Generate a random prime number with len words long.
  * The highest 2 bits of x will be set to 1 to ensure n (n = p * q) is
  *   actually 2048,3072,4096,etc. bits long.
+ * tmp should be at least 2*len words long.
  * WARNING: x will be 64*len bits long.
  *   This is a design choice to keep the implementation simple and efficient.
  *   If you need arbitrary bit lengths, consider using a higher-level wrapper.
+ * 
+ * return values:
+ *   0: success
+ *   -1: invalid input
+ *   -2: failed to find a prime within the maximum attempts.
  */
 int sdc_int_gen_prime(uint64_t *x, uint64_t *tmp, size_t len);
 
