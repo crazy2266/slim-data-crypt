@@ -1,3 +1,18 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * SHA-2 (Secure Hash Algorithm 2) family implementation.
+ *
+ * References:
+ *   - FIPS PUB 180-4: Secure Hash Standard (SHS)
+ *     (https://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf)
+ *   - NIST SP 800-107: Recommendation for Applications Using Approved
+ *     Hash Algorithms
+ *
+ * Implementation conforms to FIPS 180-4 for SHA-512.
+ */
+
 #include <string.h>
 #include "sha2.h"
 #include "utils.h"
