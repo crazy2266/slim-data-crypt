@@ -16,600 +16,290 @@
 
 static unsigned g_failures = 0;
 
-static void test_ok(const char *name)
-{
-    printf("  [ OK ] %s\n", name);
+static void test_ok(const char *name) {
+    printf("  [PASS] %s\n", name);
 }
 
-static int test_fail(const char *name, const char *reason)
-{
+static int test_fail(const char *name, const char *reason) {
     printf("  [FAIL] %s: %s\n", name, reason);
     g_failures++;
     return -1;
 }
 
-static int eq_words(const uint64_t *a, const uint64_t *b, size_t len)
-{
+static int eq_words(const uint64_t *a, const uint64_t *b, size_t len) {
     uint64_t diff = 0;
-    for (size_t i = 0; i < len; i++)
-        diff |= a[i] ^ b[i];
+    for (size_t i = 0; i < len; i++) diff |= a[i] ^ b[i];
     return diff == 0;
 }
 
-static void print_hex(const char *label, const uint64_t *a, size_t len)
-{
+static void print_hex(const char *label, const uint64_t *a, size_t len) {
     printf("%s = 0x", label);
-
     int started = 0;
-
     for (size_t i = len; i != 0; i--) {
         uint64_t w = a[i - 1];
-
         if (started || w != 0) {
             printf("%016" PRIx64, w);
             started = 1;
         }
     }
-
-    if (!started)
-        printf("0");
-
+    if (!started) printf("0");
     putchar('\n');
 }
 
-static uint64_t test_rng_state =
-    UINT64_C(0x6a09e667f3bcc909);
+static uint64_t test_rng_state = UINT64_C(0x6a09e667f3bcc909);
 
-/*
- * Deterministic PRNG used only to create test messages.
- * This is NOT a cryptographic RNG.
- */
-static uint64_t test_rand64(void)
-{
+static uint64_t test_rand64(void) {
     uint64_t x = test_rng_state;
-
-    x ^= x >> 12;
-    x ^= x << 25;
-    x ^= x >> 27;
-
+    x ^= x >> 12; x ^= x << 25; x ^= x >> 27;
     test_rng_state = x;
-
     return x * UINT64_C(0x2545f4914f6cdd1d);
 }
 
-static void fill_test_random(uint64_t *x, size_t len)
-{
-    for (size_t i = 0; i < len; i++)
-        x[i] = test_rand64();
+/* ========== Timing ========== */
+
+static double time_diff_sec(struct timespec *start, struct timespec *end) {
+    double sec = (double)(end->tv_sec - start->tv_sec);
+    sec += (double)(end->tv_nsec - start->tv_nsec) / 1e9;
+    return sec;
 }
 
-/*
- * --------------------------------------------------------------------------
- * Basic arithmetic tests
- * --------------------------------------------------------------------------
- */
+static void print_time(const char *label, double sec) {
+    if (sec >= 1.0) printf("%s: %.3f s\n", label, sec);
+    else if (sec >= 1e-3) printf("%s: %.3f ms\n", label, sec * 1e3);
+    else printf("%s: %.3f us\n", label, sec * 1e6);
+}
 
-static int test_basic_arithmetic(void)
-{
+/* ========== Basic arithmetic tests ========== */
+
+static int test_basic_arithmetic(void) {
     printf("\n=== Basic integer tests ===\n");
-
     {
         uint64_t x[4];
-
         sdc_int_set_word(x, UINT64_C(0x123456789abcdef0), 4);
-
-        if (x[0] != UINT64_C(0x123456789abcdef0) ||
-            x[1] != 0 ||
-            x[2] != 0 ||
-            x[3] != 0)
+        if (x[0] != UINT64_C(0x123456789abcdef0) || x[1] != 0 || x[2] != 0 || x[3] != 0)
             return test_fail("set_word", "unexpected result");
-
         test_ok("set_word");
     }
-
     {
-        uint64_t a[4] = {
-            UINT64_C(1),
-            UINT64_C(2),
-            UINT64_C(3),
-            UINT64_C(4)
-        };
-        uint64_t b[4] = {0};
-
+        uint64_t a[4] = {1,2,3,4}, b[4] = {0};
         sdc_int_copy(b, a, 4);
-
-        if (!eq_words(a, b, 4))
-            return test_fail("copy", "copy mismatch");
-
+        if (!eq_words(a, b, 4)) return test_fail("copy", "copy mismatch");
         test_ok("copy");
     }
-
     {
-        uint64_t a[2] = {UINT64_C(1), 0};
-        uint64_t b[2] = {UINT64_C(2), 0};
-
-        if (!sdc_int_lt(a, b, 2) ||
-            sdc_int_lt(b, a, 2) ||
-            sdc_int_eq(a, b, 2) ||
-            !sdc_int_gte(b, a, 2))
+        uint64_t a[2] = {1,0}, b[2] = {2,0};
+        if (!sdc_int_lt(a, b, 2) || sdc_int_lt(b, a, 2) || sdc_int_eq(a, b, 2) || !sdc_int_gte(b, a, 2))
             return test_fail("comparison", "comparison mismatch");
-
         test_ok("comparison");
     }
-
     {
-        uint64_t a[2] = {
-            UINT64_MAX,
-            0
-        };
-        uint64_t b[2] = {
-            UINT64_C(1),
-            0
-        };
-        uint64_t r[2];
-
+        uint64_t a[2] = {UINT64_MAX, 0}, b[2] = {1,0}, r[2];
         uint64_t carry = sdc_int_add(r, a, b, 2);
-
         if (r[0] != 0 || r[1] != 1 || carry != 0)
             return test_fail("add", "overflow case mismatch");
-
         uint64_t borrow = sdc_int_sub(r, r, b, 2);
-
         if (r[0] != UINT64_MAX || r[1] != 0 || borrow != 0)
             return test_fail("sub", "round-trip mismatch");
-
         test_ok("add/sub");
     }
-
     {
-        uint64_t x[3] = {
-            0,
-            0,
-            UINT64_C(0x8000000000000000)
-        };
-
-        if (sdc_int_ctz(x, 3) != 191)
-            return test_fail("ctz", "expected 191 trailing zeros");
-
+        uint64_t x[3] = {0,0,UINT64_C(0x8000000000000000)};
+        if (sdc_int_ctz(x, 3) != 191) return test_fail("ctz", "expected 191 trailing zeros");
         sdc_int_shr(x, 65, 3);
-
-        if (x[0] != 0 ||
-            x[1] != UINT64_C(0x4000000000000000) ||
-            x[2] != 0)
+        if (x[0] != 0 || x[1] != UINT64_C(0x4000000000000000) || x[2] != 0)
             return test_fail("shr", "shift mismatch");
-
         test_ok("ctz/shr");
     }
-
     return 0;
 }
 
-/*
- * --------------------------------------------------------------------------
- * Independent 64-bit reference tests
- * --------------------------------------------------------------------------
- */
+/* ========== 64-bit reference tests ========== */
 
-static int test_word_reference(void)
-{
+static int test_word_reference(void) {
     printf("\n=== 64-bit reference tests ===\n");
-
     for (unsigned i = 0; i < 10000; i++) {
-        uint64_t a = test_rand64();
-        uint64_t b = test_rand64();
-
-        uint64_t aa[1] = {a};
-        uint64_t bb[1] = {b};
-        uint64_t r[2] = {0, 0};
-
-        unsigned __int128 sum =
-            (unsigned __int128)a + b;
-
-        uint64_t carry =
-            sdc_int_add(r, aa, bb, 1);
-
-        if (r[0] != (uint64_t)sum ||
-            carry != (uint64_t)(sum >> 64))
+        uint64_t a = test_rand64(), b = test_rand64();
+        uint64_t aa[1] = {a}, bb[1] = {b}, r[2] = {0,0};
+        unsigned __int128 sum = (unsigned __int128)a + b;
+        uint64_t carry = sdc_int_add(r, aa, bb, 1);
+        if (r[0] != (uint64_t)sum || carry != (uint64_t)(sum >> 64))
             return test_fail("add/reference", "random mismatch");
-
-        unsigned __int128 product =
-            (unsigned __int128)a * b;
-
+        unsigned __int128 product = (unsigned __int128)a * b;
         sdc_int_mul(r, aa, bb, 1);
-
-        if (r[0] != (uint64_t)product ||
-            r[1] != (uint64_t)(product >> 64))
+        if (r[0] != (uint64_t)product || r[1] != (uint64_t)(product >> 64))
             return test_fail("mul/reference", "random mismatch");
-
         uint64_t divisor = test_rand64() | UINT64_C(1);
-        uint64_t q[1];
-        uint64_t rem = 0;
-
-        uint64_t ref_q = a / divisor;
-        uint64_t ref_r = a % divisor;
-
+        uint64_t q[1], rem = 0;
+        uint64_t ref_q = a / divisor, ref_r = a % divisor;
         sdc_int_div_word(q, aa, divisor, 1, &rem);
-
         if (q[0] != ref_q || rem != ref_r)
             return test_fail("div_word/reference", "random mismatch");
-
         if (sdc_int_mod_word(aa, divisor, 1) != ref_r)
             return test_fail("mod_word/reference", "random mismatch");
     }
-
     test_ok("add/mul/div/mod against uint128_t reference");
     return 0;
 }
 
-/*
- * --------------------------------------------------------------------------
- * Prime generation
- * --------------------------------------------------------------------------
- */
+/* ========== Prime generation ========== */
 
-static int test_prime_generation(size_t len)
-{
+static int test_prime_generation(size_t len) {
     printf("\n=== Prime generation: %zu-bit ===\n", len * 64);
-
-    uint64_t p[len];
-    uint64_t tmp[4 * len];
-
+    uint64_t p[len], tmp[4 * len];
     int ret = sdc_int_gen_prime(p, tmp, len);
-
-    if (ret != 0)
-        return test_fail("gen_prime", "generator returned an error");
-
+    if (ret != 0) return test_fail("gen_prime", "generator returned an error");
     print_hex("prime", p, len);
-
     if (!sdc_int_is_odd(p, len))
         return test_fail("gen_prime", "prime is even");
-
-    if ((p[len - 1] &
-         UINT64_C(0xc000000000000000)) !=
-        UINT64_C(0xc000000000000000))
+    if ((p[len - 1] & UINT64_C(0xc000000000000000)) != UINT64_C(0xc000000000000000))
         return test_fail("gen_prime", "highest two bits are not set");
-
-    /*
-     * Smoke-check divisibility by small primes.
-     * The generator itself performs the complete primality test.
-     */
     static const uint32_t small_primes[] = {
-        2, 3, 5, 7, 11, 13, 17, 19, 23, 29,
-        31, 37, 41, 43, 47, 53, 59, 61, 67, 71,
-        73, 79, 83, 89, 97
+        2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,
+        73,79,83,89,97
     };
-
-    for (size_t i = 0;
-         i < sizeof(small_primes) / sizeof(small_primes[0]);
-         i++) {
+    for (size_t i = 0; i < sizeof(small_primes)/sizeof(small_primes[0]); i++)
         if (sdc_int_mod_word(p, small_primes[i], len) == 0)
             return test_fail("gen_prime", "divisible by small prime");
-    }
-
     test_ok("prime generation shape/small-prime smoke check");
     return 0;
 }
 
-/*
- * --------------------------------------------------------------------------
- * RAW RSA test
- * --------------------------------------------------------------------------
- *
- * rsa_len is the RSA modulus length in uint64_t words.
- *
- * RSA-2048:
- *   rsa_len   = 32
- *   prime_len = 16
- *
- * RSA-4096:
- *   rsa_len   = 64
- *   prime_len = 32
- *
- * This is deliberately a "raw RSA" test:
- *
- *     c = m^e mod n
- *     m = c^d mod n
- *
- * There is NO OAEP/PKCS#1 padding here. This function tests the integer
- * implementation, not production RSA protocol/security.
- */
+/* ========== RAW RSA test with performance timing ========== */
 
-static int test_rsa_raw(size_t rsa_len)
-{
+static int test_rsa_raw(size_t rsa_len, int do_perf) {
     const size_t prime_len = rsa_len / 2;
     const size_t rsa_bits = rsa_len * 64;
     const size_t prime_bits = prime_len * 64;
+    struct timespec t_start, t_end;
 
-    printf("\n");
-    printf("============================================================\n");
+    printf("\n============================================================\n");
     printf("RAW RSA-%zu TEST\n", rsa_bits);
     printf("============================================================\n");
 
     if (rsa_len == 0 || (rsa_len & 1) != 0)
         return test_fail("rsa_raw", "invalid rsa_len");
 
-    /*
-     * p/q are prime_len words.
-     * n/phi/d/m/c are rsa_len words.
-     *
-     * mul(p,q) -> 2*prime_len == rsa_len words.
-     */
-    uint64_t p[prime_len];
-    uint64_t q[prime_len];
-
-    uint64_t n[rsa_len];
-    uint64_t phi[rsa_len];
-
-    uint64_t p1[rsa_len];
-    uint64_t q1[rsa_len];
-
+    uint64_t p[prime_len], q[prime_len];
+    uint64_t n[rsa_len], phi[rsa_len];
+    uint64_t p1[rsa_len], q1[rsa_len];
     uint64_t d[rsa_len];
-
-    uint64_t m[rsa_len];
-    uint64_t c[rsa_len];
-    uint64_t m_dec[rsa_len];
-
-    /*
-     * sdc_int_mul() needs 2*len output words.
-     */
-    uint64_t pq_full[2 * prime_len];
-    uint64_t phi_full[2 * rsa_len];
-
-    /*
-     * modexp_u64() requires tmp >= 4*rsa_len.
-     * This also gives modinv() ample scratch.
-     */
-    uint64_t *tmp =
-        (uint64_t *)calloc(4 * rsa_len, sizeof(uint64_t));
-
-    if (tmp == NULL)
-        return test_fail("rsa_raw", "scratch allocation failed");
+    uint64_t m[rsa_len], c[rsa_len], m_dec[rsa_len];
+    uint64_t pq_full[2 * prime_len], phi_full[2 * rsa_len];
+    uint64_t *tmp = (uint64_t *)calloc(4 * rsa_len, sizeof(uint64_t));
+    if (tmp == NULL) return test_fail("rsa_raw", "scratch allocation failed");
 
     int ret;
+    double t_keygen = 0.0, t_enc = 0.0, t_dec = 0.0;
 
-    /*
-     * 1. Generate p
-     */
+    /* ---- Generate p ---- */
     printf("\nGenerating %zu-bit p...\n", prime_bits);
-
+    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
     ret = sdc_int_gen_prime(p, tmp, prime_len);
-
-    if (ret != 0) {
-        free(tmp);
-        return test_fail("rsa_raw/p", "prime generation failed");
-    }
-
+    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_keygen += time_diff_sec(&t_start, &t_end); }
+    if (ret != 0) { free(tmp); return test_fail("rsa_raw/p", "prime generation failed"); }
     print_hex("p", p, prime_len);
 
-    /*
-     * 2. Generate q.
-     * q == p is vanishingly unlikely, but reject it anyway.
-     */
+    /* ---- Generate q ---- */
     printf("\nGenerating %zu-bit q...\n", prime_bits);
-
-    do {
-        ret = sdc_int_gen_prime(q, tmp, prime_len);
-
-        if (ret != 0) {
-            free(tmp);
-            return test_fail("rsa_raw/q", "prime generation failed");
-        }
-    } while (eq_words(p, q, prime_len));
-
+    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
+    do { ret = sdc_int_gen_prime(q, tmp, prime_len); } while (ret == 0 && eq_words(p, q, prime_len));
+    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_keygen += time_diff_sec(&t_start, &t_end); }
+    if (ret != 0) { free(tmp); return test_fail("rsa_raw/q", "prime generation failed"); }
     print_hex("q", q, prime_len);
     test_ok("p != q");
 
-    /*
-     * 3. n = p*q
-     */
+    /* ---- n = p*q ---- */
     printf("\nCalculating n = p*q...\n");
-
+    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
     memset(pq_full, 0, sizeof(pq_full));
     sdc_int_mul(pq_full, p, q, prime_len);
-
     memcpy(n, pq_full, sizeof(n));
-
+    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_keygen += time_diff_sec(&t_start, &t_end); }
     print_hex("n", n, rsa_len);
-
-    /*
-     * Since p and q each have their highest two bits set, n must have
-     * exactly rsa_bits bits.
-     */
-    if ((n[rsa_len - 1] &
-         UINT64_C(0x8000000000000000)) == 0) {
-        free(tmp);
-        return test_fail("rsa_raw/n", "modulus lost its top bit");
-    }
-
+    if ((n[rsa_len - 1] & UINT64_C(0x8000000000000000)) == 0)
+        { free(tmp); return test_fail("rsa_raw/n", "modulus lost its top bit"); }
     test_ok("n has expected modulus size");
 
-    /*
-     * 4. phi = (p-1)*(q-1)
-     *
-     * Keep p1/q1 at rsa_len width so the multiplication is performed
-     * by the normal rsa_len-wide path.
-     */
-    memset(p1, 0, sizeof(p1));
-    memset(q1, 0, sizeof(q1));
-
+    /* ---- phi = (p-1)*(q-1) ---- */
+    memset(p1, 0, sizeof(p1)); memset(q1, 0, sizeof(q1));
     memcpy(p1, p, prime_len * sizeof(uint64_t));
     memcpy(q1, q, prime_len * sizeof(uint64_t));
-
     sdc_int_sub_word(p1, p1, 1, rsa_len);
     sdc_int_sub_word(q1, q1, 1, rsa_len);
-
     memset(phi_full, 0, sizeof(phi_full));
-
     printf("\nCalculating phi=(p-1)*(q-1)...\n");
-
+    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
     sdc_int_mul(phi_full, p1, q1, rsa_len);
-
-    /*
-     * For p,q of half the RSA size, phi fits in rsa_len words.
-     */
-    for (size_t i = rsa_len; i < 2 * rsa_len; i++) {
-        if (phi_full[i] != 0) {
-            free(tmp);
-            return test_fail("rsa_raw/phi",
-                             "phi exceeds RSA modulus width");
-        }
-    }
-
+    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_keygen += time_diff_sec(&t_start, &t_end); }
+    for (size_t i = rsa_len; i < 2 * rsa_len; i++)
+        if (phi_full[i] != 0) { free(tmp); return test_fail("rsa_raw/phi", "phi exceeds RSA modulus width"); }
     memcpy(phi, phi_full, sizeof(phi));
-
     print_hex("phi", phi, rsa_len);
 
-    /*
-     * 5. gcd(65537, phi)
-     *
-     * 65537 is prime, so gcd != 1 iff phi % 65537 == 0.
-     */
+    /* ---- gcd(65537, phi) ---- */
     printf("\nChecking gcd(65537, phi)...\n");
-
-    if (sdc_int_mod_word(phi, TEST_E, rsa_len) == 0) {
-        free(tmp);
-        return test_fail("rsa_raw/gcd", "gcd(e,phi) != 1");
-    }
-
+    if (sdc_int_mod_word(phi, TEST_E, rsa_len) == 0)
+        { free(tmp); return test_fail("rsa_raw/gcd", "gcd(e,phi) != 1"); }
     test_ok("gcd(e,phi) == 1");
 
-    /*
-     * 6. d = e^-1 mod phi
-     */
+    /* ---- d = e^-1 mod phi ---- */
     printf("\nCalculating d=e^-1 mod phi...\n");
-
+    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
     memset(d, 0, sizeof(d));
-
     sdc_int_modinv(d, phi, TEST_E, tmp, rsa_len);
-
+    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_keygen += time_diff_sec(&t_start, &t_end); }
     print_hex("d", d, rsa_len);
-
-    if (sdc_int_eq_word(d, 0, rsa_len)) {
-        free(tmp);
-        return test_fail("rsa_raw/modinv", "returned zero");
-    }
-
+    if (sdc_int_eq_word(d, 0, rsa_len)) { free(tmp); return test_fail("rsa_raw/modinv", "returned zero"); }
     test_ok("modinv returned non-zero d");
 
-    /*
-     * 7. Generate m < n.
-     *
-     * Use the library RNG for the message, but this message is test data,
-     * not a production RSA encoding.
-     */
+    /* ---- Generate m < n ---- */
     printf("\nGenerating random message m < n...\n");
-
     for (;;) {
-        ret = sdc_random_bytes(
-            (uint8_t *)m,
-            rsa_len * sizeof(uint64_t)
-        );
-
-        if (ret != 0) {
-            free(tmp);
-            return test_fail("rsa_raw/message",
-                             "random generation failed");
-        }
-
-        if (!sdc_int_gte(m, n, rsa_len))
-            break;
+        ret = sdc_random_bytes((uint8_t *)m, rsa_len * sizeof(uint64_t));
+        if (ret != 0) { free(tmp); return test_fail("rsa_raw/message", "random generation failed"); }
+        if (!sdc_int_gte(m, n, rsa_len)) break;
     }
-
-    if (sdc_int_eq_word(m, 0, rsa_len))
-        m[0] = 2;
-
+    if (sdc_int_eq_word(m, 0, rsa_len)) m[0] = 2;
     print_hex("m", m, rsa_len);
 
-    /*
-     * 8. Montgomery setup.
-     */
-    uint64_t ninv =
-        sdc_int_calculate_ninv(n[0]);
-
+    /* ---- Montgomery setup ---- */
+    uint64_t ninv = sdc_int_calculate_ninv(n[0]);
     printf("\nninv = %016" PRIx64 "\n", ninv);
 
-    /*
-     * 9. Encrypt:
-     *
-     *     c = m^65537 mod n
-     */
+    /* ---- Encrypt ---- */
     printf("\nEncrypting with e=65537...\n");
-
+    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
     memset(c, 0, sizeof(c));
-
-    sdc_int_mont_modexp_u64(
-        c,
-        m,
-        &((uint64_t){TEST_E}),
-        1,
-        n,
-        tmp,
-        rsa_len,
-        ninv
-    );
-
+    sdc_int_mont_modexp_u64(c, m, &((uint64_t){TEST_E}), 1, n, tmp, rsa_len, ninv);
+    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_enc = time_diff_sec(&t_start, &t_end); }
     print_hex("c", c, rsa_len);
 
-    /*
-     * 10. Decrypt:
-     *
-     *     m_dec = c^d mod n
-     */
+    /* ---- Decrypt ---- */
     printf("\nDecrypting with d...\n");
-
+    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
     memset(m_dec, 0, sizeof(m_dec));
-
-    sdc_int_mont_modexp_u64(
-        m_dec,
-        c,
-        d,
-        rsa_len,
-        n,
-        tmp,
-        rsa_len,
-        ninv
-    );
-
+    sdc_int_mont_modexp_u64(m_dec, c, d, rsa_len, n, tmp, rsa_len, ninv);
+    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_dec = time_diff_sec(&t_start, &t_end); }
     print_hex("m_dec", m_dec, rsa_len);
-
-    if (!eq_words(m, m_dec, rsa_len)) {
-        free(tmp);
-        return test_fail("rsa_raw/decrypt",
-                         "m_dec != m");
-    }
-
+    if (!eq_words(m, m_dec, rsa_len)) { free(tmp); return test_fail("rsa_raw/decrypt", "m_dec != m"); }
     test_ok("constant-time RSA encrypt/decrypt");
 
-    /*
-     * 11. Variable-time implementation cross-check.
-     *
-     * This is an arithmetic consistency check; the vartime implementation
-     * should produce exactly the same plaintext.
-     */
+    /* ---- Vartime cross-check ---- */
     printf("\nVariable-time decrypt cross-check...\n");
-
     memset(m_dec, 0, sizeof(m_dec));
-
-    sdc_int_mont_modexp_u64_vartime(
-        m_dec,
-        c,
-        d,
-        rsa_len,
-        n,
-        tmp,
-        rsa_len,
-        ninv
-    );
-
-    if (!eq_words(m, m_dec, rsa_len)) {
-        free(tmp);
-        return test_fail("rsa_raw/vartime_decrypt",
-                         "vartime result != m");
-    }
-
+    sdc_int_mont_modexp_u64_vartime(m_dec, c, d, rsa_len, n, tmp, rsa_len, ninv);
+    if (!eq_words(m, m_dec, rsa_len)) { free(tmp); return test_fail("rsa_raw/vartime_decrypt", "vartime result != m"); }
     test_ok("variable-time RSA decrypt");
 
     free(tmp);
+
+    /* ---- Print performance ---- */
+    if (do_perf) {
+        printf("\n--- Performance ---\n");
+        print_time("Key generation (p+q+phi+d)", t_keygen);
+        print_time("Encrypt (m^e mod n)", t_enc);
+        print_time("Decrypt (c^d mod n)", t_dec);
+    }
 
     printf("\n============================================================\n");
     printf("RSA-%zu RAW TEST PASSED\n", rsa_bits);
@@ -618,64 +308,37 @@ static int test_rsa_raw(size_t rsa_len)
     return 0;
 }
 
-int main(void)
-{
+/* ========== Main ========== */
+
+int main(void) {
     printf("============================================================\n");
     printf("Slim Data Crypt - Integer/RSA Regression Tests\n");
     printf("============================================================\n");
 
-    /*
-     * Small deterministic arithmetic tests first. If one of these fails,
-     * there is no point waiting for a multi-minute RSA-4096 test.
-     */
-    if (test_basic_arithmetic() != 0)
-        return 1;
+    if (test_basic_arithmetic() != 0) return 1;
+    if (test_word_reference() != 0) return 1;
+    if (test_prime_generation(4) != 0) return 1;
 
-    if (test_word_reference() != 0)
-        return 1;
+    /* RSA-2048 with performance */
+    if (test_rsa_raw(32, 1) != 0) return 1;
 
-    /*
-     * Prime smoke test.
-     */
-    if (test_prime_generation(4) != 0)
-        return 1;
-
-    /*
-     * Real end-to-end RSA tests.
-     *
-     * RSA-2048:
-     *   p,q = 1024-bit primes
-     *
-     * RSA-4096:
-     *   p,q = 2048-bit primes
-     *
-     * These can take a while depending on the primality-test and
-     * Montgomery implementation, especially RSA-4096.
-     */
-    if (test_rsa_raw(32) != 0)
-        return 1;
-
-    if (test_rsa_raw(64) != 0)
-        return 1;
+    /* RSA-4096 with performance */
+    if (test_rsa_raw(64, 1) != 0) return 1;
 
     printf("\n============================================================\n");
-
     if (g_failures == 0) {
         printf("ALL INTEGER/RSA TESTS PASSED\n");
         printf("============================================================\n");
         return 0;
     }
-
     printf("TEST FAILURES: %u\n", g_failures);
     printf("============================================================\n");
-
     return 1;
 }
 
 #else
 
-int main(void)
-{
+int main(void) {
     printf("[SKIP] Integer module is disabled\n");
     return 0;
 }
