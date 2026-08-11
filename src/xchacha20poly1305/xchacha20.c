@@ -1,6 +1,7 @@
 /*
  * SPDX-License-Identifier: MIT
- *
+ * Copyright (c) 2026 crazy2266
+ * 
  * XChaCha20 - 5-block-per-call keystream generation:
  *   - 4 blocks (counter+0..+3) computed in parallel with NEON (SoA state)
  *   - 1 block  (counter+4)     computed with plain scalar code
