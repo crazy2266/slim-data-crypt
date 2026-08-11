@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * A simple system random number generation function.
+ */
+
 #include "random.h"
 #include <stdio.h>
 

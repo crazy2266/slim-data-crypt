@@ -1,3 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * HMAC (Hash-based Message Authentication Code)
+ *
+ * References:
+ *   - RFC 2104: HMAC: Keyed-Hashing for Message Authentication
+ *   - FIPS 198-1: The Keyed-Hash Message Authentication Code (HMAC)
+ *
+ * Implementation conforms to the above standards.
+ */
+
 #include "hmac.h"
 #include "sha2.h"
 #include "utils.h"

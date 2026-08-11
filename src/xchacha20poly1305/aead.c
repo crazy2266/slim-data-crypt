@@ -1,3 +1,20 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * AEAD (Authenticated Encryption with Associated Data)
+ * XChaCha20-Poly1305 construction.
+ *
+ * References:
+ *   - ChaCha20 and Poly1305: Designed by Daniel J. Bernstein
+ *   - XChaCha20 construction: Introduced by libsodium (Frank Denis)
+ *   - AEAD_CHACHA20_POLY1305: RFC 8439 (https://tools.ietf.org/html/rfc8439)
+ *   - XChaCha20-Poly1305: libsodium implementation (https://github.com/jedisct1/libsodium)
+ *
+ * This implementation combines XChaCha20 stream cipher with Poly1305 authenticator
+ * in the AEAD mode, as used in libsodium and modern TLS protocols.
+ */
+
 #include <string.h>
 #include "aead.h"
 #include "utils.h"

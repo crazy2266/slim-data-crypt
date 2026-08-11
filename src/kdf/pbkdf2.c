@@ -1,3 +1,16 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * PBKDF2 (Password-Based Key Derivation Function 2)
+ *
+ * References:
+ *   - RFC 8018: PKCS #5 v2.1 (https://tools.ietf.org/html/rfc8018)
+ *   - NIST SP 800-132: Recommendation for Password-Based Key Derivation
+ *
+ * Implementation conforms to RFC 8018, using HMAC-SHA256 as the PRF.
+ */
+
 #include <string.h>
 #include "pbkdf2.h"
 #include "hmac.h"
