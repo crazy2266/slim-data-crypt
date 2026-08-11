@@ -1,9 +1,12 @@
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 #include "integer.h"
+
+#if SDC_ENABLE_INTEGER
 
 static void print_hex(const char *label, const uint64_t *a, size_t len) {
     printf("%s: ", label);
@@ -238,3 +241,12 @@ int main(void) {
 
     return 0;
 }
+
+#else
+
+int main(void) {
+    printf("[SKIP] Integer 测试未启用\n");
+    return 0;
+}
+
+#endif /* SDC_ENABLE_INTEGER */

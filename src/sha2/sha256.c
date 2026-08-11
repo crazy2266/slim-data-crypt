@@ -13,9 +13,12 @@
  * Implementation conforms to FIPS 180-4 for SHA-256.
  */
 
+#include "config.h"
 #include <string.h>
 #include "sha2.h"
 #include "utils.h"
+
+#if SDC_ENABLE_SHA256
 
 #define ROTR32(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
 #define Ch(x, y, z)  (((x) & (y)) ^ (~(x) & (z)))
@@ -159,3 +162,5 @@ void sdc_sha256_hash(uint8_t out[32], const uint8_t *in, size_t len) {
     sdc_sha256_update(&ctx, in, len);
     sdc_sha256_final(&ctx, out);
 }
+
+#endif /* SDC_ENABLE_SHA256 */

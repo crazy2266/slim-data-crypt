@@ -10,6 +10,13 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "config.h"
+
+#if SDC_ENABLE_PBKDF2
+
+#if !SDC_ENABLE_HMAC || !SDC_ENABLE_SHA256
+    #error "PBKDF2-HMAC-SHA256 requires HMAC and SHA256 support"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,5 +44,7 @@ int sdc_kdf_pbkdf2_sha256(
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* SDC_ENABLE_PBKDF2 */
 
 #endif /* SDC_PBKDF2_H */

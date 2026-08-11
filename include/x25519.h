@@ -10,6 +10,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "config.h"
+
+#if SDC_ENABLE_X25519
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,4 +42,5 @@ int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32]);
 }
 #endif
 
+#endif /* SDC_ENABLE_X25519 */
 #endif /* SDC_X25519_H */

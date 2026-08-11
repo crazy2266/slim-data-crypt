@@ -11,10 +11,17 @@
  * Implementation conforms to RFC 8018, using HMAC-SHA256 as the PRF.
  */
 
+#include "config.h"
 #include <string.h>
 #include "pbkdf2.h"
 #include "hmac.h"
 #include "utils.h"
+
+#if SDC_ENABLE_PBKDF2
+
+#if !SDC_ENABLE_HMAC || !SDC_ENABLE_SHA256
+    #error "PBKDF2-HMAC-SHA256 requires HMAC and SHA256 support"
+#endif
 
 int sdc_kdf_pbkdf2_sha256(
     uint8_t *out, size_t outlen,
@@ -72,3 +79,5 @@ int sdc_kdf_pbkdf2_sha256(
 
     return 0;
 }
+
+#endif /* SDC_ENABLE_PBKDF2 */

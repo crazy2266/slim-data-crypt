@@ -1,6 +1,9 @@
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include "pbkdf2.h"
+
+#if SDC_ENABLE_PBKDF2
 
 static void print_hex(const char *label, const uint8_t *data, size_t len) {
     printf("%s: ", label);
@@ -86,3 +89,12 @@ int main(void) {
     printf("\n✅ PBKDF2 测试全部通过\n");
     return 0;
 }
+
+#else
+
+int main(void) {
+    printf("[SKIP] PBKDF2 测试未启用\n");
+    return 0;
+}
+
+#endif /* SDC_ENABLE_PBKDF2 */

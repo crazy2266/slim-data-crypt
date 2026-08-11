@@ -5,11 +5,12 @@
  * Ported from libsodium's poly1305_ref implementation.
  */
 
+#include "config.h"
 #include <string.h>
 #include "poly1305.h"
 #include "utils.h"
 
-typedef unsigned __int128 u128;
+#if SDC_ENABLE_POLY1305
 
 void sdc_poly1305_init(sdc_poly1305_ctx *ctx, const uint8_t key[32]) {
     uint64_t t0 = load64_le(key);
@@ -201,3 +202,5 @@ void sdc_poly1305_mac(uint8_t mac[16], const uint8_t *in, size_t len, const uint
     sdc_poly1305_update(&ctx, in, len);
     sdc_poly1305_final(&ctx, mac);
 }
+
+#endif /* SDC_ENABLE_POLY1305 */

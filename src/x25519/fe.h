@@ -13,6 +13,9 @@
 #define FE_H
 
 #include <stdint.h>
+#include "config.h"
+
+#if SDC_ENABLE_X25519
 
 typedef uint64_t fe[5];
 
@@ -42,5 +45,7 @@ void fe_mul121666(fe h, const fe f);
 void fe_invert(fe h, const fe f);
 void fe_frombytes(fe h, const uint8_t s[32]);
 void fe_tobytes(uint8_t s[32], const fe h);
+
+#endif /* SDC_ENABLE_X25519 */
 
 #endif /* FE_H */

@@ -1,9 +1,16 @@
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include "aead.h"
 #include "xchacha20.h"
+
+#if SDC_ENABLE_XCHACHA20POLY1305_AEAD
+
+#if !SDC_ENABLE_XCHACHA20 || !SDC_ENABLE_POLY1305
+#  error "XChaCha20 and Poly1305 must be enabled to use XChaCha20-Poly1305 AEAD"
+#endif
 
 #define REP32(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x
 #define REP24(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x
@@ -294,3 +301,12 @@ int main(void) {
     printf("\n=== 测试完成 ===\n");
     return 0;
 }
+
+#else
+
+int main(void) {
+    printf("[SKIP] XChaCha20-Poly1305 测试未启用\n");
+    return 0;
+}
+
+#endif /* SDC_ENABLE_XCHACHA20POLY1305_AEAD */

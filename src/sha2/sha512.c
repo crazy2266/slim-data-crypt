@@ -13,9 +13,12 @@
  * Implementation conforms to FIPS 180-4 for SHA-512.
  */
 
+#include "config.h"
 #include <string.h>
 #include "sha2.h"
 #include "utils.h"
+
+#if SDC_ENABLE_SHA512
 
 #define ROTR64(x, n) (((x) >> (n)) | ((x) << (64 - (n))))
 #define Ch(x, y, z)  (((x) & (y)) ^ (~(x) & (z)))
@@ -178,3 +181,5 @@ void sdc_sha512_hash(uint8_t out[64], const uint8_t *in, size_t len) {
     sdc_sha512_update(&ctx, in, len);
     sdc_sha512_final(&ctx, out);
 }
+
+#endif /* SDC_ENABLE_SHA512 */

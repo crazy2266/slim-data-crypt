@@ -7,8 +7,11 @@
 
 /* =============== TODO: Implement this file. =============== */
 
+#include "config.h"
 #include "integer.h"
 #include "utils.h"
+
+#if SDC_ENABLE_INTEGER
 
 static int gen_random_odd(uint64_t *x, size_t len) {
 
@@ -17,3 +20,5 @@ static int gen_random_odd(uint64_t *x, size_t len) {
 int sdc_int_gen_prime(uint64_t *x, uint64_t *tmp, size_t bits) {
 
 }
+
+#endif /* SDC_ENABLE_INTEGER */

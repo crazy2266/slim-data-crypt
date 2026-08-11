@@ -12,6 +12,13 @@
 #include <stddef.h>
 #include "xchacha20.h"
 #include "poly1305.h"
+#include "config.h"
+
+#if SDC_ENABLE_XCHACHA20POLY1305_AEAD
+
+#if !SDC_ENABLE_XCHACHA20 || !SDC_ENABLE_POLY1305
+#  error "XChaCha20 and Poly1305 must be enabled to use XChaCha20-Poly1305 AEAD"
+#endif
 
 typedef struct {
     sdc_xchacha20_ctx chacha;
@@ -93,5 +100,7 @@ int sdc_xchacha20_poly1305_decrypt(
     const uint8_t tag[16],
     uint8_t *plaintext
 );
+
+#endif /* SDC_ENABLE_XCHACHA20POLY1305_AEAD */
 
 #endif /* SDC_AEAD_H */

@@ -13,6 +13,9 @@
 #include "fe.h"
 #include "random.h"
 #include "utils.h"
+#include "config.h"
+
+#if SDC_ENABLE_X25519
 
 static void sdc_x25519_scalarmult(uint8_t out[32], const uint8_t scalar[32],
         const uint8_t point[32]) 
@@ -85,3 +88,5 @@ int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32]) {
     sdc_x25519_scalarmult(pub, priv, basepoint);
     return 0;
 }
+
+#endif /* SDC_ENABLE_X25519 */

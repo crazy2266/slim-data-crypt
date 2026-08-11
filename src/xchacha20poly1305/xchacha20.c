@@ -15,9 +15,12 @@
  * dependency chain to carry.
  */
 
+#include "config.h"
 #include <string.h>
 #include "xchacha20.h"
 #include "utils.h"
+
+#if SDC_ENABLE_XCHACHA20
 
 static inline uint32_t rotl32(uint32_t x, int n) {
     return (x << n) | (x >> (32 - n));
@@ -257,3 +260,5 @@ void sdc_xchacha20_crypt(sdc_xchacha20_ctx *ctx, const uint8_t *in,
         }
     }
 }
+
+#endif /* SDC_ENABLE_XCHACHA20 */

@@ -10,6 +10,13 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "config.h"
+
+#if SDC_ENABLE_POLY1305
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct {
     uint64_t r[3];
@@ -24,5 +31,11 @@ void sdc_poly1305_init(sdc_poly1305_ctx *ctx, const uint8_t key[32]);
 void sdc_poly1305_update(sdc_poly1305_ctx *ctx, const uint8_t *in, size_t len);
 void sdc_poly1305_final(sdc_poly1305_ctx *ctx, uint8_t mac[16]);
 void sdc_poly1305_mac(uint8_t mac[16], const uint8_t *in, size_t len, const uint8_t key[32]);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* SDC_ENABLE_POLY1305 */
 
 #endif /* SDC_POLY1305_H */

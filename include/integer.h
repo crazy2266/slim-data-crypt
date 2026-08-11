@@ -23,6 +23,13 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "config.h"
+
+#if SDC_ENABLE_INTEGER
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // These basic functions have no comment because the author is lazy. :)
 // If you want to know more, please check the source code.
@@ -160,5 +167,11 @@ void sdc_int_modinv(uint64_t *d, const uint64_t *phi, uint64_t e, uint64_t *tmp,
  *   If you need arbitrary bit lengths, consider using a higher-level wrapper.
  */
 int sdc_int_gen_prime(uint64_t *x, uint64_t *tmp, size_t len);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* SDC_ENABLE_INTEGER */
 
 #endif /* SDC_INTEGER_H */

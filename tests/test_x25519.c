@@ -1,6 +1,9 @@
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include "x25519.h"
+
+#if SDC_ENABLE_X25519
 
 /* 测试向量（RFC 7748） */
 static const uint8_t rfc_private_a[32] = {
@@ -82,3 +85,12 @@ int main(void) {
     printf("\nResult: %d/3 passed\n", passed);
     return (passed == 3) ? 0 : 1;
 }
+
+#else
+
+int main(void) {
+    printf("[SKIP] X25519 测试未启用\n");
+    return 0;
+}
+
+#endif /* SDC_ENABLE_X25519 */

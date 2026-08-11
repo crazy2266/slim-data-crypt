@@ -11,10 +11,17 @@
  * Implementation conforms to the above standards.
  */
 
+#include "config.h"
 #include "hmac.h"
 #include "sha2.h"
 #include "utils.h"
 #include <string.h>
+
+#if SDC_ENABLE_HMAC
+
+#if !SDC_ENABLE_SHA256
+    #error "HMAC-SHA256 requires SHA256 support"
+#endif
 
 void sdc_hmac_sha256_init(sdc_hmac_sha256_ctx *ctx, const uint8_t *key, size_t key_len) {
     uint8_t k[64] = {0};
@@ -61,3 +68,5 @@ void sdc_hmac_sha256(uint8_t out[32], const uint8_t *key, size_t key_len,
     sdc_hmac_sha256_update(&ctx, data, data_len);
     sdc_hmac_sha256_final(&ctx, out);
 }
+
+#endif /* SDC_ENABLE_HMAC */

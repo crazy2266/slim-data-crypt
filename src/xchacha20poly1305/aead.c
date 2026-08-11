@@ -15,9 +15,16 @@
  * in the AEAD mode, as used in libsodium and modern TLS protocols.
  */
 
+#include "config.h"
 #include <string.h>
 #include "aead.h"
 #include "utils.h"
+
+#if SDC_ENABLE_XCHACHA20POLY1305_AEAD
+
+#if !SDC_ENABLE_XCHACHA20 || !SDC_ENABLE_POLY1305
+#  error "XChaCha20 and Poly1305 must be enabled to use XChaCha20-Poly1305 AEAD"
+#endif
 
 // RFC 8439 / XChaCha20-Poly1305: pad AAD/ciphertext to a 16-byte boundary.
 static void poly1305_pad16(sdc_poly1305_ctx *ctx, uint64_t len) {
@@ -185,3 +192,5 @@ int sdc_xchacha20_poly1305_decrypt(
     sdc_xchacha20_poly1305_decrypt_final(&ctx);
     return ret;
 }
+
+#endif /* SDC_ENABLE_XCHACHA20POLY1305_AEAD */

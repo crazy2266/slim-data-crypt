@@ -10,8 +10,11 @@
  * The implementation of integer arithmetic functions.
  */
 
+#include "config.h"
 #include "integer.h"
 #include "utils.h"
+
+#if SDC_ENABLE_INTEGER
 
 /* ================ Inner helper functions ================ */
 
@@ -603,3 +606,5 @@ void sdc_int_modinv(uint64_t *d, const uint64_t *phi, uint64_t e, uint64_t *tmp,
     // d = tmp / e = (k * phi + 1) / e
     sdc_int_copy(d, tmp, len);
 }
+
+#endif /* SDC_ENABLE_INTEGER */
