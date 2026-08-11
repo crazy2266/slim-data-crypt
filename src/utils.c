@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * Some helper functions.
+ */
+
 #include "utils.h"
 
 void sdc_secure_memzero(void *ptr, size_t len) {
