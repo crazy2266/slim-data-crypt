@@ -45,53 +45,66 @@ uint64_t sdc_int_add_word(uint64_t *r, const uint64_t *a, uint64_t word, size_t 
 uint64_t sdc_int_sub_word(uint64_t *r, const uint64_t *a, uint64_t word, size_t len);
 /*
  * Multiply two unsigned integers.
- * r should be at least 2 * len words long.
+ * r should be at least 2*len words long.
+ * a,b should be at least len words long.
  * WARNING: r must be distinct from a and b.
  */
 void sdc_int_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t len);
 
 /*
  * Multiply an unsigned integer by a word.
- * r should be at least len + 1 words long.
+ * r should be at least (len+1) words long.
+ * a should be at least len words long.
  */
 void sdc_int_mul_word(uint64_t *r, const uint64_t *a, uint64_t word, size_t len);
 
-// Convert x (normal field) to Montgomery field.
+/*
+ * Convert x (normal field) to Montgomery field.
+ * x,n should be at least len words long.
+ */
 void sdc_int_to_mont(uint64_t *x, const uint64_t *n, size_t len);
 
 /*
  * Multiply two Montgomery numbers in the field Z_n.
- * r should be at least len words long.
+ * r,a,b,n should be at least len words long.
+ * ninv should be precomputed by sdc_int_calculate_ninv.
  * WARNING: r must be distinct from a and b.
  */
 void sdc_int_mont_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, const uint64_t *n, size_t len, uint64_t ninv);
 
-// Convert x (Montgomery field) to normal field.
+/*
+ * Convert x (Montgomery field) to normal field.
+ * x,n should be at least len words long.
+ * ninv should be precomputed by sdc_int_calculate_ninv.
+ */
 void sdc_int_from_mont(uint64_t *x, const uint64_t *n, size_t len, uint64_t ninv);
 
 /*
  * Compute a^e mod n in the field Z_n.
- * r should be at least len words long.
+ * r,a,n should be at least len words long.
  * a should be in normal field, and r will be in normal field after the operation.
  * tmp should be at least 4*len words long.
+ * ninv should be precomputed by sdc_int_calculate_ninv.
  */
 void sdc_int_mont_modexp_u8(uint64_t *r, const uint64_t *a, const uint8_t *e, size_t elen,
                             const uint64_t *n, uint64_t *tmp, size_t len, uint64_t ninv);
 
 /*
  * Compute a^e mod n in the field Z_n.
- * r should be at least len words long.
+ * r,a,n should be at least len words long.
  * a should be in normal field, and r will be in normal field after the operation.
  * tmp should be at least 4*len words long.
+ * ninv should be precomputed by sdc_int_calculate_ninv.
  */
 void sdc_int_mont_modexp_u64(uint64_t *r, const uint64_t *a, const uint64_t *e, size_t elen,
                              const uint64_t *n, uint64_t *tmp, size_t len, uint64_t ninv);
 
 /*
  * Compute a^e mod n in the field Z_n.
- * r should be at least len words long.
+ * r,a,n should be at least len words long.
  * a should be in normal field, and r will be in normal field after the operation.
  * tmp should be at least 2*len words long.
+ * ninv should be precomputed by sdc_int_calculate_ninv.
  * WARNING: This function is not constant-time,
  *   do not use it in decryption and signing operations.
  */
@@ -103,7 +116,7 @@ uint64_t sdc_int_calculate_ninv(uint64_t x);
 
 /*
  * Divide an unsigned integer by a word.
- * quo should be at least len words long.
+ * quo,a should be at least len words long.
  * rem is just a word, and it can be NULL if you don't need it.
  * WARNING: word cannot be zero, or it will cause undefined behavior.
  */
@@ -135,7 +148,7 @@ void sdc_int_tobytes_be(const uint64_t *a, size_t len, uint8_t *out);
 
 /*
  * d = e^{-1} mod phi
- * phi should be at least len words long.
+ * d,phi should be at least len words long.
  * tmp should be at least (3*len+1) words long.
  * WARNING: This function is not constant-time,
  *   do not use it in high-frequency scenarios.
