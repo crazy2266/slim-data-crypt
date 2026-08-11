@@ -204,6 +204,41 @@ uint64_t sdc_int_sub_word(uint64_t *r, const uint64_t *a, uint64_t word, size_t 
     return borrow;
 }
 
+void sdc_int_shr(uint64_t *x, size_t bits, size_t len) {
+    if (bits == 0) return;
+    if (bits >= 64 * len) {
+        sdc_int_set_word(x, 0, len);
+        return;
+    }
+    size_t shr_limb = bits / 64;
+    size_t shr_bits = bits % 64;
+    size_t i;
+    
+    if (shr_bits == 0) {
+        for (i = 0; i < len - shr_limb; i++) {
+            x[i] = x[i + shr_limb];
+        }
+    } else {
+        for (i = 0; i < len - shr_limb - 1; i++) {
+            x[i] = (x[i + shr_limb] >> shr_bits) | 
+                   (x[i + shr_limb + 1] << (64 - shr_bits));
+        }
+        x[len - shr_limb - 1] = x[len - 1] >> shr_bits;
+    }
+    for (i = len - shr_limb; i < len; i++) {
+        x[i] = 0;
+    }
+}
+
+size_t sdc_int_ctz(const uint64_t *x, size_t len) {
+    if (len == 0) return 0;
+    size_t i;
+    for (i = 0; i < len; i++) {
+        if (x[i] != 0) return i * 64 + __builtin_ctzll(x[i]);
+    }
+    return len * 64;
+}
+
 void sdc_int_mul_word(uint64_t *r, const uint64_t *a, uint64_t b, size_t len) {
     u128 tmp;
     size_t i;
@@ -479,12 +514,7 @@ static uint64_t modinv64(uint64_t a, uint64_t m) {
     uint64_t v = m;
     uint64_t x1 = 1;
     uint64_t x2 = 0;
-
-    /* Total iterations: enough to guarantee termination for 64-bit values.
-       128 iterations is a safe, fixed, data-independent bound
-       (each iteration halves at least one of u or v when they're even,
-        or reduces max(u,v) when both are odd; 2*64 is a standard safe bound). */
-    const int ITERS = 128;
+    const int ITERS = 256;
 
     for (int i = 0; i < ITERS; i++) {
         uint64_t u_odd_mask = (uint64_t)(-(int64_t)(u & 1));      /* all-ones if u odd */

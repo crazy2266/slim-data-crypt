@@ -50,6 +50,11 @@ uint64_t sdc_int_add_ctl(uint64_t *a, const uint64_t *b, size_t len, uint64_t ct
 uint64_t sdc_int_sub_ctl(uint64_t *a, const uint64_t *b, size_t len, uint64_t ctl);
 uint64_t sdc_int_add_word(uint64_t *r, const uint64_t *a, uint64_t word, size_t len);
 uint64_t sdc_int_sub_word(uint64_t *r, const uint64_t *a, uint64_t word, size_t len);
+// WARNING: This function has branches, please use it cautiously.
+void sdc_int_shr(uint64_t *x, size_t bits, size_t len);
+// WARNING: This function is not constant-time.
+size_t sdc_int_ctz(const uint64_t *x, size_t len);
+
 /*
  * Multiply two unsigned integers.
  * r should be at least 2*len words long.
@@ -130,6 +135,13 @@ uint64_t sdc_int_calculate_ninv(uint64_t x);
 void sdc_int_div_word(uint64_t *quo, const uint64_t *a, uint64_t word, size_t len, uint64_t *rem);
 
 /*
+ * Compute the remainder of dividing an unsigned integer by a word.
+ * a should be at least len words long.
+ * WARNING: word cannot be zero, or it will cause undefined behavior.
+ */
+uint64_t sdc_int_mod_word(const uint64_t *a, uint64_t word, size_t len);
+
+/*
  * Convert a byte array to an unsigned integer in little-endian order.
  * a should be at least len words long, and in should be 8*len bytes long.
  */
@@ -162,6 +174,8 @@ void sdc_int_modinv(uint64_t *d, const uint64_t *phi, uint64_t e, uint64_t *tmp,
 
 /*
  * Generate a random prime number with len words long.
+ * The highest 2 bits of x will be set to 1 to ensure n (n = p * q) is
+ *   actually 2048,3072,4096,etc. bits long.
  * WARNING: x will be 64*len bits long.
  *   This is a design choice to keep the implementation simple and efficient.
  *   If you need arbitrary bit lengths, consider using a higher-level wrapper.

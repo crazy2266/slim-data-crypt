@@ -83,7 +83,7 @@ int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32]) {
     priv[0] &= 0xf8;
     priv[31] &= 0x7f;
     priv[31] |= 0x40;
-    
+    // 生成公钥
     static const uint8_t basepoint[32] = {9};
     sdc_x25519_scalarmult(pub, priv, basepoint);
     return 0;
