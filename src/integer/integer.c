@@ -623,7 +623,7 @@ static sdc_word_t modinv_word(sdc_word_t a, sdc_word_t m) {
     /* To keep this fully branch-free and correct regardless of which variable
        ended up holding 1, select based on (u == 1). */
     sdc_word_t u_is_one_mask = gen_mask_word(is_nonzero_word(u ^ 1) ^ 1);
-    sdc_word_t result = select_word(u_is_one_mask, x1 % m, x2 % m);
+    sdc_word_t result = select_word(u_is_one_mask, rem_word(x1, m), rem_word(x2, m));
     return result;
 }
 
