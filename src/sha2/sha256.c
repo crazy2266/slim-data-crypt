@@ -52,15 +52,13 @@ static void sdc_sha256_transform(sdc_sha256_ctx *ctx, const uint8_t* block) {
     uint32_t a, b, c, d, e, f, g, h;
     uint32_t T1, T2;
 
-    // 大端序加载 16 个 32 位字
     for (int i = 0; i < 16; i++) {
         W[i] = load32_be(block + 4 * i);
     }
-    // 扩展到 64 个字
     for (int i = 16; i < 64; i++) {
         W[i] = sigma1(W[i-2]) + W[i-7] + sigma0(W[i-15]) + W[i-16];
     }
-    // 初始化工作变量
+
     a = ctx->state[0];
     b = ctx->state[1];
     c = ctx->state[2];
@@ -69,7 +67,7 @@ static void sdc_sha256_transform(sdc_sha256_ctx *ctx, const uint8_t* block) {
     f = ctx->state[5];
     g = ctx->state[6];
     h = ctx->state[7];
-    // 64 轮压缩
+
     for (int i = 0; i < 64; i++) {
         T1 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i];
         T2 = Sigma0(a) + Maj(a, b, c);
@@ -82,7 +80,7 @@ static void sdc_sha256_transform(sdc_sha256_ctx *ctx, const uint8_t* block) {
         b = a;
         a = T1 + T2;
     }
-    // 更新状态
+
     ctx->state[0] += a;
     ctx->state[1] += b;
     ctx->state[2] += c;
@@ -107,9 +105,8 @@ void sdc_sha256_init(sdc_sha256_ctx *ctx) {
 }
 
 void sdc_sha256_update(sdc_sha256_ctx *ctx, const uint8_t *data, size_t len) {
-    // 更新总位数
     ctx->count += (uint64_t)len * 8;
-    // 处理已有残留
+
     if (ctx->len) {
         size_t want = 64 - ctx->len;
         if (want > len) want = len;
@@ -117,19 +114,18 @@ void sdc_sha256_update(sdc_sha256_ctx *ctx, const uint8_t *data, size_t len) {
         ctx->len += want;
         data += want;
         len -= want;
-
         if (ctx->len == 64) {
             sdc_sha256_transform(ctx, ctx->buffer);
             ctx->len = 0;
         }
     }
-    // 处理完整块
+
     while (len >= 64) {
         sdc_sha256_transform(ctx, data);
         data += 64;
         len -= 64;
     }
-    // 存剩余字节
+
     if (len) {
         memcpy(ctx->buffer, data, len);
         ctx->len = len;
@@ -140,14 +136,12 @@ void sdc_sha256_final(sdc_sha256_ctx *ctx, uint8_t out[32]) {
     size_t i = ctx->len;
     ctx->buffer[i++] = 0x80;
     
-    if (ctx->len > 55) {  // 56 位开始放长度，所以如果已有大于 55，需要新块
+    if (ctx->len > 55) {
         memset(ctx->buffer + i, 0, 64 - i);
         sdc_sha256_transform(ctx, ctx->buffer);
         i = 0;
     }
-    memset(ctx->buffer + i, 0, 56 - i);  // 清到 56 位
-
-    // 长度放在最后 8 字节（大端）
+    memset(ctx->buffer + i, 0, 56 - i);
     store64_be(ctx->buffer + 56, ctx->count);
     sdc_sha256_transform(ctx, ctx->buffer);
 

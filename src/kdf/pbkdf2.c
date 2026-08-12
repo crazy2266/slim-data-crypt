@@ -67,7 +67,6 @@ int sdc_kdf_pbkdf2_sha256(
             }
         }
 
-        // 复制到输出
         size_t copy = (outlen - pos > 32) ? 32 : (outlen - pos);
         memcpy(out + pos, t, copy);
         pos += copy;
@@ -76,7 +75,6 @@ int sdc_kdf_pbkdf2_sha256(
 
     sdc_secure_memzero(u, sizeof(u));
     sdc_secure_memzero(t, sizeof(t));
-
     return 0;
 }
 

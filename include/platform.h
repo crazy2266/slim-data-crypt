@@ -15,6 +15,7 @@
 #  error "Unsupported compiler"
 #endif
 
+/* Uncomment the line below to force a specific platform. */
 // #define SDC_64BIT 1
 // #define SDC_32BIT 1
 

@@ -21,8 +21,8 @@
 
 #if SDC_ENABLE_CHACHA20 || SDC_ENABLE_XCHACHA20
 typedef struct {
-    uint32x4_t state1[16];     /* NEON 4-block parallel (SoA) */
-    uint32_t state2[16];     /* Scalar 5th block (AoS) */
+    uint32x4_t state1[16];        /* NEON 4-block parallel (SoA) */
+    uint32_t state2[16];          /* Scalar 5th block (AoS) */
     alignas(16) uint8_t buf[320]; /* 5 blocks x 64 bytes */
     size_t buf_used;
 } sdc_chacha20_ctx;

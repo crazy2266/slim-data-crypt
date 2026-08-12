@@ -63,15 +63,14 @@ static void sdc_sha512_transform(sdc_sha512_ctx *ctx, const uint8_t* block) {
     uint64_t a, b, c, d, e, f, g, h;
     uint64_t T1, T2;
 
-    // 大端序加载 16 个 64 位字
     for (int i = 0; i < 16; i++) {
         W[i] = load64_be(block + 8 * i);
     }
-    // 扩展到 80 个字
+
     for (int i = 16; i < 80; i++) {
         W[i] = sigma1(W[i-2]) + W[i-7] + sigma0(W[i-15]) + W[i-16];
     }
-    // 初始化工作变量
+
     a = ctx->state[0];
     b = ctx->state[1];
     c = ctx->state[2];
@@ -80,7 +79,7 @@ static void sdc_sha512_transform(sdc_sha512_ctx *ctx, const uint8_t* block) {
     f = ctx->state[5];
     g = ctx->state[6];
     h = ctx->state[7];
-    // 80 轮压缩
+
     for (int i = 0; i < 80; i++) {
         T1 = h + Sigma1(e) + Ch(e, f, g) + K[i] + W[i];
         T2 = Sigma0(a) + Maj(a, b, c);
@@ -93,7 +92,7 @@ static void sdc_sha512_transform(sdc_sha512_ctx *ctx, const uint8_t* block) {
         b = a;
         a = T1 + T2;
     }
-    // 更新状态
+
     ctx->state[0] += a;
     ctx->state[1] += b;
     ctx->state[2] += c;
@@ -119,13 +118,10 @@ void sdc_sha512_init(sdc_sha512_ctx *ctx) {
 }
 
 void sdc_sha512_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len) {
-    // 更新总位数
     uint64_t bits = (uint64_t)len * 8;
     ctx->count[0] += bits;
-    if (ctx->count[0] < bits) {
-        ctx->count[1]++;
-    }
-    // 处理已有残留
+
+    if (ctx->count[0] < bits) ctx->count[1]++;
     if (ctx->len) {
         size_t want = 128 - ctx->len;
         if (want > len) want = len;
@@ -133,19 +129,18 @@ void sdc_sha512_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len) {
         ctx->len += want;
         data += want;
         len -= want;
-
         if (ctx->len == 128) {
             sdc_sha512_transform(ctx, ctx->buffer);
             ctx->len = 0;
         }
     }
-    // 处理完整块
+
     while (len >= 128) {
         sdc_sha512_transform(ctx, data);
         data += 128;
         len -= 128;
     }
-    // 存剩余字节
+
     if (len) {
         memcpy(ctx->buffer, data, len);
         ctx->len = len;
@@ -156,14 +151,13 @@ void sdc_sha512_final(sdc_sha512_ctx *ctx, uint8_t out[64]) {
     size_t i = ctx->len;
     ctx->buffer[i++] = 0x80;
 
-    if (ctx->len > 111) {  // 112 位开始放长度，所以如果已有大于 111，需要新块
+    if (ctx->len > 111) {
         memset(ctx->buffer + i, 0, 128 - i);
         sdc_sha512_transform(ctx, ctx->buffer);
         i = 0;
     }
-    memset(ctx->buffer + i, 0, 112 - i);  // 清到 112 位
+    memset(ctx->buffer + i, 0, 112 - i);
 
-    // 长度放在最后 16 字节（大端）
     uint64_t high = ctx->count[1];
     uint64_t low  = ctx->count[0];
     store64_be(ctx->buffer + 112, high);
