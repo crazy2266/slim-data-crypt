@@ -11,30 +11,51 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-
-typedef unsigned __int128 u128;
+#include "platform.h"
 
 void sdc_secure_memzero(void *ptr, size_t len);
 int sdc_secure_memcmp(const void *a, const void *b, size_t len);
 
-static inline uint32_t load32_le(const uint8_t src[4]) {
+/* ================ load/store functions ================ */
+
+static inline uint32_t load32_le(const uint8_t in[4]) {
     uint32_t result;
-    memcpy(&result, src, sizeof(result));
+    result = (uint32_t)in[0];
+    result |= (uint32_t)in[1] << 8;
+    result |= (uint32_t)in[2] << 16;
+    result |= (uint32_t)in[3] << 24;
     return result;
 }
 
-static inline void store32_le(uint8_t dst[4], uint32_t value) {
-    memcpy(dst, &value, sizeof(value));
+static inline void store32_le(uint8_t out[4], uint32_t in) {
+    out[0] = (uint8_t)in;
+    out[1] = (uint8_t)(in >> 8);
+    out[2] = (uint8_t)(in >> 16);
+    out[3] = (uint8_t)(in >> 24);
 }
 
-static inline uint64_t load64_le(const uint8_t src[8]) {
+static inline uint64_t load64_le(const uint8_t in[8]) {
     uint64_t result;
-    memcpy(&result, src, sizeof(result));
+    result = (uint64_t)in[0];
+    result |= (uint64_t)in[1] << 8;
+    result |= (uint64_t)in[2] << 16;
+    result |= (uint64_t)in[3] << 24;
+    result |= (uint64_t)in[4] << 32;
+    result |= (uint64_t)in[5] << 40;
+    result |= (uint64_t)in[6] << 48;
+    result |= (uint64_t)in[7] << 56;
     return result;
 }
 
-static inline void store64_le(uint8_t dst[8], uint64_t value) {
-    memcpy(dst, &value, sizeof(value));
+static inline void store64_le(uint8_t out[8], uint64_t in) {
+    out[0] = (uint8_t)in;
+    out[1] = (uint8_t)(in >> 8);
+    out[2] = (uint8_t)(in >> 16);
+    out[3] = (uint8_t)(in >> 24);
+    out[4] = (uint8_t)(in >> 32);
+    out[5] = (uint8_t)(in >> 40);
+    out[6] = (uint8_t)(in >> 48);
+    out[7] = (uint8_t)(in >> 56);
 }
 
 static inline uint32_t load32_be(const uint8_t in[4]) {
@@ -77,22 +98,16 @@ static inline void store64_be(uint8_t out[8], uint64_t in) {
     out[0] = (uint8_t)(in >> 56);
 }
 
-static inline uint64_t is_nonzero64(uint64_t x) {
-    return (x | (0ULL - x)) >> 63;
-}
-
-static inline uint64_t GTE128(u128 a, u128 b) {
-    u128 ah = a >> 64;
-    u128 bh = b >> 64;
-    u128 al = a & 0xFFFFFFFFFFFFFFFFULL;
-    u128 bl = b & 0xFFFFFFFFFFFFFFFFULL;
-
-    u128 hgt = (bh - ah) >> 127;
-    u128 lgt = (bl - al) >> 127;
-    u128 heq = is_nonzero64(ah ^ bh) ^ 1;
-    u128 leq = is_nonzero64(al ^ bl) ^ 1;
-    uint64_t result = hgt | (heq & (lgt | leq));
-    return result;
-}
+#if SDC_64BIT
+#  define load_word_le load64_le
+#  define load_word_be load64_be
+#  define store_word_le store64_le
+#  define store_word_be store64_be
+#elif SDC_32BIT
+#  define load_word_le load32_le
+#  define load_word_be load32_be
+#  define store_word_le store32_le
+#  define store_word_be store32_be
+#endif
 
 #endif /* SDC_UTILS_H */

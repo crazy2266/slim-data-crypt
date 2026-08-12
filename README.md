@@ -1,5 +1,5 @@
 # slim-data-crypt
-A simple cryptography library which is specifically optimized for ARM64 architecture.
+A simple cryptography library which is specifically optimized for ARM architecture.
 
 Supported Algorithms:
 - SHA-2

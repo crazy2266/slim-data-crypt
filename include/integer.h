@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "platform.h"
 #include "config.h"
 
 #if SDC_ENABLE_INTEGER
@@ -34,26 +35,26 @@ extern "C" {
 // These basic functions have no comment because the author is lazy. :)
 // If you want to know more, please check the source code.
 
-void sdc_int_set_word(uint64_t *r, uint64_t val, size_t len);
-void sdc_int_copy(uint64_t *r, const uint64_t *a, size_t len);
-void sdc_int_ccopy(uint64_t *dst, const uint64_t *src, size_t len, uint64_t ctl);
-void sdc_int_cswap(uint64_t *a, uint64_t *b, size_t len, uint64_t ctl);
-uint64_t sdc_int_eq_word(const uint64_t *a, uint64_t word, size_t len);
-uint64_t sdc_int_is_odd(const uint64_t *a, size_t len);
-uint64_t sdc_int_is_even(const uint64_t *a, size_t len);
-uint64_t sdc_int_lt(const uint64_t *a, const uint64_t *b, size_t len);
-uint64_t sdc_int_eq(const uint64_t *a, const uint64_t *b, size_t len);
-uint64_t sdc_int_gte(const uint64_t *a, const uint64_t *b, size_t len);
-uint64_t sdc_int_add(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t len);
-uint64_t sdc_int_sub(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t len);
-uint64_t sdc_int_add_ctl(uint64_t *a, const uint64_t *b, size_t len, uint64_t ctl);
-uint64_t sdc_int_sub_ctl(uint64_t *a, const uint64_t *b, size_t len, uint64_t ctl);
-uint64_t sdc_int_add_word(uint64_t *r, const uint64_t *a, uint64_t word, size_t len);
-uint64_t sdc_int_sub_word(uint64_t *r, const uint64_t *a, uint64_t word, size_t len);
+void sdc_int_set_word(sdc_word_t *r, sdc_word_t val, size_t len);
+void sdc_int_copy(sdc_word_t *r, const sdc_word_t *a, size_t len);
+void sdc_int_ccopy(sdc_word_t *dst, const sdc_word_t *src, size_t len, sdc_word_t ctl);
+void sdc_int_cswap(sdc_word_t *a, sdc_word_t *b, size_t len, sdc_word_t ctl);
+sdc_word_t sdc_int_eq_word(const sdc_word_t *a, sdc_word_t word, size_t len);
+sdc_word_t sdc_int_is_odd(const sdc_word_t *a, size_t len);
+sdc_word_t sdc_int_is_even(const sdc_word_t *a, size_t len);
+sdc_word_t sdc_int_lt(const sdc_word_t *a, const sdc_word_t *b, size_t len);
+sdc_word_t sdc_int_eq(const sdc_word_t *a, const sdc_word_t *b, size_t len);
+sdc_word_t sdc_int_gte(const sdc_word_t *a, const sdc_word_t *b, size_t len);
+sdc_word_t sdc_int_add(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t len);
+sdc_word_t sdc_int_sub(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t len);
+sdc_word_t sdc_int_add_ctl(sdc_word_t *a, const sdc_word_t *b, size_t len, sdc_word_t ctl);
+sdc_word_t sdc_int_sub_ctl(sdc_word_t *a, const sdc_word_t *b, size_t len, sdc_word_t ctl);
+sdc_word_t sdc_int_add_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word, size_t len);
+sdc_word_t sdc_int_sub_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word, size_t len);
 // WARNING: This function has branches, please use it cautiously.
-void sdc_int_shr(uint64_t *x, size_t bits, size_t len);
+void sdc_int_shr(sdc_word_t *x, size_t bits, size_t len);
 // WARNING: This function is not constant-time.
-size_t sdc_int_ctz(const uint64_t *x, size_t len);
+size_t sdc_int_ctz(const sdc_word_t *x, size_t len);
 
 /*
  * Multiply two unsigned integers.
@@ -61,20 +62,20 @@ size_t sdc_int_ctz(const uint64_t *x, size_t len);
  * a,b should be at least len words long.
  * WARNING: r must be distinct from a and b.
  */
-void sdc_int_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, size_t len);
+void sdc_int_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t len);
 
 /*
  * Multiply an unsigned integer by a word.
  * r should be at least (len+1) words long.
  * a should be at least len words long.
  */
-void sdc_int_mul_word(uint64_t *r, const uint64_t *a, uint64_t word, size_t len);
+void sdc_int_mul_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word, size_t len);
 
 /*
  * Convert x (normal field) to Montgomery field.
  * x,n should be at least len words long.
  */
-void sdc_int_to_mont(uint64_t *x, const uint64_t *n, size_t len);
+void sdc_int_to_mont(sdc_word_t *x, const sdc_word_t *n, size_t len);
 
 /*
  * Multiply two Montgomery numbers in the field Z_n.
@@ -82,14 +83,14 @@ void sdc_int_to_mont(uint64_t *x, const uint64_t *n, size_t len);
  * ninv should be precomputed by sdc_int_calculate_ninv.
  * WARNING: r must be distinct from a and b.
  */
-void sdc_int_mont_mul(uint64_t *r, const uint64_t *a, const uint64_t *b, const uint64_t *n, size_t len, uint64_t ninv);
+void sdc_int_mont_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, const sdc_word_t *n, size_t len, sdc_word_t ninv);
 
 /*
  * Convert x (Montgomery field) to normal field.
  * x,n should be at least len words long.
  * ninv should be precomputed by sdc_int_calculate_ninv.
  */
-void sdc_int_from_mont(uint64_t *x, const uint64_t *n, size_t len, uint64_t ninv);
+void sdc_int_from_mont(sdc_word_t *x, const sdc_word_t *n, size_t len, sdc_word_t ninv);
 
 /*
  * Compute a^e mod n in the field Z_n.
@@ -98,8 +99,8 @@ void sdc_int_from_mont(uint64_t *x, const uint64_t *n, size_t len, uint64_t ninv
  * tmp should be at least 4*len words long.
  * ninv should be precomputed by sdc_int_calculate_ninv.
  */
-void sdc_int_mont_modexp_u8(uint64_t *r, const uint64_t *a, const uint8_t *e, size_t elen,
-                            const uint64_t *n, uint64_t *tmp, size_t len, uint64_t ninv);
+void sdc_int_mont_modexp_u8(sdc_word_t *r, const sdc_word_t *a, const uint8_t *e, size_t elen,
+                            const sdc_word_t *n, sdc_word_t *tmp, size_t len, sdc_word_t ninv);
 
 /*
  * Compute a^e mod n in the field Z_n.
@@ -108,8 +109,8 @@ void sdc_int_mont_modexp_u8(uint64_t *r, const uint64_t *a, const uint8_t *e, si
  * tmp should be at least 4*len words long.
  * ninv should be precomputed by sdc_int_calculate_ninv.
  */
-void sdc_int_mont_modexp_u64(uint64_t *r, const uint64_t *a, const uint64_t *e, size_t elen,
-                             const uint64_t *n, uint64_t *tmp, size_t len, uint64_t ninv);
+void sdc_int_mont_modexp_word(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *e, size_t elen,
+                              const sdc_word_t *n, sdc_word_t *tmp, size_t len, sdc_word_t ninv);
 
 /*
  * Compute a^e mod n in the field Z_n.
@@ -120,11 +121,11 @@ void sdc_int_mont_modexp_u64(uint64_t *r, const uint64_t *a, const uint64_t *e, 
  * WARNING: This function is not constant-time,
  *   do not use it in decryption and signing operations.
  */
-void sdc_int_mont_modexp_u64_vartime(uint64_t *r, const uint64_t *a, const uint64_t *e, size_t elen,
-                                     const uint64_t *n, uint64_t *tmp, size_t len, uint64_t ninv);
+void sdc_int_mont_modexp_word_vartime(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *e, size_t elen,
+                                      const sdc_word_t *n, sdc_word_t *tmp, size_t len, sdc_word_t ninv);
 
 // return ninv. (ninv = -x^{-1} mod n)
-uint64_t sdc_int_calculate_ninv(uint64_t x);
+sdc_word_t sdc_int_calculate_ninv(sdc_word_t x);
 
 /*
  * Divide an unsigned integer by a word.
@@ -132,52 +133,52 @@ uint64_t sdc_int_calculate_ninv(uint64_t x);
  * rem is just a word, and it can be NULL if you don't need it.
  * WARNING: word cannot be zero, or it will cause undefined behavior.
  */
-void sdc_int_div_word(uint64_t *quo, const uint64_t *a, uint64_t word, size_t len, uint64_t *rem);
+void sdc_int_div_word(sdc_word_t *quo, const sdc_word_t *a, sdc_word_t word, size_t len, sdc_word_t *rem);
 
 /*
  * Compute the remainder of dividing an unsigned integer by a word.
  * a should be at least len words long.
  * WARNING: word cannot be zero, or it will cause undefined behavior.
  */
-uint64_t sdc_int_mod_word(const uint64_t *a, uint64_t word, size_t len);
+sdc_word_t sdc_int_mod_word(const sdc_word_t *a, sdc_word_t word, size_t len);
 
 /*
  * Convert a byte array to an unsigned integer in little-endian order.
  * a should be at least len words long, and in should be 8*len bytes long.
  */
-void sdc_int_frombytes_le(uint64_t *a, size_t len, const uint8_t *in);
+void sdc_int_frombytes_le(sdc_word_t *a, size_t len, const uint8_t *in);
 
 /*
  * Convert a byte array to an unsigned integer in big-endian order.
  * a should be at least len words long, and in should be 8*len bytes long.
  */
-void sdc_int_frombytes_be(uint64_t *a, size_t len, const uint8_t *in);
+void sdc_int_frombytes_be(sdc_word_t *a, size_t len, const uint8_t *in);
 
 /*
  * Convert an unsigned integer to a byte array in little-endian order.
  * a should be at least len words long, and out should be at least 8*len bytes long.
  */
-void sdc_int_tobytes_le(const uint64_t *a, size_t len, uint8_t *out);
+void sdc_int_tobytes_le(const sdc_word_t *a, size_t len, uint8_t *out);
 
 /*
  * Convert an unsigned integer to a byte array in big-endian order.
  * a should be at least len words long, and out should be at least 8*len bytes long.
  */
-void sdc_int_tobytes_be(const uint64_t *a, size_t len, uint8_t *out);
+void sdc_int_tobytes_be(const sdc_word_t *a, size_t len, uint8_t *out);
 
 /*
  * d = e^{-1} mod phi
  * d,phi should be at least len words long.
  * tmp should be at least (len+1) words long.
  */
-void sdc_int_modinv(uint64_t *d, const uint64_t *phi, uint64_t e, uint64_t *tmp, size_t len);
+void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, sdc_word_t *tmp, size_t len);
 
 /*
  * Generate a random prime number with len words long.
  * The highest 2 bits of x will be set to 1 to ensure n (n = p * q) is
  *   actually 2048,3072,4096,etc. bits long.
- * tmp should be at least 2*len words long.
- * WARNING: x will be 64*len bits long.
+ * tmp should be at least 5*len words long.
+ * WARNING: x will be (SDC_WORD_BITS * len) bits long.
  *   This is a design choice to keep the implementation simple and efficient.
  *   If you need arbitrary bit lengths, consider using a higher-level wrapper.
  * 
@@ -186,7 +187,13 @@ void sdc_int_modinv(uint64_t *d, const uint64_t *phi, uint64_t e, uint64_t *tmp,
  *   -1: invalid input
  *   -2: failed to find a prime within the maximum attempts.
  */
-int sdc_int_gen_prime(uint64_t *x, uint64_t *tmp, size_t len);
+int sdc_int_gen_prime(sdc_word_t *x, sdc_word_t *tmp, size_t len);
+
+// A helper function to calculate the length of an unsigned integer in words.
+static inline size_t sdc_get_len_by_bits(size_t bits) {
+    if (bits == 0) return 0;
+    return (bits + SDC_WORD_BITS - 1) / SDC_WORD_BITS;
+}
 
 #ifdef __cplusplus
 }

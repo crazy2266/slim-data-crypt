@@ -12,7 +12,7 @@
 #include "fe.h"
 #include "config.h"
 
-#if SDC_ENABLE_X25519
+#if SDC_ENABLE_X25519 && SDC_64BIT
 
 #define MASK51 0x7FFFFFFFFFFFF
 typedef unsigned __int128 u128;
@@ -341,4 +341,4 @@ void fe_invert(fe out, const fe z) {
     fe_mul(out, t1, t0);
 }
 
-#endif /* SDC_ENABLE_X25519 */
+#endif /* SDC_ENABLE_X25519 && SDC_64BIT */

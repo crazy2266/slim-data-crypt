@@ -13,11 +13,17 @@
 #define FE_H
 
 #include <stdint.h>
+#include "platform.h"
 #include "config.h"
 
 #if SDC_ENABLE_X25519
 
+#if SDC_64BIT
 typedef uint64_t fe[5];
+#elif SDC_32BIT
+typedef int32_t fe[10];
+#endif
+
 
 #define FE25519(name) _sdc_x25519_fe_##name
 #define fe_0          FE25519(zero)

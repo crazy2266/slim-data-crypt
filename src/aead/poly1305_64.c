@@ -10,7 +10,9 @@
 #include "poly1305.h"
 #include "utils.h"
 
-#if SDC_ENABLE_POLY1305
+#if SDC_ENABLE_POLY1305 && SDC_64BIT
+
+typedef unsigned __int128 u128;
 
 void sdc_poly1305_init(sdc_poly1305_ctx *ctx, const uint8_t key[32]) {
     uint64_t t0 = load64_le(key);
@@ -28,11 +30,11 @@ void sdc_poly1305_init(sdc_poly1305_ctx *ctx, const uint8_t key[32]) {
     ctx->pad[1] = load64_le(key + 24);
 
     ctx->leftover = 0;
-    ctx->final = 0;
+    ctx->is_final = 0;
 }
 
 static void sdc_poly1305_blocks(sdc_poly1305_ctx *ctx, const uint8_t *m, size_t bytes) {
-    const uint64_t hibit = ctx->final ? 0 : (1ULL << 40);
+    const uint64_t hibit = ctx->is_final ? 0 : (1ULL << 40);
     uint64_t r0 = ctx->r[0];
     uint64_t r1 = ctx->r[1];
     uint64_t r2 = ctx->r[2];
@@ -89,7 +91,7 @@ static void sdc_poly1305_blocks(sdc_poly1305_ctx *ctx, const uint8_t *m, size_t 
 }
 
 void sdc_poly1305_update(sdc_poly1305_ctx *ctx, const uint8_t *in, size_t len) {
-    if (ctx->final) return;
+    if (ctx->is_final) return;
 
     if (ctx->leftover) {
         size_t want = 16 - ctx->leftover;
@@ -131,7 +133,7 @@ void sdc_poly1305_final(sdc_poly1305_ctx *ctx, uint8_t mac[16]) {
         for (; i < 16; i++) {
             ctx->buffer[i] = 0;
         }
-        ctx->final = 1;
+        ctx->is_final = 1;
         sdc_poly1305_blocks(ctx, ctx->buffer, 16);
     }
 
@@ -203,4 +205,4 @@ void sdc_poly1305_mac(uint8_t mac[16], const uint8_t *in, size_t len, const uint
     sdc_poly1305_final(&ctx, mac);
 }
 
-#endif /* SDC_ENABLE_POLY1305 */
+#endif /* SDC_ENABLE_POLY1305 && SDC_64BIT */

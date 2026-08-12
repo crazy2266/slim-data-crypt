@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "integer.h"
+#include "platform.h"
 #include "random.h"
 #include "utils.h"
 
@@ -37,25 +38,30 @@ static const uint32_t SMALL_PRIMES[168] = {
 
 /*
  * Generate a random odd number with the highest two bits set to 1.
- * This ensures that the number has exactly `64 * len` bits and is large enough
+ * This ensures that the number has exactly `SDC_WORD_BITS * len` bits and is large enough
  * that `n = p * q` will have the desired bit length.
  */
-static int int_gen_random_odd(uint64_t *x, size_t len) {
+static int int_gen_random_odd(sdc_word_t *x, size_t len) {
     if (len == 0) return -1;
-    int ret = sdc_random_bytes((uint8_t *)x, len * sizeof(uint64_t));
+    int ret = sdc_random_bytes((uint8_t *)x, len * SDC_WORD_SIZE);
     if (ret != 0) return ret;
     x[0] |= 1;                           /* Set the least significant bit to 1 */
-    x[len - 1] |= 0xC000000000000000ULL; /* Set the highest two bits to 1 */
+#if SDC_64BIT
+    x[len - 1] |= 0xC000000000000000ULL;
+#elif SDC_32BIT
+    x[len - 1] |= 0xC0000000U;
+#endif
     return 0;
+#undef HIGH_2BITS
 }
 
 /*
  * Check if a number is divisible by any of the small primes.
  * This is a fast pre-screening step before Miller-Rabin.
  */
-static int is_divisible_by_small_prime(const uint64_t *x, size_t len) {
+static int is_divisible_by_small_prime(const sdc_word_t *x, size_t len) {
     for (size_t i = 0; i < SMALL_PRIMES_COUNT; i++) {
-        uint64_t rem = sdc_int_mod_word(x, SMALL_PRIMES[i], len);
+        sdc_word_t rem = sdc_int_mod_word(x, SMALL_PRIMES[i], len);
         if (rem == 0) return 1;
     }
     return 0;
@@ -64,28 +70,30 @@ static int is_divisible_by_small_prime(const uint64_t *x, size_t len) {
 /*
  * Miller-Rabin primality test using deterministic bases.
  * 
- * For numbers < 2^64, the bases {2, 3, 5, 7, 11, 13, 17} are sufficient.
+ * For numbers that fit in a single word, the bases {2, 3, 5, 7, 11, 13, 17} are sufficient.
  * For larger numbers, we use a wider set of bases to reduce error probability.
  */
-static int is_prime(const uint64_t *x, size_t len, uint64_t *tmp) {
+static int is_prime(const sdc_word_t *x, size_t len, sdc_word_t *tmp) {
     /*
      * tmp layout:
      *   tmp[0 .. len-1]     = d, where x - 1 = d * 2^s
      *   tmp[len .. 2*len-1] = scratch for modular exponentiation
+     *   tmp[3*len .. 4*len-1] = result for Miller-Rabin test
+     *   tmp[4*len .. 5*len-1] = minus_one for Miller-Rabin test
      */
-    static const uint64_t bases64[] = { 2, 3, 5, 7, 11, 13, 17 };
-    static const uint64_t bases_large[] = {
+    static const sdc_word_t bases_small[] = { 2, 3, 5, 7, 11, 13, 17 };
+    static const sdc_word_t bases_large[] = {
         2, 3, 5, 7, 11, 13, 17, 19,
         23, 29, 31, 37, 41, 43, 47, 53
     };
-    const uint64_t *bases;
-    size_t base_count;
-    uint64_t *d = tmp;
-    uint64_t *scratch = tmp + len;
-    size_t s, i, j;
-    uint64_t ninv;
-    uint64_t result[len];
-    uint64_t minus_one[len];
+    size_t base_count, s, i, j;
+    sdc_word_t *d = tmp;
+    sdc_word_t *scratch = tmp + len;
+    sdc_word_t *result = tmp + 3 * len;
+    sdc_word_t *minus_one = tmp + 4 * len;
+    sdc_word_t ninv;
+    const sdc_word_t exponent = 2;
+    const sdc_word_t *bases;
 
     if (len == 0) return 0;
 
@@ -100,12 +108,12 @@ static int is_prime(const uint64_t *x, size_t len, uint64_t *tmp) {
     s = sdc_int_ctz(d, len);
     sdc_int_shr(d, s, len);
 
-    /* x is odd, so its low word is invertible modulo 2^64. */
+    /* x is odd, so its low word is invertible modulo 2^SDC_WORD_BITS. */
     ninv = sdc_int_calculate_ninv(x[0]);
 
     if (len == 1) {
-        bases = bases64;
-        base_count = sizeof(bases64) / sizeof(bases64[0]);
+        bases = bases_small;
+        base_count = sizeof(bases_small) / sizeof(bases_small[0]);
     } else {
         bases = bases_large;
         base_count = sizeof(bases_large) / sizeof(bases_large[0]);
@@ -115,8 +123,7 @@ static int is_prime(const uint64_t *x, size_t len, uint64_t *tmp) {
     sdc_int_sub_word(minus_one, minus_one, 1, len);
 
     for (i = 0; i < base_count; i++) {
-        uint64_t base = bases[i];
-        uint64_t exponent[1] = { 2 };
+        sdc_word_t base = bases[i];
         int witness_passed = 0;
 
         /* For tiny standalone inputs, reduce a base that is >= x. */
@@ -124,17 +131,18 @@ static int is_prime(const uint64_t *x, size_t len, uint64_t *tmp) {
         if (base == 0) continue;
 
         sdc_int_set_word(result, base, len);
-        sdc_int_mont_modexp_u64_vartime(
+        sdc_int_mont_modexp_word_vartime(
             result, result, d, len, x, scratch, len, ninv);
 
         if (sdc_int_eq_word(result, 1, len) ||
             sdc_int_eq(result, minus_one, len)) {
+            witness_passed = 1;
             continue;
         }
 
         for (j = 1; j < s; j++) {
-            sdc_int_mont_modexp_u64_vartime(
-                result, result, exponent, 1, x, scratch, len, ninv);
+            sdc_int_mont_modexp_word_vartime(
+                result, result, &exponent, 1, x, scratch, len, ninv);
             if (sdc_int_eq(result, minus_one, len)) {
                 witness_passed = 1;
                 break;
@@ -146,7 +154,7 @@ static int is_prime(const uint64_t *x, size_t len, uint64_t *tmp) {
     return 1;
 }
 
-int sdc_int_gen_prime(uint64_t *x, uint64_t *tmp, size_t len) {
+int sdc_int_gen_prime(sdc_word_t *x, sdc_word_t *tmp, size_t len) {
     if (x == NULL || tmp == NULL || len == 0) return -1;
     int attempt = 0;
     while (attempt < GEN_PRIME_MAX_ATTEMPT) {
