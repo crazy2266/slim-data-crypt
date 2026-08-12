@@ -3,6 +3,7 @@ A simple cryptography library which is specifically optimized for ARM64 architec
 
 Supported Algorithms:
 - SHA-2
+- ChaCha20-Poly1305
 - XChaCha20-Poly1305
 - PBKDF2-HMAC-SHA256
 - X25519

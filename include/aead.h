@@ -23,7 +23,7 @@
 #if SDC_ENABLE_CHACHA20POLY1305_AEAD || SDC_ENABLE_XCHACHA20POLY1305_AEAD
 
 /* ============================================================
-   公共上下文结构体（两种模式共用）
+   Public ctx for ChaCha20-Poly1305 and XChaCha20-Poly1305
    ============================================================ */
 typedef struct {
     sdc_chacha20_ctx chacha;
@@ -41,7 +41,7 @@ typedef struct {
 
 #if SDC_ENABLE_XCHACHA20POLY1305_AEAD
 
-/* 初始化 */
+/* Initialize */
 void sdc_xchacha20poly1305_init(
     sdc_chacha20poly1305_ctx *ctx,
     const uint8_t key[32],
@@ -50,7 +50,7 @@ void sdc_xchacha20poly1305_init(
     size_t aad_len
 );
 
-/* 加密 */
+/* Encrypt and compute tag */
 void sdc_xchacha20poly1305_encrypt_update(
     sdc_chacha20poly1305_ctx *ctx,
     const uint8_t *in,
@@ -63,7 +63,7 @@ void sdc_xchacha20poly1305_encrypt_final(
     uint8_t tag[16]
 );
 
-/* 解密（认证 + 解密） */
+/* Authenticate and decrypt */
 void sdc_xchacha20poly1305_auth_update(
     sdc_chacha20poly1305_ctx *ctx,
     const uint8_t *in,
@@ -86,7 +86,7 @@ void sdc_xchacha20poly1305_decrypt_final(
     sdc_chacha20poly1305_ctx *ctx
 );
 
-/* 一次性接口 */
+/* One-time interface */
 void sdc_xchacha20poly1305_encrypt(
     const uint8_t key[32],
     const uint8_t nonce[24],
@@ -126,7 +126,7 @@ void sdc_chacha20poly1305_init(
     size_t aad_len
 );
 
-/* 加密 */
+/* Encrypt and compute tag */
 void sdc_chacha20poly1305_encrypt_update(
     sdc_chacha20poly1305_ctx *ctx,
     const uint8_t *in,
@@ -139,7 +139,7 @@ void sdc_chacha20poly1305_encrypt_final(
     uint8_t tag[16]
 );
 
-/* 解密（认证 + 解密） */
+/* Authenticate and decrypt */
 void sdc_chacha20poly1305_auth_update(
     sdc_chacha20poly1305_ctx *ctx,
     const uint8_t *in,
@@ -162,7 +162,7 @@ void sdc_chacha20poly1305_decrypt_final(
     sdc_chacha20poly1305_ctx *ctx
 );
 
-/* 一次性接口 */
+/* One-time interface */
 void sdc_chacha20poly1305_encrypt(
     const uint8_t key[32],
     const uint8_t nonce[12],

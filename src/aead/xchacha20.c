@@ -146,10 +146,10 @@ static void next_block(sdc_chacha20_ctx *ctx) {
     uint32x4_t ne[16] = { n0, n1, n2,  n3,  n4,  n5,  n6,  n7,
                            n8, n9, n10, n11, n12, n13, n14, n15 };
     for (int w = 0; w < 16; w++) {
-        store32_le(ctx->buf +  0 * 64 + w * 4, vgetq_lane_u32(ne[w], 0));
-        store32_le(ctx->buf +  1 * 64 + w * 4, vgetq_lane_u32(ne[w], 1));
-        store32_le(ctx->buf +  2 * 64 + w * 4, vgetq_lane_u32(ne[w], 2));
-        store32_le(ctx->buf +  3 * 64 + w * 4, vgetq_lane_u32(ne[w], 3));
+        store32_le(ctx->buf + 0 * 64 + w * 4, vgetq_lane_u32(ne[w], 0));
+        store32_le(ctx->buf + 1 * 64 + w * 4, vgetq_lane_u32(ne[w], 1));
+        store32_le(ctx->buf + 2 * 64 + w * 4, vgetq_lane_u32(ne[w], 2));
+        store32_le(ctx->buf + 3 * 64 + w * 4, vgetq_lane_u32(ne[w], 3));
     }
 
     /* Scalar block -> buf[256..319] */

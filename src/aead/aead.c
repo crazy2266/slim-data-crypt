@@ -13,13 +13,16 @@
 
 #if SDC_ENABLE_CHACHA20POLY1305_AEAD || SDC_ENABLE_XCHACHA20POLY1305_AEAD
 
-#if !SDC_ENABLE_CHACHA20 || !SDC_ENABLE_POLY1305
-#  error "ChaCha20 and Poly1305 must be enabled to use ChaCha20-Poly1305 AEAD"
+#if SDC_ENABLE_CHACHA20POLY1305_AEAD
+#  if !SDC_ENABLE_CHACHA20 || !SDC_ENABLE_POLY1305
+#    error "ChaCha20 and Poly1305 must be enabled to use ChaCha20-Poly1305 AEAD"
+#  endif
 #endif
-
-/* ============================================================
-   公共辅助函数
-   ============================================================ */
+#if SDC_ENABLE_XCHACHA20POLY1305_AEAD
+#  if !SDC_ENABLE_XCHACHA20 || !SDC_ENABLE_POLY1305
+#    error "XChaCha20 and Poly1305 must be enabled to use XChaCha20-Poly1305 AEAD"
+#  endif
+#endif
 
 static void poly1305_pad16(sdc_poly1305_ctx *ctx, uint64_t len) {
     static const uint8_t zero[16] = {0};
@@ -43,23 +46,14 @@ void sdc_xchacha20poly1305_init(sdc_chacha20poly1305_ctx *ctx,
     uint8_t block0[64] = {0};
     uint8_t subkey[32];
 
-    /* 1. 派生子密钥 (用 XChaCha20) */
     sdc_xchacha20_init(&ctx->chacha, key, nonce, 0);
     sdc_xchacha20_crypt(&ctx->chacha, block0, block0, 64);
     memcpy(subkey, block0, 32);
     sdc_secure_memzero(block0, sizeof(block0));
-
-    /* 2. 重新初始化 XChaCha20，counter 从 1 开始 */
     sdc_xchacha20_init(&ctx->chacha, key, nonce, 1);
-
-    /* 3. 初始化 Poly1305 */
     sdc_poly1305_init(&ctx->poly, subkey);
     sdc_secure_memzero(subkey, sizeof(subkey));
-
-    /* 4. 认证 AAD */
-    if (aad && aad_len) {
-        sdc_poly1305_update(&ctx->poly, aad, aad_len);
-    }
+    if (aad && aad_len) sdc_poly1305_update(&ctx->poly, aad, aad_len);
     poly1305_pad16(&ctx->poly, aad_len);
 
     ctx->aad_len = aad_len;
@@ -164,9 +158,7 @@ int sdc_xchacha20poly1305_decrypt(const uint8_t key[32],
     sdc_xchacha20poly1305_init(&ctx, key, nonce, aad, aad_len);
     sdc_xchacha20poly1305_auth_update(&ctx, ciphertext, msg_len);
     int ret = sdc_xchacha20poly1305_auth_final(&ctx, tag);
-    if (ret == 0) {
-        sdc_xchacha20poly1305_decrypt_update(&ctx, ciphertext, plaintext, msg_len);
-    }
+    if (ret == 0) sdc_xchacha20poly1305_decrypt_update(&ctx, ciphertext, plaintext, msg_len);
     sdc_xchacha20poly1305_decrypt_final(&ctx);
     return ret;
 }
@@ -187,23 +179,14 @@ void sdc_chacha20poly1305_init(sdc_chacha20poly1305_ctx *ctx,
     uint8_t block0[64] = {0};
     uint8_t subkey[32];
 
-    /* 1. 派生子密钥 (用 ChaCha20 IETF) */
     sdc_chacha20_init(&ctx->chacha, key, nonce, 0);
     sdc_chacha20_crypt(&ctx->chacha, block0, block0, 64);
     memcpy(subkey, block0, 32);
     sdc_secure_memzero(block0, sizeof(block0));
-
-    /* 2. 重新初始化 ChaCha20 IETF，counter 从 1 开始 */
     sdc_chacha20_init(&ctx->chacha, key, nonce, 1);
-
-    /* 3. 初始化 Poly1305 */
     sdc_poly1305_init(&ctx->poly, subkey);
     sdc_secure_memzero(subkey, sizeof(subkey));
-
-    /* 4. 认证 AAD */
-    if (aad && aad_len) {
-        sdc_poly1305_update(&ctx->poly, aad, aad_len);
-    }
+    if (aad && aad_len) sdc_poly1305_update(&ctx->poly, aad, aad_len);
     poly1305_pad16(&ctx->poly, aad_len);
 
     ctx->aad_len = aad_len;
@@ -308,9 +291,7 @@ int sdc_chacha20poly1305_decrypt(const uint8_t key[32],
     sdc_chacha20poly1305_init(&ctx, key, nonce, aad, aad_len);
     sdc_chacha20poly1305_auth_update(&ctx, ciphertext, msg_len);
     int ret = sdc_chacha20poly1305_auth_final(&ctx, tag);
-    if (ret == 0) {
-        sdc_chacha20poly1305_decrypt_update(&ctx, ciphertext, plaintext, msg_len);
-    }
+    if (ret == 0) sdc_chacha20poly1305_decrypt_update(&ctx, ciphertext, plaintext, msg_len);
     sdc_chacha20poly1305_decrypt_final(&ctx);
     return ret;
 }

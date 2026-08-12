@@ -12,7 +12,7 @@ void sdc_secure_memzero(void *ptr, size_t len) {
     while (len--) *p++ = 0;
 }
 
-/**
+/*
  * 常量时间比较：用于比较认证标签，防止时序攻击
  * 返回非 0 表示不同，0 表示相同
  */
