@@ -14,7 +14,7 @@ void sdc_secure_memzero(void *ptr, size_t len) {
 
 /**
  * 常量时间比较：用于比较认证标签，防止时序攻击
- * 返回非 0 表示相同，0 表示不同
+ * 返回非 0 表示不同，0 表示相同
  */
 int sdc_secure_memcmp(const void *a, const void *b, size_t len) {
     const volatile uint8_t *pa = (const volatile uint8_t *)a;
@@ -23,5 +23,5 @@ int sdc_secure_memcmp(const void *a, const void *b, size_t len) {
     for (size_t i = 0; i < len; i++) {
         diff |= pa[i] ^ pb[i];
     }
-    return (int)(diff == 0);
+    return (int)diff;
 }

@@ -15,10 +15,10 @@
  * dependency chain to carry.
  */
 
-#include "config.h"
 #include <string.h>
-#include "xchacha20.h"
+#include "chacha20.h"
 #include "utils.h"
+#include "config.h"
 
 #if SDC_ENABLE_XCHACHA20
 
@@ -86,7 +86,7 @@ static void hchacha20_scalar(uint32_t out[8], const uint32_t key[8],
  * next_block - generate 320 bytes of keystream (5 blocks) into ctx->buf
  * --------------------------------------------------------------------- */
 
-static void next_block(sdc_xchacha20_ctx *ctx) {
+static void next_block(sdc_chacha20_ctx *ctx) {
     uint32x4_t i0 = ctx->state1[0],  i1 = ctx->state1[1];
     uint32x4_t i2 = ctx->state1[2],  i3 = ctx->state1[3];
     uint32x4_t i4 = ctx->state1[4],  i5 = ctx->state1[5];
@@ -176,7 +176,7 @@ static void next_block(sdc_xchacha20_ctx *ctx) {
  * sdc_xchacha20_init
  * --------------------------------------------------------------------- */
 
-void sdc_xchacha20_init(sdc_xchacha20_ctx *ctx, const uint8_t key[32],
+void sdc_xchacha20_init(sdc_chacha20_ctx *ctx, const uint8_t key[32],
                         const uint8_t nonce[24], uint64_t counter) {
     if (!ctx || !key || !nonce) return;
 
@@ -225,7 +225,7 @@ void sdc_xchacha20_init(sdc_xchacha20_ctx *ctx, const uint8_t key[32],
     ctx->buf_used = 320; /* forces next_block() on the first crypt() call */
 }
 
-void sdc_xchacha20_crypt(sdc_xchacha20_ctx *ctx, const uint8_t *in,
+void sdc_xchacha20_crypt(sdc_chacha20_ctx *ctx, const uint8_t *in,
                          uint8_t *out, size_t len) {
     if (!ctx || !in || !out || len == 0) return;
 

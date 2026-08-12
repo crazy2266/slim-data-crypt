@@ -4,18 +4,18 @@
 #include <stdlib.h>
 #include <time.h>
 #include "aead.h"
-#include "xchacha20.h"
+#include "chacha20.h"
 
-#if SDC_ENABLE_XCHACHA20POLY1305_AEAD
+#if SDC_ENABLE_CHACHA20POLY1305_AEAD && SDC_ENABLE_XCHACHA20POLY1305_AEAD
 
-#if !SDC_ENABLE_XCHACHA20 || !SDC_ENABLE_POLY1305
-#  error "XChaCha20 and Poly1305 must be enabled to use XChaCha20-Poly1305 AEAD"
+#if !SDC_ENABLE_CHACHA20 || !SDC_ENABLE_POLY1305
+#  error "ChaCha20 and Poly1305 must be enabled to use ChaCha20-Poly1305 AEAD"
 #endif
 
 #define REP32(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x
 #define REP24(x) x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x
 
-// ==================== 测试数据 ====================
+// ==================== XChaCha20-Poly1305 测试数据 ====================
 static const uint8_t k1[32] = { REP32(0x01) };
 static const uint8_t n1[24] = { REP24(0x02) };
 static const uint8_t tg1[16] = {
@@ -134,6 +134,63 @@ static const uint8_t tg5[16] = {
     0x6f,0xf4,0xc9,0x92,0xd8,0xd5,0xd7,0x74
 };
 
+// ==================== ChaCha20-Poly1305 (IETF) 测试数据 ====================
+// RFC 8439 测试向量
+static const uint8_t rfc_key[32] = {
+    0x80,0x81,0x82,0x83,0x84,0x85,0x86,0x87,
+    0x88,0x89,0x8a,0x8b,0x8c,0x8d,0x8e,0x8f,
+    0x90,0x91,0x92,0x93,0x94,0x95,0x96,0x97,
+    0x98,0x99,0x9a,0x9b,0x9c,0x9d,0x9e,0x9f
+};
+static const uint8_t rfc_nonce[12] = {0x07,0x00,0x00,0x00,0x40,0x41,0x42,0x43,0x44,0x45,0x46,0x47};
+static const uint8_t rfc_aad[12] = {0x50,0x51,0x52,0x53,0xc0,0xc1,0xc2,0xc3,0xc4,0xc5,0xc6,0xc7};
+static const uint8_t rfc_plaintext[114] = {
+    0x4c,0x61,0x64,0x69,0x65,0x73,0x20,0x61,
+    0x6e,0x64,0x20,0x47,0x65,0x6e,0x74,0x6c,
+    0x65,0x6d,0x65,0x6e,0x20,0x6f,0x66,0x20,
+    0x74,0x68,0x65,0x20,0x63,0x6c,0x61,0x73,
+    0x73,0x20,0x6f,0x66,0x20,0x27,0x39,0x39,
+    0x3a,0x20,0x49,0x66,0x20,0x49,0x20,0x63,
+    0x6f,0x75,0x6c,0x64,0x20,0x6f,0x66,0x66,
+    0x65,0x72,0x20,0x79,0x6f,0x75,0x20,0x6f,
+    0x6e,0x6c,0x79,0x20,0x6f,0x6e,0x65,0x20,
+    0x74,0x69,0x70,0x20,0x66,0x6f,0x72,0x20,
+    0x74,0x68,0x65,0x20,0x66,0x75,0x74,0x75,
+    0x72,0x65,0x2c,0x20,0x73,0x75,0x6e,0x73,
+    0x63,0x72,0x65,0x65,0x6e,0x20,0x77,0x6f,
+    0x75,0x6c,0x64,0x20,0x62,0x65,0x20,0x69,
+    0x74,0x2e
+};
+static const uint8_t rfc_ciphertext[114] = {
+    0xd3,0x1a,0x8d,0x34,0x64,0x8e,0x60,0xdb,
+    0x7b,0x86,0xaf,0xbc,0x53,0xef,0x7e,0xc2,
+    0xa4,0xad,0xed,0x51,0x29,0x6e,0x08,0xfe,
+    0xa9,0xe2,0xb5,0xa7,0x36,0xee,0x62,0xd6,
+    0x3d,0xbe,0xa4,0x5e,0x8c,0xa9,0x67,0x12,
+    0x82,0xfa,0xfb,0x69,0xda,0x92,0x72,0x8b,
+    0x1a,0x71,0xde,0x0a,0x9e,0x06,0x0b,0x29,
+    0x05,0xd6,0xa5,0xb6,0x7e,0xcd,0x3b,0x36,
+    0x92,0xdd,0xbd,0x7f,0x2d,0x77,0x8b,0x8c,
+    0x98,0x03,0xae,0xe3,0x28,0x09,0x1b,0x58,
+    0xfa,0xb3,0x24,0xe4,0xfa,0xd6,0x75,0x94,
+    0x55,0x85,0x80,0x8b,0x48,0x31,0xd7,0xbc,
+    0x3f,0xf4,0xde,0xf0,0x8e,0x4b,0x7a,0x9d,
+    0xe5,0x76,0xd2,0x65,0x86,0xce,0xc6,0x4b,
+    0x61,0x16
+};
+static const uint8_t rfc_tag[16] = {
+    0x1a,0xe1,0x0b,0x59,0x4f,0x09,0xe2,0x6a,
+    0x7e,0x90,0x2e,0xcb,0xd0,0x60,0x06,0x91
+};
+
+// 简单 IETF 测试向量 (空明文)
+static const uint8_t ietf_key[32] = { REP32(0x01) };
+static const uint8_t ietf_nonce[12] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0a,0x0b,0x0c};
+static const uint8_t ietf_tag_empty[16] = {
+    0x9e,0xf2,0xfd,0xb7,0x61,0xc3,0x7f,0x3e,
+    0x8e,0x94,0xb6,0xcc,0x31,0x02,0x6b,0xec
+};
+
 // ==================== 打印函数 ====================
 static void print_hex(const char *label, const uint8_t *data, size_t len, size_t max) {
     printf("%s: ", label);
@@ -143,13 +200,13 @@ static void print_hex(const char *label, const uint8_t *data, size_t len, size_t
     printf("\n");
 }
 
-// ==================== 测试函数 ====================
-static void test_encrypt(const char *name,
-                         const uint8_t *key, const uint8_t *nonce,
-                         const uint8_t *aad, size_t aad_len,
-                         const uint8_t *plain, size_t plen,
-                         const uint8_t *exp_ct, const uint8_t *exp_tag,
-                         size_t outcipher_len) {
+// ==================== XChaCha20-Poly1305 测试 ====================
+static void test_xchacha20_encrypt(const char *name,
+                                   const uint8_t *key, const uint8_t *nonce,
+                                   const uint8_t *aad, size_t aad_len,
+                                   const uint8_t *plain, size_t plen,
+                                   const uint8_t *exp_ct, const uint8_t *exp_tag,
+                                   size_t outcipher_len) {
     uint8_t ciphertext[1024] = {0};
     uint8_t tag[16] = {0};
     uint8_t decrypted[1024] = {0};
@@ -157,7 +214,7 @@ static void test_encrypt(const char *name,
     printf("\n=== %s ===\n", name);
     printf("plaintext_len=%zu\n", plen);
 
-    sdc_xchacha20_poly1305_encrypt(key, nonce, aad, aad_len, plain, plen, ciphertext, tag);
+    sdc_xchacha20poly1305_encrypt(key, nonce, aad, aad_len, plain, plen, ciphertext, tag);
 
     print_hex("  exp_ct", exp_ct, plen, outcipher_len);
     print_hex("  got_ct", ciphertext, plen, outcipher_len);
@@ -174,7 +231,46 @@ static void test_encrypt(const char *name,
     }
     printf("  [OK] 加密通过\n");
 
-    int ret = sdc_xchacha20_poly1305_decrypt(key, nonce, aad, aad_len, ciphertext, plen, tag, decrypted);
+    int ret = sdc_xchacha20poly1305_decrypt(key, nonce, aad, aad_len, ciphertext, plen, tag, decrypted);
+    if (ret != 0 || memcmp(decrypted, plain, plen) != 0) {
+        printf("  [FAIL] 解密失败\n");
+        return;
+    }
+    printf("  [OK] 解密通过\n");
+}
+
+// ==================== ChaCha20-Poly1305 (IETF) 测试 ====================
+static void test_chacha20_ietf_encrypt(const char *name,
+                                       const uint8_t *key, const uint8_t *nonce,
+                                       const uint8_t *aad, size_t aad_len,
+                                       const uint8_t *plain, size_t plen,
+                                       const uint8_t *exp_ct, const uint8_t *exp_tag,
+                                       size_t outcipher_len) {
+    uint8_t ciphertext[1024] = {0};
+    uint8_t tag[16] = {0};
+    uint8_t decrypted[1024] = {0};
+
+    printf("\n=== %s ===\n", name);
+    printf("plaintext_len=%zu\n", plen);
+
+    sdc_chacha20poly1305_encrypt(key, nonce, aad, aad_len, plain, plen, ciphertext, tag);
+
+    print_hex("  exp_ct", exp_ct, plen, outcipher_len);
+    print_hex("  got_ct", ciphertext, plen, outcipher_len);
+    print_hex("  exp_tag", exp_tag, 16, 16);
+    print_hex("  got_tag", tag, 16, 16);
+
+    if (plen > 0 && memcmp(ciphertext, exp_ct, plen) != 0) {
+        printf("  [FAIL] 密文不匹配\n");
+        return;
+    }
+    if (memcmp(tag, exp_tag, 16) != 0) {
+        printf("  [FAIL] 标签不匹配\n");
+        return;
+    }
+    printf("  [OK] 加密通过\n");
+
+    int ret = sdc_chacha20poly1305_decrypt(key, nonce, aad, aad_len, ciphertext, plen, tag, decrypted);
     if (ret != 0 || memcmp(decrypted, plain, plen) != 0) {
         printf("  [FAIL] 解密失败\n");
         return;
@@ -200,7 +296,14 @@ static void test_encrypt(const char *name,
     }
 #endif
 
-static void bench_aead(const char *name, size_t size, int iterations) {
+static void bench_aead(const char *name, size_t size, int iterations,
+                       void (*encrypt_fn)(const uint8_t *, const uint8_t *,
+                                          const uint8_t *, size_t,
+                                          const uint8_t *, size_t,
+                                          uint8_t *, uint8_t *),
+                       int nonce_len) {
+    (void)nonce_len;
+    
     uint8_t key[32] = {0x01};
     uint8_t nonce[24] = {0x02};
     uint8_t *plain = malloc(size);
@@ -208,8 +311,7 @@ static void bench_aead(const char *name, size_t size, int iterations) {
     uint8_t tag[16];
 
     if (!plain || !cipher) {
-        free(plain);
-        free(cipher);
+        free(plain); free(cipher);
         printf("%s: 内存分配失败\n", name);
         return;
     }
@@ -217,11 +319,11 @@ static void bench_aead(const char *name, size_t size, int iterations) {
     memset(plain, 0xAA, size);
 
     // 预热
-    sdc_xchacha20_poly1305_encrypt(key, nonce, NULL, 0, plain, size, cipher, tag);
+    encrypt_fn(key, nonce, NULL, 0, plain, size, cipher, tag);
 
     double start = wall_time();
     for (int i = 0; i < iterations; i++) {
-        sdc_xchacha20_poly1305_encrypt(key, nonce, NULL, 0, plain, size, cipher, tag);
+        encrypt_fn(key, nonce, NULL, 0, plain, size, cipher, tag);
     }
     double elapsed = wall_time() - start;
 
@@ -238,11 +340,10 @@ static void bench_xchacha20(const char *name, size_t size, int iterations) {
     uint8_t nonce[24] = {0x02};
     uint8_t *in = malloc(size);
     uint8_t *out = malloc(size);
-    sdc_xchacha20_ctx ctx;
+    sdc_chacha20_ctx ctx;
 
     if (!in || !out) {
-        free(in);
-        free(out);
+        free(in); free(out);
         printf("%s: 内存分配失败\n", name);
         return;
     }
@@ -267,21 +368,100 @@ static void bench_xchacha20(const char *name, size_t size, int iterations) {
     free(out);
 }
 
-// 在 main 函数末尾调用，或者单独加一个性能测试入口
+static void bench_chacha20(const char *name, size_t size, int iterations) {
+    uint8_t key[32] = {0x01};
+    uint8_t nonce[12] = {0x02,0x02,0x02,0x02,0x02,0x02,0x02,0x02,0x02,0x02,0x02,0x02};
+    uint8_t *in = malloc(size);
+    uint8_t *out = malloc(size);
+    sdc_chacha20_ctx ctx;
+
+    if (!in || !out) {
+        free(in); free(out);
+        printf("%s: 内存分配失败\n", name);
+        return;
+    }
+
+    memset(in, 0xAA, size);
+
+    sdc_chacha20_init(&ctx, key, nonce, 0);
+    sdc_chacha20_crypt(&ctx, in, out, size);
+
+    double start = wall_time();
+    for (int i = 0; i < iterations; i++) {
+        sdc_chacha20_init(&ctx, key, nonce, 0);
+        sdc_chacha20_crypt(&ctx, in, out, size);
+    }
+    double elapsed = wall_time() - start;
+
+    double mbps = (double)size * iterations / (1024.0 * 1024.0) / elapsed;
+    printf("%-20s size=%-10zu iter=%-5d %.2f MB/s\n",
+           name, size, iterations, mbps);
+
+    free(in);
+    free(out);
+}
+
 static void run_benchmarks(void) {
     printf("\n=== 性能测试 ===\n");
-    bench_aead("AEAD 1KB", 1024, 1000);
-    bench_aead("AEAD 4KB", 4096, 500);
-    bench_aead("AEAD 16KB", 16384, 200);
-    bench_aead("AEAD 64KB", 65536, 50);
-    bench_aead("AEAD 32MB", 32*1024*1024, 10);
-    bench_aead("AEAD 64MB", 64*1024*1024, 5);
-    bench_xchacha20("XChaCha20 1KB", 1024, 1000);
-    bench_xchacha20("XChaCha20 4KB", 4096, 500);
-    bench_xchacha20("XChaCha20 16KB", 16384, 200);
-    bench_xchacha20("XChaCha20 64KB", 65536, 50);
-    bench_xchacha20("XChaCha20 32MB", 32*1024*1024, 10);
-    bench_xchacha20("XChaCha20 64MB", 64*1024*1024, 5);
+    bench_aead("AEAD (XChaCha20)", 1024, 1000,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_xchacha20poly1305_encrypt,
+               24);
+    bench_aead("AEAD (XChaCha20)", 4096, 500,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_xchacha20poly1305_encrypt,
+               24);
+    bench_aead("AEAD (XChaCha20)", 16384, 200,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_xchacha20poly1305_encrypt,
+               24);
+    bench_aead("AEAD (XChaCha20)", 65536, 50,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_xchacha20poly1305_encrypt,
+               24);
+
+    bench_aead("AEAD (IETF)", 1024, 1000,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_chacha20poly1305_encrypt,
+               12);
+    bench_aead("AEAD (IETF)", 4096, 500,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_chacha20poly1305_encrypt,
+               12);
+    bench_aead("AEAD (IETF)", 16384, 200,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_chacha20poly1305_encrypt,
+               12);
+    bench_aead("AEAD (IETF)", 65536, 50,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_chacha20poly1305_encrypt,
+               12);
+
+    bench_xchacha20("XChaCha20", 1024, 1000);
+    bench_xchacha20("XChaCha20", 4096, 500);
+    bench_xchacha20("XChaCha20", 16384, 200);
+    bench_xchacha20("XChaCha20", 65536, 50);
+
+    bench_chacha20("ChaCha20", 1024, 1000);
+    bench_chacha20("ChaCha20", 4096, 500);
+    bench_chacha20("ChaCha20", 16384, 200);
+    bench_chacha20("ChaCha20", 65536, 50);
 }
 
 // ==================== 主函数 ====================
@@ -292,12 +472,26 @@ int main(void) {
     static uint8_t pt4[256];
     for (int i = 0; i < 256; i++) pt4[i] = (uint8_t)(0x0d + i * 7);
 
-    test_encrypt("TEST1 (空明文)", k1, n1, NULL, 0, NULL, 0, NULL, tg1, 16);
-    test_encrypt("TEST2 (16字节)", k2, n2, NULL, 0, pt2, 16, ct2, tg2, 16);
-    test_encrypt("TEST3 (64字节)", k3, n3, NULL, 0, pt3, 64, ct3, tg3, 64);
-    test_encrypt("TEST4 (256字节)", k4, n4, NULL, 0, pt4, 256, ct4_expected, tg4, 256);
-    test_encrypt("TEST5 (带AAD 32字节，明文64字节)", k5, n5, aad5, 32, pt5, 64, ct5, tg5, 64);
+    test_xchacha20_encrypt("TEST1 (空明文)", k1, n1, NULL, 0, NULL, 0, NULL, tg1, 16);
+    test_xchacha20_encrypt("TEST2 (16字节)", k2, n2, NULL, 0, pt2, 16, ct2, tg2, 16);
+    test_xchacha20_encrypt("TEST3 (64字节)", k3, n3, NULL, 0, pt3, 64, ct3, tg3, 64);
+    test_xchacha20_encrypt("TEST4 (256字节)", k4, n4, NULL, 0, pt4, 256, ct4_expected, tg4, 256);
+    test_xchacha20_encrypt("TEST5 (带AAD 32字节，明文64字节)", k5, n5, aad5, 32, pt5, 64, ct5, tg5, 64);
+
+    printf("\n=== ChaCha20-Poly1305 (IETF) 测试 ===\n");
+
+    // RFC 8439 测试向量
+    test_chacha20_ietf_encrypt("RFC 8439 (114字节)", rfc_key, rfc_nonce,
+                               rfc_aad, sizeof(rfc_aad),
+                               rfc_plaintext, sizeof(rfc_plaintext),
+                               rfc_ciphertext, rfc_tag, 114);
+
+    // 空明文 IETF 测试
+    test_chacha20_ietf_encrypt("IETF 空明文", ietf_key, ietf_nonce,
+                               NULL, 0, NULL, 0, NULL, ietf_tag_empty, 16);
+
     run_benchmarks();
+
     printf("\n=== 测试完成 ===\n");
     return 0;
 }
@@ -305,8 +499,8 @@ int main(void) {
 #else
 
 int main(void) {
-    printf("[SKIP] XChaCha20-Poly1305 测试未启用\n");
+    printf("[SKIP] ChaCha20-Poly1305 测试未启用\n");
     return 0;
 }
 
-#endif /* SDC_ENABLE_XCHACHA20POLY1305_AEAD */
+#endif /* SDC_ENABLE_CHACHA20POLY1305_AEAD && SDC_ENABLE_XCHACHA20POLY1305_AEAD */

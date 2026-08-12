@@ -14,8 +14,10 @@
 #define SDC_ENABLE_SHA512                 1
 #define SDC_ENABLE_X25519                 1
 #define SDC_ENABLE_PBKDF2                 1
+#define SDC_ENABLE_CHACHA20               1
 #define SDC_ENABLE_XCHACHA20              1
 #define SDC_ENABLE_POLY1305               1
+#define SDC_ENABLE_CHACHA20POLY1305_AEAD  1
 #define SDC_ENABLE_XCHACHA20POLY1305_AEAD 1
 
 #endif /* SDC_CONFIG_H */
