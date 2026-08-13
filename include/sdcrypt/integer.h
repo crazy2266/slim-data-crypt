@@ -66,6 +66,16 @@ size_t sdc_int_ctz(const sdc_word_t *x, size_t len);
 void sdc_int_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t len);
 
 /*
+ * Constant-time divide two unsigned integers.
+ * q should be at least alen words long.
+ * r should be at least blen words long.
+ * a,b should be at least alen words long.
+ * WARNING: q,r must be distinct from a and b, and b shouldn't be zero.
+ */
+void sdc_int_div(sdc_word_t *q, sdc_word_t *r, const sdc_word_t *a, size_t alen, 
+                 const sdc_word_t *b, size_t blen);
+
+/*
  * Return r = x mod n.
  * r,n should be at least n_len words long.
  * x should be at least x_len words long.

@@ -52,6 +52,8 @@ static inline sdc_word_t gen_mask_word(sdc_word_t boolval) {
     return (sdc_word_t)0 - boolval;
 }
 
+// if mask is 0xFFFFFFFF/0xFFFFFFFFFFFFFFFF, return a.
+// if mask is 0, return b.
 static inline sdc_word_t select_word(sdc_word_t mask, sdc_word_t a, sdc_word_t b) {
     return (a & mask) | (b & ~mask);
 }
@@ -195,6 +197,28 @@ void sdc_int_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t
 	}
 }
 
+void sdc_int_div(sdc_word_t *q, sdc_word_t *r, const sdc_word_t *a, size_t alen, 
+                 const sdc_word_t *b, size_t blen) {
+    if (r == NULL) return;
+    if (alen == 0 || blen == 0) return;
+    if (sdc_int_eq_word(b, 0, blen)) return;
+    size_t i, k, widx, bidx;
+    sdc_word_t bit, c, ge;
+    if (q) sdc_int_set_word(q, 0, alen);
+    sdc_int_set_word(r, 0, blen);
+
+    for (i = alen * SDC_WORD_BITS; i > 0; i--) {
+        widx = (i - 1) / SDC_WORD_BITS;
+        bidx = (i - 1) % SDC_WORD_BITS;
+        bit = (a[widx] >> bidx) & 1;
+        c = sdc_int_add(r, r, r, blen);
+        r[0] |= bit;
+        ge = sdc_int_gte(r, b, blen) | c;
+        sdc_int_sub_ctl(r, b, blen, ge);
+        if (q) q[widx] |= ge << bidx;
+    }
+}
+
 /* Reference: BearSSL i32_reduce.c */
 void sdc_int_reduce(sdc_word_t *r, const sdc_word_t *x, size_t x_len, 
                     const sdc_word_t *n, size_t n_len) {
@@ -203,6 +227,7 @@ void sdc_int_reduce(sdc_word_t *r, const sdc_word_t *x, size_t x_len,
     sdc_word_t bit, c;
     k = x_len * SDC_WORD_BITS;
     sdc_int_set_word(r, 0, n_len);
+
     for (i = k; i > 0; i--) {
         bit = (x[(i - 1) / SDC_WORD_BITS] >> ((i - 1) % SDC_WORD_BITS)) & 1;
         r[0] |= bit;

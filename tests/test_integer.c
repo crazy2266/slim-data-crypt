@@ -264,6 +264,194 @@ static int test_modexp(void) {
 }
 
 /* ============================================================
+   测试 5: 大数除法
+   ============================================================ */
+
+static int test_division(void) {
+    printf("\n=== 大数除法测试 ===\n");
+    /*
+     * 使用 4 words 作为测试宽度。
+     * 通过乘法验证 a = q * b + r
+     * 并且 r < b
+     */
+#define len 4
+    sdc_word_t a[len];
+    sdc_word_t b[len];
+    sdc_word_t q[len];
+    sdc_word_t r[len];
+
+    /* --------------------------------------------------------
+       1. 0 / b
+       -------------------------------------------------------- */
+    {
+        sdc_int_set_word(a, 0, len);
+        sdc_int_set_word(b, 123, len);
+
+        sdc_int_div(q, r, a, len, b, len);
+
+        sdc_word_t zero[len];
+        sdc_int_set_word(zero, 0, len);
+
+        if (!eq_words(q, zero, len) ||
+            !eq_words(r, zero, len))
+            return test_fail("div/0", "0 / b != 0");
+
+        test_ok("0 / b");
+    }
+
+    /* --------------------------------------------------------
+       2. a / 1
+       -------------------------------------------------------- */
+    {
+        sdc_int_set_word(b, 1, len);
+
+        random_fill(a, len);
+
+        sdc_int_div(q, r, a, len, b, len);
+
+        sdc_word_t zero[len];
+        sdc_int_set_word(zero, 0, len);
+
+        if (!eq_words(q, a, len) ||
+            !eq_words(r, zero, len))
+            return test_fail("div/1", "a / 1 != a");
+
+        test_ok("a / 1");
+    }
+
+    /* --------------------------------------------------------
+       3. a < b
+       -------------------------------------------------------- */
+    {
+        sdc_int_set_word(a, 123, len);
+        sdc_int_set_word(b, 456, len);
+        sdc_int_div(q, r, a, len, b, len);
+
+        sdc_word_t zero[len];
+        sdc_int_set_word(zero, 0, len);
+
+        if (!eq_words(q, zero, len) ||
+            !eq_words(r, a, len))
+            return test_fail("div/a<b", "a < b result mismatch");
+
+        test_ok("a < b");
+    }
+
+    /* --------------------------------------------------------
+       4. a == b
+       -------------------------------------------------------- */
+    {
+        random_fill(b, len);
+
+        /* 避免 b == 0 */
+        if (sdc_int_eq_word(b, 0, len)) b[0] = 1;
+        sdc_int_copy(a, b, len);
+        sdc_int_div(q, r, a, len, b, len);
+
+        sdc_word_t one[len];
+        sdc_word_t zero[len];
+
+        sdc_int_set_word(one, 1, len);
+        sdc_int_set_word(zero, 0, len);
+
+        if (!eq_words(q, one, len) ||
+            !eq_words(r, zero, len))
+            return test_fail("div/a==b", "a == b result mismatch");
+
+        test_ok("a == b");
+    }
+
+    /* --------------------------------------------------------
+       5. 固定边界值
+       -------------------------------------------------------- */
+    {
+        sdc_int_set_word(a, 0, len);
+        sdc_int_set_word(b, 0, len);
+
+#if SDC_64BIT
+        a[0] = UINT64_MAX;
+        b[0] = UINT64_C(2);
+#else
+        a[0] = UINT32_MAX;
+        b[0] = UINT32_C(2);
+#endif
+
+        sdc_int_div(q, r, a, len, b, len);
+
+#if SDC_64BIT
+        sdc_word_t expected_q[len] = {
+            UINT64_C(0x7FFFFFFFFFFFFFFF), 0, 0, 0
+        };
+        sdc_word_t expected_r[len] = {
+            UINT64_C(1), 0, 0, 0
+        };
+#else
+        sdc_word_t expected_q[len] = {
+            UINT32_C(0x7FFFFFFF), 0, 0, 0
+        };
+        sdc_word_t expected_r[len] = {
+            UINT32_C(1), 0, 0, 0
+        };
+#endif
+
+        if (!eq_words(q, expected_q, len) ||
+            !eq_words(r, expected_r, len))
+            return test_fail("div/word-boundary",
+                             "word boundary mismatch");
+
+        test_ok("word boundary");
+    }
+
+    /* --------------------------------------------------------
+       6. 随机测试
+       -------------------------------------------------------- */
+    for (unsigned t = 0; t < 10000; t++) {
+        random_fill(a, len);
+        random_fill(b, len);
+
+        /* b != 0 */
+        if (sdc_int_eq_word(b, 0, len))
+            b[0] = 1;
+
+        sdc_int_div(q, r, a, len, b, len);
+
+        /* 检查： r < b */
+        if (!sdc_int_lt(r, b, len))
+            return test_fail("div/random",
+                             "remainder >= divisor");
+
+        /*
+         * 验证：a = q*b+r
+         * q 和 b 都是 len words。
+         * 乘积最多需要 2*len words。
+         */
+        sdc_word_t product[len * 2];
+        sdc_int_mul(product, q, b, len);
+
+        /* product += r */
+        sdc_word_t carry = sdc_int_add(product, product, r, len);
+
+        /*
+         * q <= a/b，所以 q*b+r 应该精确等于 a。
+         * 对于正常的非溢出商，这里高半部分必须为 0。
+         */
+        for (size_t i = len; i < len * 2; i++) {
+            if (product[i] != 0)
+                return test_fail("div/random",
+                                 "q*b+r overflow");
+        }
+
+        if (!eq_words(product, a, len) || carry != 0)
+            return test_fail("div/random",
+                             "a != q*b+r");
+    }
+
+    test_ok("random division (10000 cases)");
+#undef len
+    return 0;
+}
+
+/* ============================================================
    main
    ============================================================ */
 
@@ -276,6 +464,7 @@ int main(void) {
     if (test_word_reference() != 0) return 1;
     if (test_modinv() != 0) return 1;
     if (test_modexp() != 0) return 1;
+    if (test_division() != 0) return 1;
 
     printf("\n========================================\n");
     if (g_failures == 0) {
