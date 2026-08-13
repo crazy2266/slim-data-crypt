@@ -99,6 +99,7 @@ void sdc_int_from_mont(sdc_word_t *x, const sdc_word_t *n, size_t len, sdc_word_
  * a should be in normal field, and r will be in normal field after the operation.
  * tmp should be at least 4*len words long.
  * ninv should be precomputed by sdc_int_calculate_ninv.
+ * ATTENTION: e must be in big-endian format.
  */
 void sdc_int_mont_modexp_u8(sdc_word_t *r, const sdc_word_t *a, const uint8_t *e, size_t elen,
                             const sdc_word_t *n, sdc_word_t *tmp, size_t len, sdc_word_t ninv);
@@ -109,6 +110,7 @@ void sdc_int_mont_modexp_u8(sdc_word_t *r, const sdc_word_t *a, const uint8_t *e
  * a should be in normal field, and r will be in normal field after the operation.
  * tmp should be at least 4*len words long.
  * ninv should be precomputed by sdc_int_calculate_ninv.
+ * ATTENTION: e must be in little-endian format.
  */
 void sdc_int_mont_modexp_word(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *e, size_t elen,
                               const sdc_word_t *n, sdc_word_t *tmp, size_t len, sdc_word_t ninv);
@@ -119,6 +121,7 @@ void sdc_int_mont_modexp_word(sdc_word_t *r, const sdc_word_t *a, const sdc_word
  * a should be in normal field, and r will be in normal field after the operation.
  * tmp should be at least 2*len words long.
  * ninv should be precomputed by sdc_int_calculate_ninv.
+ * ATTENTION: e must be in little-endian format.
  * WARNING: This function is not constant-time,
  *   do not use it in decryption and signing operations.
  */
