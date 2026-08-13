@@ -198,7 +198,7 @@ void sdc_int_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t
 /* Reference: BearSSL i32_reduce.c */
 void sdc_int_reduce(sdc_word_t *r, const sdc_word_t *x, size_t x_len, 
                     const sdc_word_t *n, size_t n_len) {
-    if (n_len == 0) return;
+    if (n_len == 0 || sdc_int_eq_word(n, 0, n_len)) return;
     size_t i, k;
     sdc_word_t bit, c;
     k = x_len * SDC_WORD_BITS;
