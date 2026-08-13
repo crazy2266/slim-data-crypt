@@ -66,6 +66,14 @@ size_t sdc_int_ctz(const sdc_word_t *x, size_t len);
 void sdc_int_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t len);
 
 /*
+ * Return r = x mod n.
+ * r,n should be at least n_len words long.
+ * x should be at least x_len words long.
+ * WARNING: r must be distinct from x and n.
+ */
+void sdc_int_reduce(sdc_word_t *r, const sdc_word_t *x, size_t x_len, const sdc_word_t *n, size_t n_len);
+
+/*
  * Multiply an unsigned integer by a word.
  * r should be at least (len+1) words long.
  * a should be at least len words long.

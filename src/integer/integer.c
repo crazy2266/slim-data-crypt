@@ -195,6 +195,22 @@ void sdc_int_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t
 	}
 }
 
+/* Reference: BearSSL i32_reduce.c */
+void sdc_int_reduce(sdc_word_t *r, const sdc_word_t *x, size_t x_len, 
+                    const sdc_word_t *n, size_t n_len) {
+    if (n_len == 0) return;
+    size_t i, k;
+    sdc_word_t bit, c;
+    k = x_len * SDC_WORD_BITS;
+    sdc_int_set_word(r, 0, n_len);
+    for (i = k; i > 0; i--) {
+        bit = (x[(i - 1) / SDC_WORD_BITS] >> ((i - 1) % SDC_WORD_BITS)) & 1;
+        r[0] |= bit;
+        c = sdc_int_add(r, r, r, n_len);
+        sdc_int_sub_ctl(r, n, n_len, c | sdc_int_gte(r, n, n_len));
+    }
+}
+
 sdc_word_t sdc_int_add_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word, size_t len) {
     sdc_dword_t tmp;
     sdc_word_t carry;
@@ -283,6 +299,7 @@ void sdc_int_mul_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t b, size_t l
     r[len] = (sdc_word_t)tmp;
 }
 
+// We assume that x < n.
 void sdc_int_to_mont(sdc_word_t *x, const sdc_word_t *n, size_t len) {
     size_t i, k;
     sdc_word_t c;
@@ -428,7 +445,7 @@ void sdc_int_mont_modexp_word_vartime(sdc_word_t *r, const sdc_word_t *a, const 
         sdc_word_t word = e[elen - 1 - i];
         for (bit_idx = 0; bit_idx < SDC_WORD_BITS; bit_idx++) {
             bit = (word >> (SDC_WORD_BITS - 1 - bit_idx)) & 1;
-            /* r = r^2 mod n (用 scratch 做临时) */
+            /* r = r^2 mod n */
             sdc_int_mont_mul(scratch, r, r, n, len, ninv);
             sdc_int_copy(r, scratch, len);
             if (bit) {
@@ -442,6 +459,7 @@ void sdc_int_mont_modexp_word_vartime(sdc_word_t *r, const sdc_word_t *a, const 
 }
 
 sdc_word_t sdc_int_calculate_ninv(sdc_word_t x) {
+    if ((x & 1) == 0) return 0;
     sdc_word_t inv = 2 - x;
     inv = inv * (2 - x * inv);
     inv = inv * (2 - x * inv);
@@ -482,8 +500,9 @@ static sdc_word_t rem_word(sdc_dword_t dividend, sdc_word_t divisor) {
     return r;
 }
 
-/* 大数除以单字：quo = a / word, rem = a % word */
+/* quo = a / word, rem = a % word */
 void sdc_int_div_word(sdc_word_t *quo, const sdc_word_t *a, sdc_word_t word, size_t len, sdc_word_t *rem) {
+    if (word == 0) return;
     sdc_dword_t remainder = 0;
     for (size_t i = len; i > 0; i--) {
         sdc_dword_t val = (remainder << SDC_WORD_BITS) | a[i - 1];
@@ -495,6 +514,7 @@ void sdc_int_div_word(sdc_word_t *quo, const sdc_word_t *a, sdc_word_t word, siz
 }
 
 sdc_word_t sdc_int_mod_word(const sdc_word_t *a, sdc_word_t word, size_t len) {
+    if (word == 0) return 0;
     sdc_dword_t rem = 0;
     for (size_t i = len; i > 0; i--) {
         sdc_dword_t val = (rem << SDC_WORD_BITS) | a[i - 1];
@@ -657,6 +677,7 @@ static sdc_word_t modinv_word(sdc_word_t a, sdc_word_t m) {
  * generation with small public exponents.
  */
 void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, sdc_word_t *tmp, size_t len) {
+    if (e == 0) return;
     sdc_word_t k = 0;
     sdc_word_t rem;
 
