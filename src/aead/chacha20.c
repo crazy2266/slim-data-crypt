@@ -21,6 +21,7 @@
 #include <sdcrypt/config.h>
 
 #if SDC_ENABLE_CHACHA20
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
 
 static inline uint32_t rotl32(uint32_t x, int n) {
     return (x << n) | (x >> (32 - n));
@@ -200,4 +201,79 @@ void sdc_chacha20_crypt(sdc_chacha20_ctx *ctx, const uint8_t *in,
     }
 }
 
+#else
+#warning "Compiling without NEON support, fallback to scalar implementation"
+
+#define ROTL32(x, n) ((x << (n)) | (x >> (32 - (n))))
+#define QR(a, b, c, d) \
+    a += b; d ^= a; d = ROTL32(d, 16); \
+    c += d; b ^= c; b = ROTL32(b, 12); \
+    a += b; d ^= a; d = ROTL32(d, 8);  \
+    c += d; b ^= c; b = ROTL32(b, 7);
+
+static void chacha20_block(uint32_t out[16], const uint32_t in[16]) {
+    uint32_t x[16];
+    int i;
+    memcpy(x, in, sizeof(uint32_t) * 16);
+    for (i = 0; i < 10; i++) {
+        QR(x[0], x[4], x[8],  x[12]);
+        QR(x[1], x[5], x[9],  x[13]);
+        QR(x[2], x[6], x[10], x[14]);
+        QR(x[3], x[7], x[11], x[15]);
+        QR(x[0], x[5], x[10], x[15]);
+        QR(x[1], x[6], x[11], x[12]);
+        QR(x[2], x[7], x[8],  x[13]);
+        QR(x[3], x[4], x[9],  x[14]);
+    }
+    for (i = 0; i < 16; i++) {
+        out[i] = x[i] + in[i];
+    }
+}
+
+static void next_block(sdc_chacha20_ctx *ctx) {
+    uint32_t out[16];
+    chacha20_block(out, ctx->state);
+    for (int i = 0; i < 16; i++) {
+        store32_le(ctx->buf + 4 * i, out[i]);
+    }
+    ctx->buf_used = 0;
+    ctx->state[12]++;
+}
+
+void sdc_chacha20_init(sdc_chacha20_ctx *ctx, const uint8_t key[32],
+                       const uint8_t nonce[12], uint32_t counter) {
+    if (!ctx || !key || !nonce) return;
+    ctx->state[0] = 0x61707865;
+    ctx->state[1] = 0x3320646e;
+    ctx->state[2] = 0x79622d32;
+    ctx->state[3] = 0x6b206574;
+    for (int i = 0; i < 8; i++) {
+        ctx->state[i + 4] = load32_le(key + 4 * i);
+    }
+    ctx->state[12] = (uint32_t)counter;
+    ctx->state[13] = load32_le(nonce);
+    ctx->state[14] = load32_le(nonce + 4);
+    ctx->state[15] = load32_le(nonce + 8);
+    ctx->buf_used = 64;
+}
+
+void sdc_chacha20_crypt(sdc_chacha20_ctx *ctx, const uint8_t *in,
+                        uint8_t *out, size_t len) {
+    if (!ctx || !in || !out) return;
+    size_t i = 0;
+    while (i < len) {
+        if (ctx->buf_used == 64) {
+            next_block(ctx);
+        }
+        size_t n = len - i;
+        if (n > 64 - ctx->buf_used) n = 64 - ctx->buf_used;
+        for (size_t j = 0; j < n; j++) {
+            out[i + j] = in[i + j] ^ ctx->buf[ctx->buf_used + j];
+        }
+        ctx->buf_used += n;
+        i += n;
+    }
+}
+
+#endif /* __ARM_NEON || __ARM_NEON__ */
 #endif /* SDC_ENABLE_CHACHA20 */

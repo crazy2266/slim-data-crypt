@@ -10,20 +10,28 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <stdalign.h>
 #include "./config.h"
-
+#ifndef __cplusplus
+#  include <stdalign.h>
+#endif
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
 #  include <arm_neon.h>
-#else
-#  error "NEON support is required for this project."
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #if SDC_ENABLE_CHACHA20 || SDC_ENABLE_XCHACHA20
 typedef struct {
+#if defined(__ARM_NEON) || defined(__ARM_NEON__)
     uint32x4_t state1[16];        /* NEON 4-block parallel (SoA) */
     uint32_t state2[16];          /* Scalar 5th block (AoS) */
     alignas(16) uint8_t buf[320]; /* 5 blocks x 64 bytes */
+#else
+    uint32_t state[16];
+    uint8_t buf[64];
+#endif
     size_t buf_used;
 } sdc_chacha20_ctx;
 #endif
@@ -33,13 +41,17 @@ void sdc_chacha20_init(sdc_chacha20_ctx *ctx, const uint8_t key[32],
                        const uint8_t nonce[12], uint32_t counter);
 void sdc_chacha20_crypt(sdc_chacha20_ctx *ctx, const uint8_t *in,
                         uint8_t *out, size_t len);
-#endif
+#endif /* SDC_ENABLE_CHACHA20 */
 
 #if SDC_ENABLE_XCHACHA20
 void sdc_xchacha20_init(sdc_chacha20_ctx *ctx, const uint8_t key[32],
                         const uint8_t nonce[24], uint64_t counter);
 void sdc_xchacha20_crypt(sdc_chacha20_ctx *ctx, const uint8_t *in,
                          uint8_t *out, size_t len);
+#endif /* SDC_ENABLE_XCHACHA20 */
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* SDC_CHACHA20_H */
