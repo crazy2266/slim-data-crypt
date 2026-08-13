@@ -10,6 +10,7 @@
 #include <sdcrypt/aead.h>
 #include <sdcrypt/utils.h>
 #include <sdcrypt/config.h>
+#include <sdcrypt/errcode.h>
 
 #if SDC_ENABLE_CHACHA20POLY1305_AEAD || SDC_ENABLE_XCHACHA20POLY1305_AEAD
 
@@ -117,7 +118,7 @@ int sdc_xchacha20poly1305_auth_final(sdc_chacha20poly1305_ctx *ctx,
     sdc_poly1305_final(&ctx->poly, expected);
 
     ctx->verified = (sdc_secure_memcmp(tag, expected, 16) == 0) ? 1 : 0;
-    return ctx->verified ? 0 : -1;
+    return ctx->verified ? SDC_ERR_OK : SDC_ERR_VERIFY_FAIL;
 }
 
 void sdc_xchacha20poly1305_decrypt_update(sdc_chacha20poly1305_ctx *ctx,
@@ -250,7 +251,7 @@ int sdc_chacha20poly1305_auth_final(sdc_chacha20poly1305_ctx *ctx,
     sdc_poly1305_final(&ctx->poly, expected);
 
     ctx->verified = (sdc_secure_memcmp(tag, expected, 16) == 0) ? 1 : 0;
-    return ctx->verified ? 0 : -1;
+    return ctx->verified ? SDC_ERR_OK : SDC_ERR_VERIFY_FAIL;
 }
 
 void sdc_chacha20poly1305_decrypt_update(sdc_chacha20poly1305_ctx *ctx,

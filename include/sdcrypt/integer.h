@@ -184,9 +184,10 @@ void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, sdc_word
  *   If you need arbitrary bit lengths, consider using a higher-level wrapper.
  * 
  * return values:
- *   0: success
- *   -1: invalid input
- *   -2: failed to find a prime within the maximum attempts.
+ *   SDC_ERR_OK: success
+ *   SDC_ERR_RANDOM_FAIL: random number generation failed
+ *   SDC_ERR_INVALID_PARAM: invalid input
+ *   SDC_ERR_INTEGER_GENPRIME_TIMEOUT: failed to find a prime within the maximum attempts.
  */
 int sdc_int_gen_prime(sdc_word_t *x, sdc_word_t *tmp, size_t len);
 

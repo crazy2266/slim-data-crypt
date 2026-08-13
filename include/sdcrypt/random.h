@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// return 0 on success, -1 on error
+// return SDC_ERR_OK on success, SDC_ERR_RANDOM_FAIL on error
 int sdc_random_bytes(uint8_t *out, size_t len);
 
 #endif /* SDC_RANDOM_H */
