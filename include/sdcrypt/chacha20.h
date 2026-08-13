@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdalign.h>
-#include "config.h"
+#include "./config.h"
 
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
 #  include <arm_neon.h>

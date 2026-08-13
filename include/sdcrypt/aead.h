@@ -10,9 +10,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "chacha20.h"
-#include "poly1305.h"
-#include "config.h"
+#include "./chacha20.h"
+#include "./poly1305.h"
+#include "./config.h"
 
 #if SDC_ENABLE_CHACHA20POLY1305_AEAD || SDC_ENABLE_XCHACHA20POLY1305_AEAD
 

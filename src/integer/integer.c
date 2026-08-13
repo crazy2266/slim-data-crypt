@@ -10,9 +10,9 @@
  * The implementation of integer arithmetic functions.
  */
 
-#include "config.h"
-#include "integer.h"
-#include "utils.h"
+#include <sdcrypt/config.h>
+#include <sdcrypt/integer.h>
+#include <sdcrypt/utils.h>
 
 #if SDC_ENABLE_INTEGER
 
@@ -251,6 +251,14 @@ void sdc_int_shr(sdc_word_t *x, size_t bits, size_t len) {
     for (i = len - shr_limb; i < len; i++) {
         x[i] = 0;
     }
+}
+
+void sdc_int_shr1(sdc_word_t *x, size_t len) {
+    size_t i;
+    for (i = 0; i < len - 1; i++) {
+        x[i] = (x[i] >> 1) |  (x[i + 1] << (SDC_WORD_BITS - 1));
+    }
+    x[len - 1] >>= 1;
 }
 
 size_t sdc_int_ctz(const sdc_word_t *x, size_t len) {
@@ -636,9 +644,9 @@ static sdc_word_t modinv_word(sdc_word_t a, sdc_word_t m) {
  *
  * For this to yield an integer, we need:
  *     k * φ ≡ -1 (mod e)
- *     k ≡ -φ⁻¹ (mod e)
+ *     k ≡ -φ^{-1} (mod e)
  *
- * Since e is a small public exponent (typically 65537), φ⁻¹ mod e
+ * Since e is a small public exponent (typically 65537), φ^{-1} mod e
  * can be computed with a SDC_WORD_BITS-bit constant-time modular inverse.
  *
  * This avoids a full big-integer extended GCD, which is both

@@ -23,8 +23,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "platform.h"
-#include "config.h"
+#include "./platform.h"
+#include "./config.h"
 
 #if SDC_ENABLE_INTEGER
 
@@ -51,6 +51,7 @@ sdc_word_t sdc_int_add_ctl(sdc_word_t *a, const sdc_word_t *b, size_t len, sdc_w
 sdc_word_t sdc_int_sub_ctl(sdc_word_t *a, const sdc_word_t *b, size_t len, sdc_word_t ctl);
 sdc_word_t sdc_int_add_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word, size_t len);
 sdc_word_t sdc_int_sub_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word, size_t len);
+void sdc_int_shr1(sdc_word_t *x, size_t len);
 // WARNING: This function has branches, please use it cautiously.
 void sdc_int_shr(sdc_word_t *x, size_t bits, size_t len);
 // WARNING: This function is not constant-time.

@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "config.h"
+#include "./config.h"
 
 #if SDC_ENABLE_X25519
 
@@ -24,9 +24,8 @@ extern "C" {
  * @param out       输出共享密钥（32 字节）
  * @param priv      私钥（32 字节）
  * @param pub       对方公钥（32 字节）
- * @return 0 成功，-1 错误
  */
-int sdc_x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pub[32]);
+void sdc_x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pub[32]);
 
 /**
  * 生成 X25519 密钥对
@@ -34,7 +33,7 @@ int sdc_x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_
  * @param pub       输出公钥（32 字节）
  * @param priv      输出私钥（32 字节）
  * @param rng       随机数生成器（可为 NULL，使用默认）
- * @return 0 成功，-1 错误
+ * @return SDC_ERR_OK 成功，其他错误码
  */
 int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32]);
 

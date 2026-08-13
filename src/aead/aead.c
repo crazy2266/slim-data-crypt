@@ -7,9 +7,9 @@
  */
 
 #include <string.h>
-#include "aead.h"
-#include "utils.h"
-#include "config.h"
+#include <sdcrypt/aead.h>
+#include <sdcrypt/utils.h>
+#include <sdcrypt/config.h>
 
 #if SDC_ENABLE_CHACHA20POLY1305_AEAD || SDC_ENABLE_XCHACHA20POLY1305_AEAD
 

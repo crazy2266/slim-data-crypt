@@ -8,14 +8,14 @@
  * add/sub, ctz/shr, and the 64-bit reference tests.
  */
 
-#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 #include <inttypes.h>
-#include "integer.h"
+#include <sdcrypt/integer.h>
+#include <sdcrypt/config.h>
 
 #if SDC_ENABLE_INTEGER
 

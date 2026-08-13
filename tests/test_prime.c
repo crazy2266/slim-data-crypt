@@ -14,9 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include "config.h"
-#include "integer.h"
-#include "random.h"
+#include <sdcrypt/config.h>
+#include <sdcrypt/integer.h>
+#include <sdcrypt/random.h>
 
 #if SDC_ENABLE_INTEGER
 

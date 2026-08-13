@@ -10,8 +10,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "sha2.h"
-#include "config.h"
+#include "./sha2.h"
+#include "./config.h"
 
 #if SDC_ENABLE_HMAC
 

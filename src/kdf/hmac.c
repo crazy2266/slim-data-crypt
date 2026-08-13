@@ -11,10 +11,10 @@
  * Implementation conforms to the above standards.
  */
 
-#include "config.h"
-#include "hmac.h"
-#include "sha2.h"
-#include "utils.h"
+#include <sdcrypt/config.h>
+#include <sdcrypt/hmac.h>
+#include <sdcrypt/sha2.h>
+#include <sdcrypt/utils.h>
 #include <string.h>
 
 #if SDC_ENABLE_HMAC

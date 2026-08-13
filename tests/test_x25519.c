@@ -1,7 +1,7 @@
-#include "config.h"
 #include <stdio.h>
 #include <string.h>
-#include "x25519.h"
+#include <sdcrypt/x25519.h>
+#include <sdcrypt/config.h>
 
 #if SDC_ENABLE_X25519
 
@@ -55,31 +55,29 @@ int main(void) {
     printf("Testing X25519...\n");
     
     /* 测试1: Alice 计算共享秘密 */
-    if (sdc_x25519_exchange(shared_a, rfc_private_a, rfc_public_b) == 0) {
-        if (compare_bytes(shared_a, rfc_shared_secret, 32)) {
-            printf("✓ Alice's shared secret correct\n");
-            passed++;
-        } else {
-            printf("✗ Alice's shared secret wrong\n");
-        }
+    sdc_x25519_exchange(shared_a, rfc_private_a, rfc_public_b);
+    if (compare_bytes(shared_a, rfc_shared_secret, 32)) {
+        printf("[PASS] Alice's shared secret correct\n");
+        passed++;
+    } else {
+        printf("[FAIL] Alice's shared secret wrong\n");
     }
     
     /* 测试2: Bob 计算共享秘密 */
-    if (sdc_x25519_exchange(shared_b, rfc_private_b, rfc_public_a) == 0) {
-        if (compare_bytes(shared_b, rfc_shared_secret, 32)) {
-            printf("✓ Bob's shared secret correct\n");
-            passed++;
-        } else {
-            printf("✗ Bob's shared secret wrong\n");
-        }
+    sdc_x25519_exchange(shared_b, rfc_private_b, rfc_public_a);
+    if (compare_bytes(shared_b, rfc_shared_secret, 32)) {
+        printf("[PASS] Bob's shared secret correct\n");
+        passed++;
+    } else {
+        printf("[FAIL] Bob's shared secret wrong\n");
     }
     
     /* 测试3: 一致性 */
     if (compare_bytes(shared_a, shared_b, 32)) {
-        printf("✓ Shared secrets match\n");
+        printf("[PASS] Shared secrets match\n");
         passed++;
     } else {
-        printf("✗ Shared secrets mismatch\n");
+        printf("[FAIL] Shared secrets mismatch\n");
     }
     
     printf("\nResult: %d/3 passed\n", passed);

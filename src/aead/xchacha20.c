@@ -16,9 +16,9 @@
  */
 
 #include <string.h>
-#include "chacha20.h"
-#include "utils.h"
-#include "config.h"
+#include <sdcrypt/chacha20.h>
+#include <sdcrypt/utils.h>
+#include <sdcrypt/config.h>
 
 #if SDC_ENABLE_XCHACHA20
 

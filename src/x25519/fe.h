@@ -13,8 +13,8 @@
 #define FE_H
 
 #include <stdint.h>
-#include "platform.h"
-#include "config.h"
+#include <sdcrypt/platform.h>
+#include <sdcrypt/config.h>
 
 #if SDC_ENABLE_X25519
 

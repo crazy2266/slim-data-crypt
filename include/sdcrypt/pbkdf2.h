@@ -10,12 +10,12 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "config.h"
+#include "./config.h"
 
 #if SDC_ENABLE_PBKDF2
 
 #if !SDC_ENABLE_HMAC || !SDC_ENABLE_SHA256
-    #error "PBKDF2-HMAC-SHA256 requires HMAC and SHA256 support"
+#  error "PBKDF2-HMAC-SHA256 requires HMAC and SHA256 support"
 #endif
 
 #ifdef __cplusplus
@@ -32,9 +32,8 @@ extern "C" {
  * @param salt       盐值
  * @param saltlen    盐值长度
  * @param iterations 迭代次数（推荐 600000）
- * @return 0 成功，-1 失败
  */
-int sdc_kdf_pbkdf2_sha256(
+void sdc_kdf_pbkdf2_sha256(
     uint8_t *out, size_t outlen,
     const uint8_t *password, size_t pwdlen,
     const uint8_t *salt, size_t saltlen,

@@ -11,9 +11,11 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-#include "platform.h"
+#include "./platform.h"
 
+// Securely memset a buffer to 0.
 void sdc_secure_memzero(void *ptr, size_t len);
+// return 0 if a == b, non-zero if a != b.
 int sdc_secure_memcmp(const void *a, const void *b, size_t len);
 
 /* ================ load/store functions ================ */

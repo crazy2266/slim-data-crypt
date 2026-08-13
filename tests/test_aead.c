@@ -1,10 +1,10 @@
-#include "config.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include "aead.h"
-#include "chacha20.h"
+#include <sdcrypt/aead.h>
+#include <sdcrypt/chacha20.h>
+#include <sdcrypt/config.h>
 
 #if SDC_ENABLE_CHACHA20POLY1305_AEAD && SDC_ENABLE_XCHACHA20POLY1305_AEAD
 
@@ -229,14 +229,14 @@ static void test_xchacha20_encrypt(const char *name,
         printf("  [FAIL] 标签不匹配\n");
         return;
     }
-    printf("  [OK] 加密通过\n");
+    printf("  [PASS] 加密通过\n");
 
     int ret = sdc_xchacha20poly1305_decrypt(key, nonce, aad, aad_len, ciphertext, plen, tag, decrypted);
     if (ret != 0 || memcmp(decrypted, plain, plen) != 0) {
         printf("  [FAIL] 解密失败\n");
         return;
     }
-    printf("  [OK] 解密通过\n");
+    printf("  [PASS] 解密通过\n");
 }
 
 // ==================== ChaCha20-Poly1305 (IETF) 测试 ====================
@@ -268,14 +268,14 @@ static void test_chacha20_ietf_encrypt(const char *name,
         printf("  [FAIL] 标签不匹配\n");
         return;
     }
-    printf("  [OK] 加密通过\n");
+    printf("  [PASS] 加密通过\n");
 
     int ret = sdc_chacha20poly1305_decrypt(key, nonce, aad, aad_len, ciphertext, plen, tag, decrypted);
     if (ret != 0 || memcmp(decrypted, plain, plen) != 0) {
         printf("  [FAIL] 解密失败\n");
         return;
     }
-    printf("  [OK] 解密通过\n");
+    printf("  [PASS] 解密通过\n");
 }
 
 // ==================== 性能测试 ====================

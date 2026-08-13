@@ -1,7 +1,7 @@
-#include "config.h"
 #include <stdio.h>
 #include <string.h>
-#include "pbkdf2.h"
+#include <sdcrypt/pbkdf2.h>
+#include <sdcrypt/config.h>
 
 #if SDC_ENABLE_PBKDF2
 
@@ -30,21 +30,16 @@ int main(void) {
         0x09, 0x11, 0x20, 0x41, 0xd3, 0xa1, 0x97, 0x83
     };
 
-    int ret = sdc_kdf_pbkdf2_sha256(out1, 64,
-                                  password1, sizeof(password1) - 1,
-                                  salt1, sizeof(salt1) - 1,
-                                  iterations1);
-    if (ret != 0) {
-        printf("  [FAIL] PBKDF2 派生失败 (ret=%d)\n", ret);
-        return 1;
-    }
-
+    sdc_kdf_pbkdf2_sha256(out1, 64,
+                          password1, sizeof(password1) - 1,
+                          salt1, sizeof(salt1) - 1,
+                          iterations1);
     printf("\n测试向量 1 (passwd/salt/c=1/dkLen=64):\n");
     print_hex("  期望", expected1, 64);
     print_hex("  计算", out1, 64);
 
     if (memcmp(out1, expected1, 64) == 0) {
-        printf("  [OK]\n");
+        printf("  [PASS]\n");
     } else {
         printf("  [FAIL]\n");
         return 1;
@@ -66,21 +61,17 @@ int main(void) {
         0x47, 0x8f, 0x62, 0xb3, 0x97, 0xf3, 0x3c, 0x8d
     };
 
-    ret = sdc_kdf_pbkdf2_sha256(out2, 64,
-                              password2, sizeof(password2) - 1,
-                              salt2, sizeof(salt2) - 1,
-                              iterations2);
-    if (ret != 0) {
-        printf("  [FAIL] PBKDF2 派生失败 (ret=%d)\n", ret);
-        return 1;
-    }
+    sdc_kdf_pbkdf2_sha256(out2, 64,
+                          password2, sizeof(password2) - 1,
+                          salt2, sizeof(salt2) - 1,
+                          iterations2);
 
     printf("\n测试向量 2 (Password/NaCl/c=80000/dkLen=64):\n");
     print_hex("  期望", expected2, 64);
     print_hex("  计算", out2, 64);
 
     if (memcmp(out2, expected2, 64) == 0) {
-        printf("  [OK]\n");
+        printf("  [PASS]\n");
     } else {
         printf("  [FAIL]\n");
         return 1;

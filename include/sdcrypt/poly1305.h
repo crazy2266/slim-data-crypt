@@ -10,8 +10,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "platform.h"
-#include "config.h"
+#include "./platform.h"
+#include "./config.h"
 
 #if SDC_ENABLE_POLY1305
 

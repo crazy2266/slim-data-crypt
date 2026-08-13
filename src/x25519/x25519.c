@@ -9,11 +9,12 @@
  * Ported to slim-data-crypt by crazy2266.
  */
 
-#include "x25519.h"
+#include <sdcrypt/x25519.h>
+#include <sdcrypt/random.h>
+#include <sdcrypt/utils.h>
+#include <sdcrypt/config.h>
+#include <sdcrypt/errcode.h>
 #include "fe.h"
-#include "random.h"
-#include "utils.h"
-#include "config.h"
 
 #if SDC_ENABLE_X25519
 
@@ -69,24 +70,23 @@ static void sdc_x25519_scalarmult(uint8_t out[32], const uint8_t scalar[32],
     sdc_secure_memzero(t, sizeof(t));
 }
 
-int sdc_x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pub[32]) {
-    if (!shared || !priv || !pub) return -1;
+void sdc_x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pub[32]) {
+    if (!shared || !priv || !pub) return;
     sdc_x25519_scalarmult(shared, priv, pub);
-    return 0;
 }
 
 int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32]) {
-    if (!pub || !priv) return -1;
+    if (!pub || !priv) return SDC_ERR_INVALID_PARAM;
     int ret = sdc_random_bytes(priv, 32);
-    if (ret != 0) return ret;
-    // clamp 私钥
-    priv[0] &= 0xf8;
+    if (ret != 0) return SDC_ERR_RANDOM_FAIL;
+
+    priv[0]  &= 0xf8;
     priv[31] &= 0x7f;
     priv[31] |= 0x40;
-    // 生成公钥
+
     static const uint8_t basepoint[32] = {9};
     sdc_x25519_scalarmult(pub, priv, basepoint);
-    return 0;
+    return SDC_ERR_OK;
 }
 
 #endif /* SDC_ENABLE_X25519 */

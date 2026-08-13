@@ -9,8 +9,9 @@
  * Ported to slim-data-crypt by crazy2266.
  */
 
+#include <sdcrypt/platform.h>
+#include <sdcrypt/config.h>
 #include "fe.h"
-#include "config.h"
 
 #if SDC_ENABLE_X25519 && SDC_64BIT
 

@@ -5,11 +5,12 @@
  * The implementation of integer prime number functions.
  */
 
-#include "config.h"
-#include "integer.h"
-#include "platform.h"
-#include "random.h"
-#include "utils.h"
+#include <sdcrypt/config.h>
+#include <sdcrypt/integer.h>
+#include <sdcrypt/platform.h>
+#include <sdcrypt/errcode.h>
+#include <sdcrypt/random.h>
+#include <sdcrypt/utils.h>
 
 #if SDC_ENABLE_INTEGER
 
@@ -42,7 +43,7 @@ static const uint32_t SMALL_PRIMES[168] = {
  * that `n = p * q` will have the desired bit length.
  */
 static int int_gen_random_odd(sdc_word_t *x, size_t len) {
-    if (len == 0) return -1;
+    if (len == 0) return SDC_ERR_INVALID_PARAM;
     int ret = sdc_random_bytes((uint8_t *)x, len * SDC_WORD_SIZE);
     if (ret != 0) return ret;
     x[0] |= 1;                           /* Set the least significant bit to 1 */
@@ -51,8 +52,7 @@ static int int_gen_random_odd(sdc_word_t *x, size_t len) {
 #elif SDC_32BIT
     x[len - 1] |= 0xC0000000U;
 #endif
-    return 0;
-#undef HIGH_2BITS
+    return SDC_ERR_OK;
 }
 
 /*
@@ -155,7 +155,7 @@ static int is_prime(const sdc_word_t *x, size_t len, sdc_word_t *tmp) {
 }
 
 int sdc_int_gen_prime(sdc_word_t *x, sdc_word_t *tmp, size_t len) {
-    if (x == NULL || tmp == NULL || len == 0) return -1;
+    if (x == NULL || tmp == NULL || len == 0) return SDC_ERR_INVALID_PARAM;
     int attempt = 0;
     while (attempt < GEN_PRIME_MAX_ATTEMPT) {
         attempt++;
@@ -166,7 +166,7 @@ int sdc_int_gen_prime(sdc_word_t *x, sdc_word_t *tmp, size_t len) {
         if (is_prime(x, len, tmp)) return 0;
     }
     /* Failed to find a prime within the maximum attempts. */
-    return -2;
+    return SDC_ERR_INTEGER_GENPRIME_TIMEOUT;
 }
 
 #endif /* SDC_ENABLE_INTEGER */

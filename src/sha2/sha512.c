@@ -13,10 +13,10 @@
  * Implementation conforms to FIPS 180-4 for SHA-512.
  */
 
-#include "config.h"
 #include <string.h>
-#include "sha2.h"
-#include "utils.h"
+#include <sdcrypt/config.h>
+#include <sdcrypt/sha2.h>
+#include <sdcrypt/utils.h>
 
 #if SDC_ENABLE_SHA512
 
