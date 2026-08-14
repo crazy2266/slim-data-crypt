@@ -185,7 +185,7 @@ sdc_word_t sdc_int_sub_ctl(sdc_word_t *a, const sdc_word_t *b,
 void sdc_int_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t len) {
 	sdc_dword_t tmp;
 	size_t i, j;
-	sdc_int_set_word(r, 0, len * 2);
+	sdc_int_set_word(r, 0, len);
 	for (i = 0; i < len; i++) {
 		tmp = 0;
 		for (j = 0; j < len; j++) {

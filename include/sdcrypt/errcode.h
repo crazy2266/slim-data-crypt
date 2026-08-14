@@ -14,7 +14,7 @@
 #define SDC_ERR_KEY_INVALID               -30
 #define SDC_ERR_KEY_SIZE_INVALID          -31
 
-#define SDC_ERR_OUT_OF_MEMORY             -50
+#define SDC_ERR_MEM_ALLOCATE_FAIL         -50
 #define SDC_ERR_BUFFER_TOO_SMALL          -51
 
 #endif /* SDC_ERRCODE_H */
