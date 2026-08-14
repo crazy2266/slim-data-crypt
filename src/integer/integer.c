@@ -202,7 +202,7 @@ void sdc_int_div(sdc_word_t *q, sdc_word_t *r, const sdc_word_t *a, size_t alen,
     if (r == NULL) return;
     if (alen == 0 || blen == 0) return;
     if (sdc_int_eq_word(b, 0, blen)) return;
-    size_t i, k, widx, bidx;
+    size_t i, widx, bidx;
     sdc_word_t bit, c, ge;
     if (q) sdc_int_set_word(q, 0, alen);
     sdc_int_set_word(r, 0, blen);
@@ -223,12 +223,11 @@ void sdc_int_div(sdc_word_t *q, sdc_word_t *r, const sdc_word_t *a, size_t alen,
 void sdc_int_reduce(sdc_word_t *r, const sdc_word_t *x, size_t x_len, 
                     const sdc_word_t *n, size_t n_len) {
     if (n_len == 0 || sdc_int_eq_word(n, 0, n_len)) return;
-    size_t i, k;
+    size_t i;
     sdc_word_t bit, c;
-    k = x_len * SDC_WORD_BITS;
     sdc_int_set_word(r, 0, n_len);
 
-    for (i = k; i > 0; i--) {
+    for (i = x_len * SDC_WORD_BITS; i > 0; i--) {
         bit = (x[(i - 1) / SDC_WORD_BITS] >> ((i - 1) % SDC_WORD_BITS)) & 1;
         r[0] |= bit;
         c = sdc_int_add(r, r, r, n_len);
