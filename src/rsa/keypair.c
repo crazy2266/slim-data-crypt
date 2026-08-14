@@ -150,7 +150,7 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey, sdc_rsa_privkey_t *privkey, sdc_wo
     sdc_int_mul(phi, phi, phi + len1, len1);
 
     /* Calculate d = e^{-1} mod phi */
-    sdc_int_modinv(privkey->d, e, phi, tmp, len2);
+    sdc_int_modinv(privkey->d, phi, e, tmp, len2);
 
     /* Calculate CRT parameters (using phi as temporary buffer) */
     sdc_int_sub_word(phi, privkey->p, 1, len1);      // phi = p-1
