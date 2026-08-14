@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <sdcrypt/mem.h>
 
 #if SDC_SWAPPABLE_ALLOCATOR
