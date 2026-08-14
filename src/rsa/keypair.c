@@ -7,6 +7,7 @@
 
 #include <sdcrypt/rsa.h>
 #include <sdcrypt/mem.h>
+#include <sdcrypt/utils.h>
 #include <sdcrypt/integer.h>
 #include <sdcrypt/errcode.h>
 #include <sdcrypt/platform.h>
@@ -105,6 +106,23 @@ err_free:
     sdc_free(D);
     sdc_free(N);
     return ret;
+}
+
+void sdc_rsa_free_keypair(sdc_rsa_pubkey_t *pubkey, sdc_rsa_privkey_t *privkey) {
+    if (pubkey) {
+        sdc_free(pubkey->n);
+        sdc_secure_memzero(pubkey, sizeof(sdc_rsa_pubkey_t));
+    }
+    if (privkey) {
+        sdc_free(privkey->p);
+        sdc_free(privkey->q);
+        sdc_free(privkey->dp);
+        sdc_free(privkey->dq);
+        sdc_free(privkey->qinv);
+        sdc_free(privkey->d);
+        sdc_free(privkey->n);
+        sdc_secure_memzero(privkey, sizeof(sdc_rsa_privkey_t));
+    }
 }
 
 #if SDC_ENABLE_RSA_KEYGEN
