@@ -323,6 +323,17 @@ void sdc_int_mul_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t b, size_t l
     r[len] = (sdc_word_t)tmp;
 }
 
+void sdc_int_precompute_R2(sdc_word_t *R2, const sdc_word_t *n, size_t len) {
+    size_t i, k;
+    sdc_word_t c;
+    k = len * SDC_WORD_BITS * 2;
+    sdc_int_set_word(R2, 1, len);
+    for (i = 0; i < k; i++) {
+        c = sdc_int_add(R2, R2, R2, len);
+        sdc_int_sub_ctl(R2, n, len, sdc_int_gte(R2, n, len) | c);
+    }
+}
+
 // We assume that x < n.
 void sdc_int_to_mont(sdc_word_t *x, const sdc_word_t *n, size_t len) {
     size_t i, k;
@@ -359,6 +370,10 @@ void sdc_int_mont_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b,
         dh = zh >> SDC_WORD_BITS;
     }
     sdc_int_sub_ctl(r, n, len, is_nonzero_word(dh) | sdc_int_gte(r, n, len));
+}
+
+void sdc_int_to_mont_with_R2(sdc_word_t *x, const sdc_word_t *a, const sdc_word_t *R2, const sdc_word_t *n, size_t len, sdc_word_t ninv) {
+    sdc_int_mont_mul(x, a, R2, n, len, ninv);
 }
 
 void sdc_int_from_mont(sdc_word_t *x, const sdc_word_t *n, size_t len, sdc_word_t ninv) {

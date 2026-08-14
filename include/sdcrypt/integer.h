@@ -91,10 +91,25 @@ void sdc_int_reduce(sdc_word_t *r, const sdc_word_t *x, size_t x_len, const sdc_
 void sdc_int_mul_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word, size_t len);
 
 /*
+ * Precompute R2 for Montgomery reduction.
+ * R2, n should be at least len words long.
+ * R2 = 2^(2 * len * SDC_WORD_BITS) mod n.
+ */
+void sdc_int_precompute_R2(sdc_word_t *R2, const sdc_word_t *n, size_t len);
+
+/*
  * Convert x (normal field) to Montgomery field.
  * x,n should be at least len words long.
  */
 void sdc_int_to_mont(sdc_word_t *x, const sdc_word_t *n, size_t len);
+
+/*
+ * Convert a (normal field) to Montgomery field with R2.
+ * x = Montmul(a, R2) = aR mod n.
+ * x,a,R2,n should be at least len words long.
+ * WARNING: x must be distinct from a,n and R2.
+ */
+void sdc_int_to_mont_with_R2(sdc_word_t *x, const sdc_word_t *a, const sdc_word_t *R2, const sdc_word_t *n, size_t len, sdc_word_t ninv);
 
 /*
  * Multiply two Montgomery numbers in the field Z_n.
