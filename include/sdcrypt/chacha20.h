@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "./config.h"
+#include <sdcrypt/config.h>
 #ifndef __cplusplus
 #  include <stdalign.h>
 #endif

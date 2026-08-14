@@ -23,8 +23,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "./platform.h"
-#include "./config.h"
+#include <sdcrypt/platform.h>
+#include <sdcrypt/config.h>
 
 #if SDC_ENABLE_INTEGER
 

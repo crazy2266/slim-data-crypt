@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
-#include "./platform.h"
+#include <sdcrypt/platform.h>
 
 // Securely memset a buffer to 0.
 void sdc_secure_memzero(void *ptr, size_t len);
