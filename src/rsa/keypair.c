@@ -12,6 +12,8 @@
 #include <sdcrypt/platform.h>
 #include <sdcrypt/config.h>
 
+#if SDC_ENABLE_RSA
+
 int sdc_rsa_pubkey_init(sdc_rsa_pubkey_t *pubkey, sdc_word_t e, const uint8_t *n, size_t nlen) {
     size_t n_words = nlen / SDC_WORD_SIZE;
     if (!pubkey || !n || e == 0 || n_words == 0 || nlen % SDC_WORD_SIZE != 0) return SDC_ERR_INVALID_PARAM;
@@ -191,4 +193,6 @@ err_free_privkey:
     sdc_free(privkey->n);
     return ret;
 }
-#endif
+#endif /* SDC_ENABLE_RSA_KEYGEN */
+
+#endif /* SDC_ENABLE_RSA */

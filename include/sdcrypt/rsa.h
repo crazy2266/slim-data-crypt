@@ -22,8 +22,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#if SDC_ENABLE_RSAES_PKCS1V15 || SDC_ENABLE_RSASSA_PKCS1V15 || \
-    SDC_ENABLE_RSAES_OAEP || SDC_ENABLE_RSASSA_PSS
+
+#define SDC_ENABLE_RSA SDC_ENABLE_RSAES_PKCS1V15 || SDC_ENABLE_RSASSA_PKCS1V15 || \
+                       SDC_ENABLE_RSAES_OAEP || SDC_ENABLE_RSASSA_PSS
+
+#if SDC_ENABLE_RSA
 
 typedef struct {
     sdc_word_t e;  // Only support e is a single word
