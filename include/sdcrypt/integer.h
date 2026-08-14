@@ -153,14 +153,14 @@ sdc_word_t sdc_int_calculate_ninv(sdc_word_t x);
  * Divide an unsigned integer by a word.
  * quo,a should be at least len words long.
  * rem is just a word, and it can be NULL if you don't need it.
- * WARNING: word cannot be zero, or it will cause undefined behavior.
+ * WARNING: word cannot be zero, or the function will return immediately without setting quo or rem.
  */
 void sdc_int_div_word(sdc_word_t *quo, const sdc_word_t *a, sdc_word_t word, size_t len, sdc_word_t *rem);
 
 /*
  * Compute the remainder of dividing an unsigned integer by a word.
  * a should be at least len words long.
- * WARNING: word cannot be zero, or it will cause undefined behavior.
+ * WARNING: word cannot be zero, or the function will return immediately without setting rem.
  */
 sdc_word_t sdc_int_mod_word(const sdc_word_t *a, sdc_word_t word, size_t len);
 
@@ -192,6 +192,7 @@ void sdc_int_tobytes_be(const sdc_word_t *a, size_t len, uint8_t *out);
  * d = e^{-1} mod phi
  * d,phi should be at least len words long.
  * tmp should be at least (len+1) words long.
+ * WARNING: phi must be odd, or the function will return immediately without setting d.
  */
 void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, sdc_word_t *tmp, size_t len);
 
