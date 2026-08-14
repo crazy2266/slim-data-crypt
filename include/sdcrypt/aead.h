@@ -16,11 +16,16 @@
 
 #if SDC_ENABLE_CHACHA20POLY1305_AEAD || SDC_ENABLE_XCHACHA20POLY1305_AEAD
 
-#if !SDC_ENABLE_CHACHA20 || !SDC_ENABLE_POLY1305
-#  error "ChaCha20 and Poly1305 must be enabled to use ChaCha20-Poly1305 AEAD"
+#if SDC_ENABLE_CHACHA20POLY1305_AEAD
+#  if !SDC_ENABLE_CHACHA20 || !SDC_ENABLE_POLY1305
+#    error "ChaCha20 and Poly1305 must be enabled to use ChaCha20-Poly1305 AEAD"
+#  endif
 #endif
-
-#if SDC_ENABLE_CHACHA20POLY1305_AEAD || SDC_ENABLE_XCHACHA20POLY1305_AEAD
+#if SDC_ENABLE_XCHACHA20POLY1305_AEAD
+#  if !SDC_ENABLE_XCHACHA20 || !SDC_ENABLE_POLY1305
+#    error "XChaCha20 and Poly1305 must be enabled to use XChaCha20-Poly1305 AEAD"
+#  endif
+#endif
 
 /* ============================================================
    Public ctx for ChaCha20-Poly1305 and XChaCha20-Poly1305
@@ -32,8 +37,6 @@ typedef struct {
     uint64_t total_len;
     uint8_t verified;
 } sdc_chacha20poly1305_ctx;
-
-#endif
 
 /* ============================================================
    XChaCha20-Poly1305 (24-byte nonce)
@@ -117,7 +120,7 @@ int sdc_xchacha20poly1305_decrypt(
 
 #if SDC_ENABLE_CHACHA20POLY1305_AEAD
 
-/* 初始化 */
+/* Initialize */
 void sdc_chacha20poly1305_init(
     sdc_chacha20poly1305_ctx *ctx,
     const uint8_t key[32],

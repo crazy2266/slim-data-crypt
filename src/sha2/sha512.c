@@ -10,7 +10,7 @@
  *   - NIST SP 800-107: Recommendation for Applications Using Approved
  *     Hash Algorithms
  *
- * Implementation conforms to FIPS 180-4 for SHA-512.
+ * Implementation conforms to FIPS 180-4 for SHA-384 and SHA-512.
  */
 
 #include <string.h>
@@ -18,7 +18,13 @@
 #include <sdcrypt/sha2.h>
 #include <sdcrypt/utils.h>
 
-#if SDC_ENABLE_SHA512
+#if SDC_ENABLE_SHA384 || SDC_ENABLE_SHA512
+
+#if SDC_ENABLE_SHA384 && !SDC_ENABLE_SHA512
+#  define SHA512_STATIC_IF_DISABLED static
+#else
+#  define SHA512_STATIC_IF_DISABLED
+#endif
 
 #define ROTR64(x, n) (((x) >> (n)) | ((x) << (64 - (n))))
 #define Ch(x, y, z)  (((x) & (y)) ^ (~(x) & (z)))
@@ -103,7 +109,7 @@ static void sdc_sha512_transform(sdc_sha512_ctx *ctx, const uint8_t* block) {
     ctx->state[7] += h;
 }
 
-void sdc_sha512_init(sdc_sha512_ctx *ctx) {
+SHA512_STATIC_IF_DISABLED void sdc_sha512_init(sdc_sha512_ctx *ctx) {
     ctx->state[0] = 0x6a09e667f3bcc908;
     ctx->state[1] = 0xbb67ae8584caa73b;
     ctx->state[2] = 0x3c6ef372fe94f82b;
@@ -117,7 +123,7 @@ void sdc_sha512_init(sdc_sha512_ctx *ctx) {
     ctx->len = 0;
 }
 
-void sdc_sha512_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len) {
+SHA512_STATIC_IF_DISABLED void sdc_sha512_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len) {
     uint64_t bits = (uint64_t)len * 8;
     ctx->count[0] += bits;
 
@@ -147,6 +153,7 @@ void sdc_sha512_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len) {
     }
 }
 
+#if SDC_ENABLE_SHA512
 void sdc_sha512_final(sdc_sha512_ctx *ctx, uint8_t out[64]) {
     size_t i = ctx->len;
     ctx->buffer[i++] = 0x80;
@@ -175,5 +182,45 @@ void sdc_sha512_hash(uint8_t out[64], const uint8_t *in, size_t len) {
     sdc_sha512_update(&ctx, in, len);
     sdc_sha512_final(&ctx, out);
 }
-
 #endif /* SDC_ENABLE_SHA512 */
+
+#if SDC_ENABLE_SHA384
+void sdc_sha384_init(sdc_sha512_ctx *ctx) {
+    sdc_sha512_init(ctx);
+}
+
+void sdc_sha384_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len) {
+    sdc_sha512_update(ctx, data, len);
+}
+
+void sdc_sha384_final(sdc_sha512_ctx *ctx, uint8_t out[48]) {
+    size_t i = ctx->len;
+    ctx->buffer[i++] = 0x80;
+
+    if (ctx->len > 111) {
+        memset(ctx->buffer + i, 0, 128 - i);
+        sdc_sha512_transform(ctx, ctx->buffer);
+        i = 0;
+    }
+    memset(ctx->buffer + i, 0, 112 - i);
+
+    uint64_t high = ctx->count[1];
+    uint64_t low  = ctx->count[0];
+    store64_be(ctx->buffer + 112, high);
+    store64_be(ctx->buffer + 120, low);
+    sdc_sha512_transform(ctx, ctx->buffer);
+
+    for (int j = 0; j < 6; j++) {
+        store64_be(out + 8 * j, ctx->state[j]);
+    }
+}
+
+void sdc_sha384_hash(uint8_t out[48], const uint8_t *in, size_t len) {
+    sdc_sha512_ctx ctx;
+    sdc_sha384_init(&ctx);
+    sdc_sha384_update(&ctx, in, len);
+    sdc_sha384_final(&ctx, out);
+}
+#endif /* SDC_ENABLE_SHA384 */
+
+#endif /* SDC_ENABLE_SHA384 || SDC_ENABLE_SHA512 */

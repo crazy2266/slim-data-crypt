@@ -10,7 +10,7 @@
  *   - NIST SP 800-107: Recommendation for Applications Using Approved
  *     Hash Algorithms
  *
- * Implementation conforms to FIPS 180-4 for SHA-256.
+ * Implementation conforms to FIPS 180-4 for SHA-224 and SHA-256.
  */
 
 #include <string.h>
@@ -18,7 +18,13 @@
 #include <sdcrypt/sha2.h>
 #include <sdcrypt/utils.h>
 
-#if SDC_ENABLE_SHA256
+#if SDC_ENABLE_SHA224 || SDC_ENABLE_SHA256
+
+#if SDC_ENABLE_SHA224 && !SDC_ENABLE_SHA256
+#  define SHA256_STATIC_IF_DISABLED static
+#else
+#  define SHA256_STATIC_IF_DISABLED
+#endif
 
 #define ROTR32(x, n) (((x) >> (n)) | ((x) << (32 - (n))))
 #define Ch(x, y, z)  (((x) & (y)) ^ (~(x) & (z)))
@@ -91,7 +97,7 @@ static void sdc_sha256_transform(sdc_sha256_ctx *ctx, const uint8_t* block) {
     ctx->state[7] += h;
 }
 
-void sdc_sha256_init(sdc_sha256_ctx *ctx) {
+SHA256_STATIC_IF_DISABLED void sdc_sha256_init(sdc_sha256_ctx *ctx) {
     ctx->state[0] = 0x6a09e667;
     ctx->state[1] = 0xbb67ae85;
     ctx->state[2] = 0x3c6ef372;
@@ -104,7 +110,7 @@ void sdc_sha256_init(sdc_sha256_ctx *ctx) {
     ctx->len = 0;
 }
 
-void sdc_sha256_update(sdc_sha256_ctx *ctx, const uint8_t *data, size_t len) {
+SHA256_STATIC_IF_DISABLED void sdc_sha256_update(sdc_sha256_ctx *ctx, const uint8_t *data, size_t len) {
     ctx->count += (uint64_t)len * 8;
 
     if (ctx->len) {
@@ -132,6 +138,7 @@ void sdc_sha256_update(sdc_sha256_ctx *ctx, const uint8_t *data, size_t len) {
     }
 }
 
+#if SDC_ENABLE_SHA256
 void sdc_sha256_final(sdc_sha256_ctx *ctx, uint8_t out[32]) {
     size_t i = ctx->len;
     ctx->buffer[i++] = 0x80;
@@ -156,5 +163,41 @@ void sdc_sha256_hash(uint8_t out[32], const uint8_t *in, size_t len) {
     sdc_sha256_update(&ctx, in, len);
     sdc_sha256_final(&ctx, out);
 }
-
 #endif /* SDC_ENABLE_SHA256 */
+
+#if SDC_ENABLE_SHA224
+void sdc_sha224_init(sdc_sha256_ctx *ctx) {
+    sdc_sha256_init(ctx);
+}
+
+void sdc_sha224_update(sdc_sha256_ctx *ctx, const uint8_t *data, size_t len) {
+    sdc_sha256_update(ctx, data, len);
+}
+
+void sdc_sha224_final(sdc_sha256_ctx *ctx, uint8_t out[28]) {
+    size_t i = ctx->len;
+    ctx->buffer[i++] = 0x80;
+    
+    if (ctx->len > 55) {
+        memset(ctx->buffer + i, 0, 64 - i);
+        sdc_sha256_transform(ctx, ctx->buffer);
+        i = 0;
+    }
+    memset(ctx->buffer + i, 0, 56 - i);
+    store64_be(ctx->buffer + 56, ctx->count);
+    sdc_sha256_transform(ctx, ctx->buffer);
+
+    for (int j = 0; j < 7; j++) {
+        store32_be(out + 4 * j, ctx->state[j]);
+    }
+}
+
+void sdc_sha224_hash(uint8_t out[28], const uint8_t *in, size_t len) {
+    sdc_sha256_ctx ctx;
+    sdc_sha224_init(&ctx);
+    sdc_sha224_update(&ctx, in, len);
+    sdc_sha224_final(&ctx, out);
+}
+#endif /* SDC_ENABLE_SHA224 */
+
+#endif /* SDC_ENABLE_SHA224 || SDC_ENABLE_SHA256 */

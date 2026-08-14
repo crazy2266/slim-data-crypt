@@ -16,7 +16,7 @@
 #if SDC_ENABLE_HMAC
 
 #if !SDC_ENABLE_SHA256
-    #error "HMAC-SHA256 requires SHA256 support"
+#  error "HMAC-SHA256 requires SHA256 support"
 #endif
 
 #ifdef __cplusplus
@@ -34,7 +34,7 @@ void sdc_hmac_sha256_init(sdc_hmac_sha256_ctx *ctx, const uint8_t *key, size_t k
 void sdc_hmac_sha256_update(sdc_hmac_sha256_ctx *ctx, const uint8_t *data, size_t len);
 void sdc_hmac_sha256_final(sdc_hmac_sha256_ctx *ctx, uint8_t out[32]);
 void sdc_hmac_sha256(uint8_t out[32], const uint8_t *key, size_t key_len,
-                 const uint8_t *data, size_t data_len);
+                     const uint8_t *data, size_t data_len);
 
 #ifdef __cplusplus
 }
