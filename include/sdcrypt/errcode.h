@@ -5,7 +5,8 @@
 #define SDC_ERR_OK                         0
 #define SDC_ERR_INVALID_PARAM             -1
 #define SDC_ERR_NOT_IMPLEMENTED           -2
-#define SDC_ERR_RANDOM_FAIL               -3
+#define SDC_ERR_ALREADY_EXISTS            -3
+#define SDC_ERR_RANDOM_FAIL               -4
 
 #define SDC_ERR_INTEGER_GENPRIME_TIMEOUT  -10
 

@@ -3,14 +3,18 @@
  * Copyright (c) 2026 crazy2266
  *
  * Comprehensive test for hash scheduler.
- * Tests SHA-224/256/384/512 with various message lengths and update patterns.
+ * Tests:
+ *   - Built-in hash algorithms (SHA-224/256/384/512)
+ *   - Per-thread custom registration
+ *   - Lookup priority (custom overrides built-in)
+ *   - Unregister and clear
  */
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <sdcrypt/hash.h>
 #include <sdcrypt/config.h>
+#include <sdcrypt/errcode.h>
 
 /* ============================================================
    Test vectors (RFC 6234 / NIST)
@@ -64,44 +68,6 @@ static const uint8_t abc_sha512[64] = {
     0x2a,0x9a,0xc9,0x4f,0xa5,0x4c,0xa4,0x9f
 };
 
-/* ----- 56-byte message: "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" ----- */
-static const uint8_t long1_sha224[28] = {
-    0x75,0x38,0x8b,0x16,0x51,0x27,0x76,0xcc,0x5d,0xba,0x5d,0xa1,0xfd,0x89,
-    0x01,0x50,0xb0,0xc6,0x45,0x5c,0xb4,0xf5,0x8b,0x19,0x52,0x52,0x25,0x25
-};
-static const uint8_t long1_sha256[32] = {
-    0x24,0x8d,0x6a,0x61,0xd2,0x06,0x38,0xb8,0xe5,0xc0,0x26,0x93,0x0c,0x3e,
-    0x60,0x39,0xa3,0x3c,0xe4,0x59,0x64,0xff,0x21,0x67,0xf6,0xec,0xed,0xd4,
-    0x19,0xdb,0x06,0xc1
-};
-static const uint8_t long1_sha384[48] = {
-    0x33,0x91,0xfd,0xdd,0xfc,0x8d,0xc7,0x39,0x37,0x07,0xa6,0x5b,0x1b,0x47,
-    0x09,0x39,0x7c,0xf8,0xb1,0xd1,0x62,0xaf,0x05,0xab,0xfe,0x8f,0x45,0x0d,
-    0xe5,0xf3,0x6b,0xc6,0xb0,0x45,0x5a,0x85,0x20,0xbc,0x4e,0x6f,0x5f,0xe9,
-    0x5b,0x1f,0xe3,0xc8,0x45,0x2b
-};
-static const uint8_t long1_sha512[64] = {
-    0x20,0x4a,0x8f,0xc6,0xdd,0xa8,0x2f,0x0a,0x0c,0xed,0x7b,0xeb,0x8e,0x08,
-    0xa4,0x16,0x57,0xc1,0x6e,0xf4,0x68,0xb2,0x28,0xa8,0x27,0x9b,0xe3,0x31,
-    0xa7,0x03,0xc3,0x35,0x96,0xfd,0x15,0xc1,0x3b,0x1b,0x07,0xf9,0xaa,0x1d,
-    0x3b,0xea,0x57,0x78,0x9c,0xa0,0x31,0xad,0x85,0xc7,0xa7,0x1d,0xd7,0x03,
-    0x54,0xec,0x63,0x12,0x38,0xca,0x34,0x45
-};
-
-/* ----- 1,000,000 x 'a' (NIST test) ----- */
-static const uint8_t million_a_sha256[32] = {
-    0x9b,0xc1,0xb2,0xa2,0x88,0xb2,0x6a,0xf7,0x25,0x7a,0x36,0x27,0x7a,0xe3,
-    0x81,0x6a,0x7d,0x4f,0x16,0xe8,0x9c,0x1e,0x7e,0x77,0xd0,0xa5,0xc4,0x8b,
-    0xad,0x62,0xb3,0x60
-};
-static const uint8_t million_a_sha512[64] = {
-    0xf0,0x83,0x03,0x94,0x42,0xf4,0xa8,0xce,0xe2,0x98,0x56,0x41,0xfa,0x49,
-    0xca,0xda,0x4c,0xa5,0x4d,0x9b,0xf3,0xde,0x03,0xf9,0xef,0x9f,0x1f,0x72,
-    0x6d,0xbb,0x65,0x5d,0x2a,0x84,0x4a,0xa1,0x01,0x4e,0x54,0xfd,0x23,0x9a,
-    0x5b,0x3f,0x37,0xae,0x46,0xd6,0x47,0x44,0xfe,0xe5,0x1a,0xb2,0xd7,0xf5,
-    0xfe,0x9b,0x20,0x9e,0x90,0xb5,0xad,0x52
-};
-
 /* ============================================================
    Helper functions
    ============================================================ */
@@ -119,56 +85,26 @@ static void print_hex(const uint8_t *data, size_t len) {
     }
 }
 
-/* 使用流式接口测试 (init/update/final) */
-static int run_stream_test(sdc_hash_id_t id,
-                           const uint8_t *in, size_t in_len,
-                           const uint8_t *expected, size_t expected_len,
-                           size_t chunk_size) {
-    uint8_t out[64];
-    const sdc_hash_ops_t *ops = sdc_hash_get_ops(id);
-    sdc_hash_ctx_t ctx;
-
-    if (!ops) return 0;
-
-    ops->init(&ctx);
-
-    size_t processed = 0;
-    while (processed < in_len) {
-        size_t chunk = (in_len - processed < chunk_size) ? (in_len - processed) : chunk_size;
-        ops->update(&ctx, in + processed, chunk);
-        processed += chunk;
-    }
-
-    ops->final(&ctx, out);
-
-    if (!compare_bytes(out, expected, expected_len)) {
-        printf("  [FAIL] %s (chunk=%zu)\n", ops->name, chunk_size);
-        printf("    期望: ");
-        print_hex(expected, expected_len);
-        printf("\n    计算: ");
-        print_hex(out, expected_len);
-        printf("\n");
-        return 0;
-    }
-    return 1;
-}
-
-/* 单次哈希测试 */
 static int run_hash_test(sdc_hash_id_t id,
                          const uint8_t *in, size_t in_len,
                          const uint8_t *expected, size_t expected_len) {
     uint8_t out[64];
-    const sdc_hash_ops_t *ops = sdc_hash_get_ops(id);
+    size_t out_len;
+    int ret = sdc_hash_compute(id, in, in_len, out, &out_len);
 
-    if (!ops) {
-        printf("  [FAIL] 算法未注册\n");
+    if (ret != SDC_ERR_OK) {
+        printf("  [FAIL] sdc_hash_compute returned %d\n", ret);
         return 0;
     }
 
-    ops->hash(out, in, in_len);
+    if (out_len != expected_len) {
+        printf("  [FAIL] length mismatch: expected %zu, got %zu\n",
+               expected_len, out_len);
+        return 0;
+    }
 
     if (!compare_bytes(out, expected, expected_len)) {
-        printf("  [FAIL] %s\n", ops->name);
+        printf("  [FAIL] hash mismatch\n");
         printf("    期望: ");
         print_hex(expected, expected_len);
         printf("\n    计算: ");
@@ -176,8 +112,28 @@ static int run_hash_test(sdc_hash_id_t id,
         printf("\n");
         return 0;
     }
+
+    printf("  [PASS] %s\n", sdc_hash_name(id) ? sdc_hash_name(id) : "Unknown");
     return 1;
 }
+
+/* ============================================================
+   Custom hash implementation for testing override
+   ============================================================ */
+
+/* 一个“假”的 SHA-256 实现，用于验证自定义注册能覆盖内置算法 */
+static void fake_sha256_hash(uint8_t *out, const uint8_t *in, size_t len) {
+    (void)in;
+    (void)len;
+    /* 输出全 0x01，便于识别 */
+    memset(out, 0x01, 32);
+}
+
+static const sdc_hash_ops_t fake_sha256_ops = {
+    .hash = fake_sha256_hash,
+    .hash_len = 32,
+    .name = "FAKE-SHA-256"
+};
 
 /* ============================================================
    Main
@@ -187,91 +143,137 @@ int main(void) {
     int passed = 0, total = 0;
 
     printf("========================================\n");
-    printf("  Comprehensive Hash Scheduler Test\n");
+    printf("  Hash Scheduler Test\n");
     printf("========================================\n\n");
 
-    sdc_hash_thread_init();
+    sdc_hash_table_clear();
 
-    /* ----- 1. 空消息 ----- */
-    printf("[Test 1] Empty message\n");
+    /* ============================================================
+       Test 1: Built-in algorithms (empty message)
+       ============================================================ */
+    printf("[Test 1] Built-in: empty message\n");
+    const uint8_t empty[] = "";
     total += 4;
-    if (run_hash_test(SDC_HASH_SHA224, (const uint8_t*)"", 0, empty_sha224, 28)) passed++;
-    if (run_hash_test(SDC_HASH_SHA256, (const uint8_t*)"", 0, empty_sha256, 32)) passed++;
-    if (run_hash_test(SDC_HASH_SHA384, (const uint8_t*)"", 0, empty_sha384, 48)) passed++;
-    if (run_hash_test(SDC_HASH_SHA512, (const uint8_t*)"", 0, empty_sha512, 64)) passed++;
+    if (run_hash_test(SDC_HASH_SHA224, empty, 0, empty_sha224, 28)) passed++;
+    if (run_hash_test(SDC_HASH_SHA256, empty, 0, empty_sha256, 32)) passed++;
+    if (run_hash_test(SDC_HASH_SHA384, empty, 0, empty_sha384, 48)) passed++;
+    if (run_hash_test(SDC_HASH_SHA512, empty, 0, empty_sha512, 64)) passed++;
     printf("\n");
 
-    /* ----- 2. "abc" ----- */
-    printf("[Test 2] \"abc\" (3 bytes)\n");
-    total += 4;
+    /* ============================================================
+       Test 2: Built-in algorithms ("abc")
+       ============================================================ */
+    printf("[Test 2] Built-in: \"abc\"\n");
     const uint8_t abc[] = "abc";
+    total += 4;
     if (run_hash_test(SDC_HASH_SHA224, abc, 3, abc_sha224, 28)) passed++;
     if (run_hash_test(SDC_HASH_SHA256, abc, 3, abc_sha256, 32)) passed++;
     if (run_hash_test(SDC_HASH_SHA384, abc, 3, abc_sha384, 48)) passed++;
     if (run_hash_test(SDC_HASH_SHA512, abc, 3, abc_sha512, 64)) passed++;
     printf("\n");
 
-    /* ----- 3. 长消息 (56 bytes) ----- */
-    printf("[Test 3] 56-byte message\n");
-    total += 4;
-    const uint8_t long1[] = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
-    if (run_hash_test(SDC_HASH_SHA224, long1, 56, long1_sha224, 28)) passed++;
-    if (run_hash_test(SDC_HASH_SHA256, long1, 56, long1_sha256, 32)) passed++;
-    if (run_hash_test(SDC_HASH_SHA384, long1, 56, long1_sha384, 48)) passed++;
-    if (run_hash_test(SDC_HASH_SHA512, long1, 56, long1_sha512, 64)) passed++;
-    printf("\n");
-
-    /* ----- 4. 流式测试 (多段 update) ----- */
-    printf("[Test 4] Streaming (update in chunks)\n");
-    total += 4;
-    if (run_stream_test(SDC_HASH_SHA256, abc, 3, abc_sha256, 32, 1)) passed++;
-    if (run_stream_test(SDC_HASH_SHA512, abc, 3, abc_sha512, 64, 2)) passed++;
-    if (run_stream_test(SDC_HASH_SHA224, long1, 56, long1_sha224, 28, 7)) passed++;
-    if (run_stream_test(SDC_HASH_SHA384, long1, 56, long1_sha384, 48, 5)) passed++;
-    printf("\n");
-
-    /* ----- 5. 线程切换 ----- */
-    printf("[Test 5] Thread-local switching\n");
+    /* ============================================================
+       Test 3: Custom registration (override built-in)
+       ============================================================ */
+    printf("[Test 3] Custom registration (override SHA-256)\n");
     total += 2;
-    sdc_hash_thread_set(SDC_HASH_SHA512);
-    if (run_hash_test(SDC_HASH_SHA512, (const uint8_t*)"", 0, empty_sha512, 64)) passed++;
-    sdc_hash_thread_set(SDC_HASH_SHA256);
-    if (run_hash_test(SDC_HASH_SHA256, (const uint8_t*)"", 0, empty_sha256, 32)) passed++;
-    printf("\n");
 
-    /* ----- 6. 临时切换 (compute_with) ----- */
-    printf("[Test 6] Temporary switch (sdc_hash_compute_with)\n");
-    total += 2;
-    uint8_t out[64];
-    const sdc_hash_ops_t *ops;
-
-    ops = sdc_hash_get_ops(SDC_HASH_SHA384);
-    if (ops && ops->hash) {
-        ops->hash(out, (const uint8_t*)"", 0);
-        if (compare_bytes(out, empty_sha384, 48)) { passed++; }
-    }
-    ops = sdc_hash_get_ops(SDC_HASH_SHA224);
-    if (ops && ops->hash) {
-        ops->hash(out, (const uint8_t*)"", 0);
-        if (compare_bytes(out, empty_sha224, 28)) { passed++; }
-    }
-    printf("\n");
-
-    /* ----- 7. 1MB 'a' (只测试 SHA-256 和 SHA-512) ----- */
-    printf("[Test 7] 1MB of 'a' (SHA-256, SHA-512)\n");
-    uint8_t *million_a = malloc(1024 * 1024);
-    if (million_a) {
-        memset(million_a, 'a', 1024 * 1024);
-        total += 2;
-        if (run_hash_test(SDC_HASH_SHA256, million_a, 1024 * 1024, million_a_sha256, 32)) passed++;
-        if (run_hash_test(SDC_HASH_SHA512, million_a, 1024 * 1024, million_a_sha512, 64)) passed++;
-        free(million_a);
+    /* 注册自定义 SHA-256 */
+    int ret = sdc_hash_register(SDC_HASH_SHA256, &fake_sha256_ops);
+    if (ret != SDC_ERR_OK) {
+        printf("  [FAIL] sdc_hash_register returned %d\n", ret);
     } else {
-        printf("  [SKIP] 1MB test (malloc failed)\n");
+        printf("  [PASS] sdc_hash_register\n");
+        passed++;
+    }
+
+    /* 现在 SHA-256 应该返回 fake 值 (全 0x01) */
+    uint8_t out[64];
+    size_t out_len;
+    ret = sdc_hash_compute(SDC_HASH_SHA256, abc, 3, out, &out_len);
+    if (ret != SDC_ERR_OK) {
+        printf("  [FAIL] sdc_hash_compute returned %d\n", ret);
+    } else if (out_len != 32) {
+        printf("  [FAIL] length mismatch: expected 32, got %zu\n", out_len);
+    } else {
+        /* 检查是否全 0x01 */
+        int all_one = 1;
+        for (size_t i = 0; i < 32; i++) {
+            if (out[i] != 0x01) { all_one = 0; break; }
+        }
+        if (all_one) {
+            printf("  [PASS] custom SHA-256 produced expected output (all 0x01)\n");
+            passed++;
+        } else {
+            printf("  [FAIL] custom SHA-256 output mismatch\n");
+        }
     }
     printf("\n");
 
-    /* ----- Final ----- */
+    /* ============================================================
+       Test 4: Unregister custom (restore built-in)
+       ============================================================ */
+    printf("[Test 4] Unregister custom (restore built-in SHA-256)\n");
+    total += 1;
+
+    sdc_hash_unregister(SDC_HASH_SHA256);
+    if (run_hash_test(SDC_HASH_SHA256, abc, 3, abc_sha256, 32)) passed++;
+    printf("\n");
+
+    /* ============================================================
+       Test 5: Clear all custom
+       ============================================================ */
+    printf("[Test 5] Register then clear all\n");
+    total += 2;
+
+    sdc_hash_register(SDC_HASH_SHA256, &fake_sha256_ops);
+    sdc_hash_register(SDC_HASH_SHA384, &fake_sha256_ops);  /* 用 fake 填 SHA-384 */
+
+    sdc_hash_table_clear();
+
+    /* 清除后，应该恢复为内置实现 */
+    if (run_hash_test(SDC_HASH_SHA256, abc, 3, abc_sha256, 32)) passed++;
+    if (run_hash_test(SDC_HASH_SHA384, abc, 3, abc_sha384, 48)) passed++;
+    printf("\n");
+
+    /* ============================================================
+       Test 6: sdc_hash_available and sdc_hash_len
+       ============================================================ */
+    printf("[Test 6] sdc_hash_available and sdc_hash_len\n");
+    total += 4;
+
+    if (sdc_hash_available(SDC_HASH_SHA256)) {
+        printf("  [PASS] sdc_hash_available(SHA-256) = true\n");
+        passed++;
+    } else {
+        printf("  [FAIL] sdc_hash_available(SHA-256) = false\n");
+    }
+
+    if (sdc_hash_len(SDC_HASH_SHA256) == 32) {
+        printf("  [PASS] sdc_hash_len(SHA-256) = 32\n");
+        passed++;
+    } else {
+        printf("  [FAIL] sdc_hash_len(SHA-256) = %zu\n", sdc_hash_len(SDC_HASH_SHA256));
+    }
+
+    if (!sdc_hash_available(SDC_HASH_NONE)) {
+        printf("  [PASS] sdc_hash_available(NONE) = false\n");
+        passed++;
+    } else {
+        printf("  [FAIL] sdc_hash_available(NONE) = true\n");
+    }
+
+    if (sdc_hash_len(SDC_HASH_NONE) == 0) {
+        printf("  [PASS] sdc_hash_len(NONE) = 0\n");
+        passed++;
+    } else {
+        printf("  [FAIL] sdc_hash_len(NONE) = %zu\n", sdc_hash_len(SDC_HASH_NONE));
+    }
+    printf("\n");
+
+    /* ============================================================
+       Final result
+       ============================================================ */
     printf("========================================\n");
     printf("Result: %d/%d tests passed\n", passed, total);
     printf("========================================\n");

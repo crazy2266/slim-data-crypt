@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  * Copyright (c) 2026 crazy2266
  *
- * Hash interface API file.
+ * Hash algorithm lookup table - public interface.
  */
 
 #ifndef SDC_HASH_H
@@ -10,15 +10,15 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <sdcrypt/sha2.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* ============================================================
-   Hash algorithm ID
+   Hash algorithm IDs
    ============================================================ */
+
 typedef enum {
     SDC_HASH_NONE = 0,
     SDC_HASH_SHA224,
@@ -29,51 +29,44 @@ typedef enum {
 } sdc_hash_id_t;
 
 /* ============================================================
-   Hash operation table
+   Hash operations
    ============================================================ */
+
 typedef struct {
-    void (*init)(void *ctx);
-    void (*update)(void *ctx, const uint8_t *data, size_t len);
-    void (*final)(void *ctx, uint8_t *out);
     void (*hash)(uint8_t *out, const uint8_t *in, size_t len);
     size_t hash_len;
     const char *name;
 } sdc_hash_ops_t;
 
-typedef union {
-    sdc_sha256_ctx sha224_256;
-    sdc_sha512_ctx sha384_512;
-} sdc_hash_ctx_t;
-
 /* ============================================================
-   API
+   API - per-thread custom table + global built-in table
    ============================================================ */
 
-/* Initialize current thread hash algorithm (default: SHA-256) */
-void sdc_hash_thread_init(void);
+/* Register a custom hash implementation for current thread only */
+int sdc_hash_register(sdc_hash_id_t id, const sdc_hash_ops_t *ops);
 
-/* Set current thread hash algorithm */
-void sdc_hash_thread_set(sdc_hash_id_t id);
+/* Unregister a custom hash implementation for current thread */
+void sdc_hash_unregister(sdc_hash_id_t id);
 
-/* Get current thread hash algorithm ID */
-sdc_hash_id_t sdc_hash_thread_get(void);
+/* Clear all custom hash implementations for current thread */
+void sdc_hash_table_clear(void);
 
-/* Get hash operation table by ID */
+/* Lookup hash ops for current thread (custom first, then built-in) */
 const sdc_hash_ops_t *sdc_hash_get_ops(sdc_hash_id_t id);
 
-/* Compute hash using current thread algorithm */
-void sdc_hash_compute(const uint8_t *in, size_t in_len, uint8_t *out);
+/* Check if a hash algorithm is available in current thread */
+int sdc_hash_available(sdc_hash_id_t id);
 
-/* Compute hash using specified algorithm */
-void sdc_hash_compute_with(sdc_hash_id_t id,
-                           const uint8_t *in, size_t in_len,
-                           uint8_t *out);
-
-/* Get current thread hash length */
-size_t sdc_hash_current_len(void);
-
-/* Get hash length for specified algorithm */
+/* Get hash length */
 size_t sdc_hash_len(sdc_hash_id_t id);
+
+/* Get hash name */
+const char *sdc_hash_name(sdc_hash_id_t id);
+
+/* Convenience: compute hash with given ID */
+int sdc_hash_compute(sdc_hash_id_t id,
+                     const uint8_t *in, size_t in_len,
+                     uint8_t *out, size_t *out_len);
 
 #ifdef __cplusplus
 }

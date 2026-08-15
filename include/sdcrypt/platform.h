@@ -48,4 +48,6 @@ typedef uint64_t sdc_dword_t;
 #  define sdc_word_ctz __builtin_ctz
 #endif
 
+#define SDC_THREAD_LOCAL __thread
+
 #endif /* SDC_PLATFORM_H */
