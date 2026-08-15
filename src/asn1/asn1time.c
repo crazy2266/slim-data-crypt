@@ -5,9 +5,9 @@
  * ASN.1 time parsing implementation.
  */
 
+#include <string.h>
 #include <sdcrypt/asn1time.h>
 #include <sdcrypt/errcode.h>
-#include <string.h>
 #include <sdcrypt/platform.h>
 
 #if SDC_ASN1_TIME_PROVIDER == 0

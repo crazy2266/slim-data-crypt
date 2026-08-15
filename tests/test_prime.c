@@ -58,25 +58,23 @@ static void print_hex(const char *label, const sdc_word_t *a, size_t len) {
     putchar('\n');
 }
 
-static double time_diff_sec(struct timespec *start, struct timespec *end) {
-    double sec = (double)(end->tv_sec - start->tv_sec);
-    sec += (double)(end->tv_nsec - start->tv_nsec) / 1e9;
-    return sec;
+static double get_time_ms(void) {
+    return (double)clock() * 1000.0 / CLOCKS_PER_SEC;
 }
 
-static void print_time(const char *label, double sec) {
-    if (sec >= 1.0) printf("%s: %.3f s\n", label, sec);
-    else if (sec >= 1e-3) printf("%s: %.3f ms\n", label, sec * 1e3);
-    else printf("%s: %.3f us\n", label, sec * 1e6);
+static void print_time(const char *label, double ms) {
+    if (ms >= 1000.0) printf("%s: %.3f s\n", label, ms / 1000.0);
+    else if (ms >= 1.0) printf("%s: %.3f ms\n", label, ms);
+    else printf("%s: %.3f us\n", label, ms * 1000.0);
 }
-
-/* ========== RSA key generation and test ========== */
 
 static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     const size_t prime_len = rsa_len / 2;
     const size_t rsa_bits = rsa_len * SDC_WORD_BITS;
     const size_t prime_bits = prime_len * SDC_WORD_BITS;
-    struct timespec t_start, t_end;
+    double t_start, t_end;
+    double t_total = 0.0;
+    double t_enc = 0.0, t_dec = 0.0;
 
     printf("\n============================================================\n");
     printf("RSA-%zu KEY GENERATION TEST\n", rsa_bits);
@@ -96,35 +94,30 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     if (tmp == NULL) return test_fail("rsa_keygen", "scratch allocation failed");
 
     int ret;
-    double t_total = 0.0;
-    double t_enc = 0.0, t_dec = 0.0;
 
-    /* ---- 1. Generate p and q ---- */
     printf("\nGenerating %zu-bit prime p...\n", prime_bits);
-    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
+    if (do_perf) t_start = get_time_ms();
     ret = sdc_int_gen_prime(p, tmp, prime_len);
-    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_total += time_diff_sec(&t_start, &t_end); }
+    if (do_perf) { t_end = get_time_ms(); t_total += t_end - t_start; }
     if (ret != 0) { free(tmp); return test_fail("p generation", "sdc_int_gen_prime failed"); }
     print_hex("p", p, prime_len);
 
     printf("\nGenerating %zu-bit prime q...\n", prime_bits);
-    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
+    if (do_perf) t_start = get_time_ms();
     do { ret = sdc_int_gen_prime(q, tmp, prime_len); } while (ret == 0 && eq_words(p, q, prime_len));
-    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_total += time_diff_sec(&t_start, &t_end); }
+    if (do_perf) { t_end = get_time_ms(); t_total += t_end - t_start; }
     if (ret != 0) { free(tmp); return test_fail("q generation", "sdc_int_gen_prime failed"); }
     print_hex("q", q, prime_len);
     test_ok("p and q generated (p != q)");
 
-    /* ---- 2. n = p * q ---- */
     printf("\nCalculating n = p * q...\n");
-    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
+    if (do_perf) t_start = get_time_ms();
     memset(pq_full, 0, sizeof(pq_full));
     sdc_int_mul(pq_full, p, q, prime_len);
     memcpy(n, pq_full, sizeof(n));
-    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_total += time_diff_sec(&t_start, &t_end); }
+    if (do_perf) { t_end = get_time_ms(); t_total += t_end - t_start; }
     print_hex("n", n, rsa_len);
 
-    /* Verify n has the correct bit length */
     sdc_word_t top_bit_mask = 0;
 #if SDC_64BIT
     top_bit_mask = UINT64_C(0x8000000000000000);
@@ -137,7 +130,6 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     }
     test_ok("n has expected bit length");
 
-    /* ---- 3. phi = (p-1) * (q-1) ---- */
     memset(p1, 0, sizeof(p1)); memset(q1, 0, sizeof(q1));
     memcpy(p1, p, prime_len * sizeof(sdc_word_t));
     memcpy(q1, q, prime_len * sizeof(sdc_word_t));
@@ -146,9 +138,9 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     memset(phi_full, 0, sizeof(phi_full));
 
     printf("\nCalculating phi = (p-1) * (q-1)...\n");
-    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
+    if (do_perf) t_start = get_time_ms();
     sdc_int_mul(phi_full, p1, q1, rsa_len);
-    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_total += time_diff_sec(&t_start, &t_end); }
+    if (do_perf) { t_end = get_time_ms(); t_total += t_end - t_start; }
 
     for (size_t i = rsa_len; i < 2 * rsa_len; i++) {
         if (phi_full[i] != 0) {
@@ -159,7 +151,6 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     memcpy(phi, phi_full, sizeof(phi));
     print_hex("phi", phi, rsa_len);
 
-    /* ---- 4. Check gcd(e, phi) == 1 ---- */
     printf("\nChecking gcd(65537, phi)...\n");
     if (sdc_int_mod_word(phi, RSA_PUB_EXP, rsa_len) == 0) {
         free(tmp);
@@ -167,12 +158,11 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     }
     test_ok("gcd(65537, phi) == 1");
 
-    /* ---- 5. d = e^-1 mod phi ---- */
     printf("\nCalculating d = e^-1 mod phi...\n");
-    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
+    if (do_perf) t_start = get_time_ms();
     memset(d, 0, sizeof(d));
     sdc_int_modinv(d, phi, RSA_PUB_EXP, tmp, rsa_len);
-    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_total += time_diff_sec(&t_start, &t_end); }
+    if (do_perf) { t_end = get_time_ms(); t_total += t_end - t_start; }
     if (sdc_int_eq_word(d, 0, rsa_len)) {
         free(tmp);
         return test_fail("d", "modinv returned zero");
@@ -180,7 +170,6 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     print_hex("d", d, rsa_len);
     test_ok("d = e^-1 mod phi computed");
 
-    /* ---- 6. Generate random message m < n ---- */
     printf("\nGenerating random message m < n...\n");
     for (;;) {
         ret = sdc_random_bytes((uint8_t *)m, rsa_len * sizeof(sdc_word_t));
@@ -190,7 +179,6 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     if (sdc_int_eq_word(m, 0, rsa_len)) m[0] = 2;
     print_hex("m", m, rsa_len);
 
-    /* ---- 7. Montgomery setup ---- */
     sdc_word_t ninv = sdc_int_calculate_ninv(n[0]);
     printf("\nninv = ");
 #if SDC_64BIT
@@ -200,20 +188,18 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
 #endif
     printf("\n");
 
-    /* ---- 8. Encrypt: c = m^e mod n ---- */
     printf("\nEncrypting with e=65537...\n");
-    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
+    if (do_perf) t_start = get_time_ms();
     memset(c, 0, sizeof(c));
     sdc_int_mont_modexp_word(c, m, e_arr, 1, n, tmp, rsa_len, ninv);
-    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_enc = time_diff_sec(&t_start, &t_end); }
+    if (do_perf) { t_end = get_time_ms(); t_enc = t_end - t_start; }
     print_hex("c (ciphertext)", c, rsa_len);
 
-    /* ---- 9. Decrypt: m_dec = c^d mod n ---- */
     printf("\nDecrypting with d...\n");
-    if (do_perf) clock_gettime(CLOCK_MONOTONIC, &t_start);
+    if (do_perf) t_start = get_time_ms();
     memset(m_dec, 0, sizeof(m_dec));
     sdc_int_mont_modexp_word(m_dec, c, d, rsa_len, n, tmp, rsa_len, ninv);
-    if (do_perf) { clock_gettime(CLOCK_MONOTONIC, &t_end); t_dec = time_diff_sec(&t_start, &t_end); }
+    if (do_perf) { t_end = get_time_ms(); t_dec = t_end - t_start; }
     print_hex("m_dec (decrypted)", m_dec, rsa_len);
 
     if (!eq_words(m, m_dec, rsa_len)) {
@@ -222,7 +208,6 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     }
     test_ok("RSA encryption/decryption successful");
 
-    /* ---- 10. Variable-time cross-check ---- */
     printf("\nVariable-time decrypt cross-check...\n");
     memset(m_dec, 0, sizeof(m_dec));
     sdc_int_mont_modexp_word_vartime(m_dec, c, d, rsa_len, n, tmp, rsa_len, ninv);
@@ -248,8 +233,6 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     return 0;
 }
 
-/* ========== Main ========== */
-
 int main(void) {
     printf("============================================================\n");
     printf("Slim Data Crypt - Prime Generation & RSA Test\n");
@@ -258,10 +241,7 @@ int main(void) {
     size_t rsa2048_len = sdc_get_len_by_bits(2048);
     size_t rsa4096_len = sdc_get_len_by_bits(4096);
 
-    /* RSA-2048 with performance */
     if (test_rsa_keygen(rsa2048_len, 1) != 0) return 1;
-
-    /* RSA-4096 with performance */
     if (test_rsa_keygen(rsa4096_len, 1) != 0) return 1;
 
     printf("\n============================================================\n");
@@ -282,4 +262,4 @@ int main(void) {
     return 0;
 }
 
-#endif /* SDC_ENABLE_INTEGER */
+#endif
