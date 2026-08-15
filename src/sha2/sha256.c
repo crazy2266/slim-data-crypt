@@ -97,19 +97,6 @@ static void sdc_sha256_transform(sdc_sha256_ctx *ctx, const uint8_t* block) {
     ctx->state[7] += h;
 }
 
-SHA256_STATIC_IF_DISABLED void sdc_sha256_init(sdc_sha256_ctx *ctx) {
-    ctx->state[0] = 0x6a09e667;
-    ctx->state[1] = 0xbb67ae85;
-    ctx->state[2] = 0x3c6ef372;
-    ctx->state[3] = 0xa54ff53a;
-    ctx->state[4] = 0x510e527f;
-    ctx->state[5] = 0x9b05688c;
-    ctx->state[6] = 0x1f83d9ab;
-    ctx->state[7] = 0x5be0cd19;
-    ctx->count = 0;
-    ctx->len = 0;
-}
-
 SHA256_STATIC_IF_DISABLED void sdc_sha256_update(sdc_sha256_ctx *ctx, const uint8_t *data, size_t len) {
     ctx->count += (uint64_t)len * 8;
 
@@ -139,6 +126,19 @@ SHA256_STATIC_IF_DISABLED void sdc_sha256_update(sdc_sha256_ctx *ctx, const uint
 }
 
 #if SDC_ENABLE_SHA256
+void sdc_sha256_init(sdc_sha256_ctx *ctx) {
+    ctx->state[0] = 0x6a09e667;
+    ctx->state[1] = 0xbb67ae85;
+    ctx->state[2] = 0x3c6ef372;
+    ctx->state[3] = 0xa54ff53a;
+    ctx->state[4] = 0x510e527f;
+    ctx->state[5] = 0x9b05688c;
+    ctx->state[6] = 0x1f83d9ab;
+    ctx->state[7] = 0x5be0cd19;
+    ctx->count = 0;
+    ctx->len = 0;
+}
+
 void sdc_sha256_final(sdc_sha256_ctx *ctx, uint8_t out[32]) {
     size_t i = ctx->len;
     ctx->buffer[i++] = 0x80;
@@ -167,7 +167,16 @@ void sdc_sha256_hash(uint8_t out[32], const uint8_t *in, size_t len) {
 
 #if SDC_ENABLE_SHA224
 void sdc_sha224_init(sdc_sha256_ctx *ctx) {
-    sdc_sha256_init(ctx);
+    ctx->state[0] = 0xc1059ed8;
+    ctx->state[1] = 0x367cd507;
+    ctx->state[2] = 0x3070dd17;
+    ctx->state[3] = 0xf70e5939;
+    ctx->state[4] = 0xffc00b31;
+    ctx->state[5] = 0x68581511;
+    ctx->state[6] = 0x64f98fa7;
+    ctx->state[7] = 0xbefa4fa4;
+    ctx->count = 0;
+    ctx->len = 0;
 }
 
 void sdc_sha224_update(sdc_sha256_ctx *ctx, const uint8_t *data, size_t len) {

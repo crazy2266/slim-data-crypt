@@ -109,20 +109,6 @@ static void sdc_sha512_transform(sdc_sha512_ctx *ctx, const uint8_t* block) {
     ctx->state[7] += h;
 }
 
-SHA512_STATIC_IF_DISABLED void sdc_sha512_init(sdc_sha512_ctx *ctx) {
-    ctx->state[0] = 0x6a09e667f3bcc908;
-    ctx->state[1] = 0xbb67ae8584caa73b;
-    ctx->state[2] = 0x3c6ef372fe94f82b;
-    ctx->state[3] = 0xa54ff53a5f1d36f1;
-    ctx->state[4] = 0x510e527fade682d1;
-    ctx->state[5] = 0x9b05688c2b3e6c1f;
-    ctx->state[6] = 0x1f83d9abfb41bd6b;
-    ctx->state[7] = 0x5be0cd19137e2179;
-    ctx->count[0] = 0;
-    ctx->count[1] = 0;
-    ctx->len = 0;
-}
-
 SHA512_STATIC_IF_DISABLED void sdc_sha512_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len) {
     uint64_t bits = (uint64_t)len * 8;
     ctx->count[0] += bits;
@@ -154,6 +140,20 @@ SHA512_STATIC_IF_DISABLED void sdc_sha512_update(sdc_sha512_ctx *ctx, const uint
 }
 
 #if SDC_ENABLE_SHA512
+void sdc_sha512_init(sdc_sha512_ctx *ctx) {
+    ctx->state[0] = 0x6a09e667f3bcc908;
+    ctx->state[1] = 0xbb67ae8584caa73b;
+    ctx->state[2] = 0x3c6ef372fe94f82b;
+    ctx->state[3] = 0xa54ff53a5f1d36f1;
+    ctx->state[4] = 0x510e527fade682d1;
+    ctx->state[5] = 0x9b05688c2b3e6c1f;
+    ctx->state[6] = 0x1f83d9abfb41bd6b;
+    ctx->state[7] = 0x5be0cd19137e2179;
+    ctx->count[0] = 0;
+    ctx->count[1] = 0;
+    ctx->len = 0;
+}
+
 void sdc_sha512_final(sdc_sha512_ctx *ctx, uint8_t out[64]) {
     size_t i = ctx->len;
     ctx->buffer[i++] = 0x80;
@@ -186,7 +186,17 @@ void sdc_sha512_hash(uint8_t out[64], const uint8_t *in, size_t len) {
 
 #if SDC_ENABLE_SHA384
 void sdc_sha384_init(sdc_sha512_ctx *ctx) {
-    sdc_sha512_init(ctx);
+    ctx->state[0] = 0xcbbb9d5dc1059ed8;
+    ctx->state[1] = 0x629a292a367cd507;
+    ctx->state[2] = 0x9159015a3070dd17;
+    ctx->state[3] = 0x152fecd8f70e5939;
+    ctx->state[4] = 0x67332667ffc00b31;
+    ctx->state[5] = 0x8eb44a8768581511;
+    ctx->state[6] = 0xdb0c2e0d64f98fa7;
+    ctx->state[7] = 0x47b5481dbefa4fa4;
+    ctx->count[0] = 0;
+    ctx->count[1] = 0;
+    ctx->len = 0;
 }
 
 void sdc_sha384_update(sdc_sha512_ctx *ctx, const uint8_t *data, size_t len) {
