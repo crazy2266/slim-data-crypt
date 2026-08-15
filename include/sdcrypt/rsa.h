@@ -49,7 +49,12 @@ typedef struct {
 // nlen must be a multiple of SDC_WORD_SIZE
 int sdc_rsa_pubkey_init(sdc_rsa_pubkey_t *pubkey, sdc_word_t e, const uint8_t *n, size_t nlen);
 // len1,len2 must be a multiple of SDC_WORD_SIZE
-int sdc_rsa_privkey_init(sdc_rsa_privkey_t *privkey, const uint8_t *p, const uint8_t *q, const uint8_t *dp, const uint8_t *dq, const uint8_t *qinv, size_t len1, const uint8_t *d, const uint8_t *n, size_t len2);
+int sdc_rsa_privkey_init(sdc_rsa_privkey_t *privkey,
+                         const uint8_t *p, const uint8_t *q,
+                         const uint8_t *dp, const uint8_t *dq,
+                         const uint8_t *qinv, size_t len1,
+                         const uint8_t *d, const uint8_t *n, size_t len2);
+
 #if SDC_ENABLE_RSA_KEYGEN
 int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey, sdc_rsa_privkey_t *privkey, sdc_word_t e, size_t bits);
 #endif
@@ -59,16 +64,16 @@ int sdc_rsaes_pkcs1v15_encrypt(const sdc_rsa_pubkey_t *pubkey, const uint8_t *pl
 int sdc_rsaes_pkcs1v15_decrypt(const sdc_rsa_privkey_t *privkey, const uint8_t *cipher, size_t cipher_len, uint8_t *plain, size_t *plain_len);
 #endif
 #if SDC_ENABLE_RSASSA_PKCS1V15
-int sdc_rsassa_pkcs1v15_sign(const sdc_rsa_privkey_t *privkey, const uint8_t *hash, size_t hash_len, uint8_t *sig, size_t *sig_len);
-int sdc_rsassa_pkcs1v15_verify(const sdc_rsa_pubkey_t *pubkey, const uint8_t *hash, size_t hash_len, const uint8_t *sig, size_t sig_len);
+int sdc_rsassa_pkcs1v15_sign(const sdc_rsa_privkey_t *privkey, const uint8_t *msg, size_t msg_len, uint8_t *sig, size_t *sig_len);
+int sdc_rsassa_pkcs1v15_verify(const sdc_rsa_pubkey_t *pubkey, const uint8_t *msg, size_t msg_len, const uint8_t *sig, size_t sig_len);
 #endif
 #if SDC_ENABLE_RSAES_OAEP
 int sdc_rsaes_oaep_encrypt(const sdc_rsa_pubkey_t *pubkey, const uint8_t *plain, size_t plain_len, uint8_t *cipher, size_t *cipher_len);
 int sdc_rsaes_oaep_decrypt(const sdc_rsa_privkey_t *privkey, const uint8_t *cipher, size_t cipher_len, uint8_t *plain, size_t *plain_len);
 #endif
 #if SDC_ENABLE_RSASSA_PSS
-int sdc_rsassa_pss_sign(const sdc_rsa_privkey_t *privkey, const uint8_t *hash, size_t hash_len, uint8_t *sig, size_t *sig_len);
-int sdc_rsassa_pss_verify(const sdc_rsa_pubkey_t *pubkey, const uint8_t *hash, size_t hash_len, const uint8_t *sig, size_t sig_len);
+int sdc_rsassa_pss_sign(const sdc_rsa_privkey_t *privkey, const uint8_t *msg, size_t msg_len, uint8_t *sig, size_t *sig_len);
+int sdc_rsassa_pss_verify(const sdc_rsa_pubkey_t *pubkey, const uint8_t *msg, size_t msg_len, const uint8_t *sig, size_t sig_len);
 #endif
 
 #endif /* SDC_ENABLE_RSA */
