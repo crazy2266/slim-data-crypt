@@ -10,6 +10,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <sdcrypt/sha2.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +39,11 @@ typedef struct {
     size_t hash_len;
     const char *name;
 } sdc_hash_ops_t;
+
+typedef union {
+    sdc_sha256_ctx sha224_256;
+    sdc_sha512_ctx sha384_512;
+} sdc_hash_ctx_t;
 
 /* ============================================================
    API
