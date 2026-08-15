@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * Memory allocator implementation.
+ */
+
 #include <stdint.h>
 #include <sdcrypt/mem.h>
 

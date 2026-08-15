@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * Hash interface API file.
+ */
+
 #ifndef SDC_HASH_H
 #define SDC_HASH_H
 

@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * Hash interface implementation.
+ */
+
 #include <sdcrypt/hash.h>
 #include <sdcrypt/sha2.h>
 #include <string.h>
