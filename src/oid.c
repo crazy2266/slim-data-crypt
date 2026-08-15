@@ -94,13 +94,9 @@ sdc_hash_id_t sdc_hash_id_from_oid(const uint8_t *oid, size_t oid_len) {
    ID → OID Lookup (Direct Indexing)
    ============================================================ */
 const sdc_oid_t *sdc_hash_oid_from_id(sdc_hash_id_t id) {
-    if (id <= SDC_HASH_NONE || id >= SDC_HASH_COUNT) {
-        return NULL;
-    }
+    if (id <= SDC_HASH_NONE || id >= SDC_HASH_COUNT) return NULL;
     const sdc_hash_meta_t *meta = &sdc_hash_meta[id];
-    if (!meta->oid) {
-        return NULL;
-    }
+    if (!meta->oid) return NULL;
     static sdc_oid_t oid;
     oid.oid = meta->oid;
     oid.oid_len = meta->oid_len;
