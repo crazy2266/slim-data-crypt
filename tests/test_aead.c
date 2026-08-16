@@ -495,7 +495,6 @@ static void run_benchmarks(void) {
     bench_chacha20("ChaCha20", 32 * 1024 * 1024, 50); // 32MB
     SLEEP(1);
     bench_chacha20("ChaCha20", 64 * 1024 * 1024, 50); // 64MB
-    SLEEP(1);
 }
 
 // ==================== 主函数 ====================
