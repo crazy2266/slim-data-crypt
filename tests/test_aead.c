@@ -427,7 +427,12 @@ static void run_benchmarks(void) {
                          const uint8_t *, size_t,
                          uint8_t *, uint8_t *))sdc_xchacha20poly1305_encrypt,
                24);
-
+    bench_aead("AEAD (XChaCha20)", 8 * 1024 * 1024, 50,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_xchacha20poly1305_encrypt,
+               24);
     bench_aead("AEAD (IETF)", 1024, 1000,
                (void (*)(const uint8_t *, const uint8_t *,
                          const uint8_t *, size_t,
@@ -452,16 +457,29 @@ static void run_benchmarks(void) {
                          const uint8_t *, size_t,
                          uint8_t *, uint8_t *))sdc_chacha20poly1305_encrypt,
                12);
-
+    bench_aead("AEAD (IETF)", 8 * 1024 * 1024, 50,
+               (void (*)(const uint8_t *, const uint8_t *,
+                         const uint8_t *, size_t,
+                         const uint8_t *, size_t,
+                         uint8_t *, uint8_t *))sdc_chacha20poly1305_encrypt,
+               12);
+    
+    
     bench_xchacha20("XChaCha20", 1024, 1000);
     bench_xchacha20("XChaCha20", 4096, 500);
     bench_xchacha20("XChaCha20", 16384, 200);
     bench_xchacha20("XChaCha20", 65536, 50);
+    bench_xchacha20("XChaCha20", 16 * 1024 * 1024, 50); // 16MB
+    bench_xchacha20("XChaCha20", 32 * 1024 * 1024, 50); // 32MB
+    bench_xchacha20("XChaCha20", 64 * 1024 * 1024, 50); // 64MB
 
     bench_chacha20("ChaCha20", 1024, 1000);
     bench_chacha20("ChaCha20", 4096, 500);
     bench_chacha20("ChaCha20", 16384, 200);
     bench_chacha20("ChaCha20", 65536, 50);
+    bench_chacha20("ChaCha20", 16 * 1024 * 1024, 50); // 16MB
+    bench_chacha20("ChaCha20", 32 * 1024 * 1024, 50); // 32MB
+    bench_chacha20("ChaCha20", 64 * 1024 * 1024, 50); // 64MB
 }
 
 // ==================== 主函数 ====================

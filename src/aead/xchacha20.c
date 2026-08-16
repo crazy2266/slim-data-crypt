@@ -59,7 +59,6 @@ static inline uint32_t rotl32(uint32_t x, int n) {
  * HChaCha20 - subkey derivation, done once per init(), kept scalar for
  * simplicity/clarity (it's off the hot path).
  * --------------------------------------------------------------------- */
-
 static void hchacha20_scalar(uint32_t out[8], const uint32_t key[8],
                              const uint32_t nonce16[4]) {
     uint32_t x[16] = {
@@ -83,10 +82,48 @@ static void hchacha20_scalar(uint32_t out[8], const uint32_t key[8],
     out[4] = x[12]; out[5] = x[13]; out[6] = x[14]; out[7] = x[15];
 }
 
+static inline void transpose_4x4_u32(uint32x4_t *out, uint32x4_t v0, uint32x4_t v1,
+                                     uint32x4_t v2, uint32x4_t v3) {
+    uint32x4_t t0 = vzip1q_u32(v0, v1);  // [a0,b0,a1,b1]
+    uint32x4_t t1 = vzip2q_u32(v0, v1);  // [a2,b2,a3,b3]
+    uint32x4_t t2 = vzip1q_u32(v2, v3);  // [c0,d0,c1,d1]
+    uint32x4_t t3 = vzip2q_u32(v2, v3);  // [c2,d2,c3,d3]
+    
+    out[0] = vreinterpretq_u32_u64(
+        vzip1q_u64(vreinterpretq_u64_u32(t0), vreinterpretq_u64_u32(t2)));
+    // [a0,b0,c0,d0]
+    
+    out[1] = vreinterpretq_u32_u64(
+        vzip2q_u64(vreinterpretq_u64_u32(t0), vreinterpretq_u64_u32(t2)));
+    // [a1,b1,c1,d1]
+    
+    out[2] = vreinterpretq_u32_u64(
+        vzip1q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));
+    // [a2,b2,c2,d2]
+    
+    out[3] = vreinterpretq_u32_u64(
+        vzip2q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));
+    // [a3,b3,c3,d3]
+}
+
+static void transpose_and_store(uint8_t buf[256], const uint32x4_t ne[16]) {
+    uint32x4_t out[4][4];  // out[block][group]
+    
+    transpose_4x4_u32(out[0], ne[0], ne[1], ne[2], ne[3]);
+    transpose_4x4_u32(out[1], ne[4], ne[5], ne[6], ne[7]);
+    transpose_4x4_u32(out[2], ne[8], ne[9], ne[10], ne[11]);
+    transpose_4x4_u32(out[3], ne[12], ne[13], ne[14], ne[15]);
+    
+    for (int block = 0; block < 4; block++) {
+        for (int group = 0; group < 4; group++) {
+            vst1q_u32((uint32_t*)(buf + block * 64 + group * 16), out[group][block]);
+        }
+    }
+}
+
 /* ---------------------------------------------------------------------
  * next_block - generate 320 bytes of keystream (5 blocks) into ctx->buf
  * --------------------------------------------------------------------- */
-
 static void next_block(sdc_chacha20_ctx *ctx) {
     uint32x4_t i0 = ctx->state1[0],  i1 = ctx->state1[1];
     uint32x4_t i2 = ctx->state1[2],  i3 = ctx->state1[3];
@@ -146,12 +183,7 @@ static void next_block(sdc_chacha20_ctx *ctx) {
     /* Transpose NEON SoA -> 4 separate 64-byte AoS blocks in buf[0..255] */
     uint32x4_t ne[16] = { n0, n1, n2,  n3,  n4,  n5,  n6,  n7,
                            n8, n9, n10, n11, n12, n13, n14, n15 };
-    for (int w = 0; w < 16; w++) {
-        store32_le(ctx->buf + 0 * 64 + w * 4, vgetq_lane_u32(ne[w], 0));
-        store32_le(ctx->buf + 1 * 64 + w * 4, vgetq_lane_u32(ne[w], 1));
-        store32_le(ctx->buf + 2 * 64 + w * 4, vgetq_lane_u32(ne[w], 2));
-        store32_le(ctx->buf + 3 * 64 + w * 4, vgetq_lane_u32(ne[w], 3));
-    }
+    transpose_and_store(ctx->buf, ne);
 
     /* Scalar block -> buf[256..319] */
     uint32_t sc[16] = { s0, s1, s2,  s3,  s4,  s5,  s6,  s7,
@@ -176,7 +208,6 @@ static void next_block(sdc_chacha20_ctx *ctx) {
 /* ---------------------------------------------------------------------
  * sdc_xchacha20_init
  * --------------------------------------------------------------------- */
-
 void sdc_xchacha20_init(sdc_chacha20_ctx *ctx, const uint8_t key[32],
                         const uint8_t nonce[24], uint64_t counter) {
     if (!ctx || !key || !nonce) return;
