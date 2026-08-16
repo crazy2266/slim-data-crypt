@@ -11,5 +11,7 @@ Supported Algorithms and Functions:
 - Integer arithmetic
 - ASN.1 parse and write
 
-Please use command "make" to build tests,and the test programs will be generated in ./bin directory.<br>
-WARNING: ARM NEON is required for ChaCha20 and XChaCha20 at this edition.
+How to build tests:
+- On Linux or Termux (Android), you can directly use "make".
+- On Windows, you should use "make (or mingw32-make) -f Makefile.win".
+All test programs will be generated in ./bin directory.

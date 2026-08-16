@@ -1,0 +1,38 @@
+CC = gcc
+CFLAGS = -Wall -Wextra -O3 -g -Iinclude -std=c99 -D__USE_MINGW_ANSI_STDIO=1
+LDFLAGS = -lm -lbcrypt
+
+SRC_DIR = src
+TEST_DIR = tests
+BUILD_DIR = build
+BIN_DIR = bin
+
+SRCS = $(wildcard $(SRC_DIR)/*.c) \
+       $(wildcard $(SRC_DIR)/*/*.c) \
+       $(wildcard $(SRC_DIR)/*/*/*.c)
+
+TEST_SRCS = $(wildcard $(TEST_DIR)/test_*.c)
+
+OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
+TEST_BINS = $(patsubst $(TEST_DIR)/%.c,$(BIN_DIR)/%.exe,$(TEST_SRCS))
+
+all: $(BIN_DIR) $(BUILD_DIR) $(TEST_BINS)
+
+$(BIN_DIR) $(BUILD_DIR):
+	if not exist $@ mkdir $@
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BIN_DIR)/%.exe: $(TEST_DIR)/%.c $(OBJS) | $(BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(LDFLAGS)
+
+test: $(TEST_BINS)
+	@$(foreach t,$(TEST_BINS),echo === $(notdir $t) === && $(subst /,\,$t) &&) echo All tests passed!
+
+clean:
+	if exist $(BUILD_DIR) rmdir /s /q $(BUILD_DIR)
+	if exist $(BIN_DIR) rmdir /s /q $(BIN_DIR)
+
+.PHONY: all clean test
