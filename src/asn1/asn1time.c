@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sdcrypt/asn1time.h>
 #include <sdcrypt/errcode.h>
+#include <sdcrypt/platform.h>
 
 #if SDC_ASN1_TIME_PROVIDER == 0
 #  include <time.h>
