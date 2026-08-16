@@ -11,6 +11,10 @@
  * - RSASSA-PSS
  */
 
+/*=============================================*/
+/*       TODO: Add RSA implementation          */
+/*=============================================*/
+
 #ifndef SDC_RSA_H
 #define SDC_RSA_H
 
