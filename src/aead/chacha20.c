@@ -211,6 +211,10 @@ void sdc_chacha20_crypt(sdc_chacha20_ctx *ctx, const uint8_t *in,
         size_t n = (available < remaining) ? available : remaining;
 
         while (n >= 64) {
+            if (i + 128 < len) {
+                __builtin_prefetch(in + i + 64, 0, 3);
+                __builtin_prefetch(ctx->buf + ctx->buf_used + 64, 0, 3);
+            }
             uint8x16x4_t ks = vld1q_u8_x4(ctx->buf + ctx->buf_used);
             uint8x16x4_t pt = vld1q_u8_x4(in + i);
             uint8x16x4_t ct;
