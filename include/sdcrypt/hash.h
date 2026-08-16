@@ -15,17 +15,6 @@
 extern "C" {
 #endif
 
-/* ---------- OID constants ---------- */
-#define SDC_OID_SHA224_LEN 9
-#define SDC_OID_SHA256_LEN 9
-#define SDC_OID_SHA384_LEN 9
-#define SDC_OID_SHA512_LEN 9
-
-extern const uint8_t SDC_OID_SHA224[SDC_OID_SHA224_LEN];
-extern const uint8_t SDC_OID_SHA256[SDC_OID_SHA256_LEN];
-extern const uint8_t SDC_OID_SHA384[SDC_OID_SHA384_LEN];
-extern const uint8_t SDC_OID_SHA512[SDC_OID_SHA512_LEN];
-
 /* ---------- Hash operation table ---------- */
 typedef struct {
     void (*hash)(uint8_t *out, const uint8_t *in, size_t len);
