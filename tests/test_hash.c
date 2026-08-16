@@ -10,6 +10,7 @@
 #include <sdcrypt/hash.h>
 #include <sdcrypt/config.h>
 #include <sdcrypt/errcode.h>
+#include <sdcrypt/oid.h>
 
 static int test_passed = 0;
 static int test_total = 0;
@@ -166,13 +167,15 @@ int main(void) {
     ret = sdc_hash_register(custom_oid, sizeof(custom_oid), &custom_ops);
     TEST_ASSERT(ret == SDC_ERR_OK, "sdc_hash_register()");
 
-    uint8_t custom_out[32];
+    uint8_t custom_out[32], expected_custom[32];
+    memset(expected_custom, 0xAA, sizeof(expected_custom));
     out_len = sizeof(custom_out);
     ret = sdc_hash_compute(custom_oid, sizeof(custom_oid),
                            msg, sizeof(msg) - 1,
                            custom_out, &out_len);
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 32,
-                "Custom hash called and returns 32 bytes");
+    
+    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 32 && compare_bytes(custom_out, expected_custom, 32),
+                "Custom hash called and returns 32 bytes with expected value");
 
     /* ============================================================
        Final result

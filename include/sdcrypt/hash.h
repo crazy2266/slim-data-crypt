@@ -30,6 +30,9 @@ int sdc_hash_compute(const uint8_t *oid, size_t oid_len,
                      const uint8_t *in, size_t in_len,
                      uint8_t *out, size_t *out_len);
 
+// The maximum number of custom hash table entry.
+#define SDC_HASH_CUSTOM_MAX 8
+
 #ifdef __cplusplus
 }
 #endif

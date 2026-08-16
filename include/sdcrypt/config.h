@@ -32,6 +32,4 @@
 #define SDC_SWAPPABLE_ALLOCATOR           0
 #define SDC_RSA_ENABLE_BLIDING_MODE       1
 
-#define SDC_HASH_BUCKETS 32
-
 #endif /* SDC_CONFIG_H */

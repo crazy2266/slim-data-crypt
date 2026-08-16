@@ -43,7 +43,6 @@ typedef struct {
     const uint8_t *oid;
     size_t oid_len;
     const sdc_hash_ops_t *ops;
-    int id;
 } sdc_hash_entry_t;
 
 static const sdc_hash_ops_t sha224_ops = {.hash = hash_sha224, .hash_len = 28, .name = "SHA-224"};
@@ -68,7 +67,6 @@ static const sdc_hash_entry_t builtin_table[] = {
 #define BUILTIN_COUNT (sizeof(builtin_table) / sizeof(builtin_table[0]))
 
 /* ---------- Custom hash table entry ---------- */
-#define SDC_HASH_CUSTOM_MAX 8
 static sdc_hash_entry_t custom_table[SDC_HASH_CUSTOM_MAX] = {0};
 static size_t custom_count = 0;
 static int initialized = 0;
