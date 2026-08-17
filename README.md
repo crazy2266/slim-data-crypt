@@ -14,4 +14,5 @@ Supported Algorithms and Functions:
 How to build tests:
 - On Linux or Termux (Android), you can directly use "make".
 - On Windows, you should use "make (or mingw32-make) -f Makefile.win".
+
 All test programs will be generated in ./bin directory.
