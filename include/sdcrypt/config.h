@@ -32,4 +32,8 @@
 #define SDC_SWAPPABLE_ALLOCATOR           0
 #define SDC_RSA_ENABLE_BLIDING_MODE       1
 
+// Other options
+#define SDC_HASH_CUSTOM_MAX 256
+
+
 #endif /* SDC_CONFIG_H */

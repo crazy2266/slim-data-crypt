@@ -15,6 +15,8 @@
 
 #include <string.h>
 #include <sdcrypt/config.h>
+#include <sdcrypt/hash.h>
+#include <sdcrypt/errcode.h>
 #include <sdcrypt/sha2.h>
 #include <sdcrypt/utils.h>
 
@@ -182,6 +184,53 @@ void sdc_sha512_hash(uint8_t out[64], const uint8_t *in, size_t len) {
     sdc_sha512_update(&ctx, in, len);
     sdc_sha512_final(&ctx, out);
 }
+
+static int sha512_init_wrapper(sdc_hash_ctx *ctx) {
+    if (!ctx) return SDC_ERR_INVALID_PARAM;
+    sdc_sha512_ctx *state = (sdc_sha512_ctx *)ctx->inner_state;
+    sdc_sha512_init(state);
+    return SDC_ERR_OK;
+}
+
+static int sha512_update_wrapper(sdc_hash_ctx *ctx, const uint8_t *in, size_t len) {
+    if (!ctx) return SDC_ERR_INVALID_PARAM;
+    sdc_sha512_ctx *state = (sdc_sha512_ctx *)ctx->inner_state;
+    sdc_sha512_update(state, in, len);
+    return SDC_ERR_OK;
+}
+
+static int sha512_final_wrapper(sdc_hash_ctx *ctx, uint8_t *out, size_t *out_len) {
+    if (!ctx || !out || !out_len) return SDC_ERR_INVALID_PARAM;
+    if (*out_len < 64) {
+        *out_len = 64;
+        return SDC_ERR_BUFFER_TOO_SMALL;
+    }
+    sdc_sha512_ctx *state = (sdc_sha512_ctx *)ctx->inner_state;
+    sdc_sha512_final(state, out);
+    *out_len = 64;
+    return SDC_ERR_OK;
+}
+
+static int sha512_hash_wrapper(uint8_t *out, const uint8_t *in, size_t len, size_t *out_len) {
+    if (!out || !out_len) return SDC_ERR_INVALID_PARAM;
+    if (*out_len < 64) {
+        *out_len = 64;
+        return SDC_ERR_BUFFER_TOO_SMALL;
+    }
+    sdc_sha512_hash(out, in, len);
+    *out_len = 64;
+    return SDC_ERR_OK;
+}
+
+const sdc_hash_ops_t sdc_sha512_ops = {
+    .init = sha512_init_wrapper,
+    .update = sha512_update_wrapper,
+    .final = sha512_final_wrapper,
+    .hash = sha512_hash_wrapper,
+    .hash_len = 64,
+    .name = "SHA-512"
+};
+
 #endif /* SDC_ENABLE_SHA512 */
 
 #if SDC_ENABLE_SHA384
@@ -231,6 +280,53 @@ void sdc_sha384_hash(uint8_t out[48], const uint8_t *in, size_t len) {
     sdc_sha384_update(&ctx, in, len);
     sdc_sha384_final(&ctx, out);
 }
+
+static int sha384_init_wrapper(sdc_hash_ctx *ctx) {
+    if (!ctx) return SDC_ERR_INVALID_PARAM;
+    sdc_sha512_ctx *state = (sdc_sha512_ctx *)ctx->inner_state;
+    sdc_sha384_init(state);
+    return SDC_ERR_OK;
+}
+
+static int sha384_update_wrapper(sdc_hash_ctx *ctx, const uint8_t *in, size_t len) {
+    if (!ctx) return SDC_ERR_INVALID_PARAM;
+    sdc_sha512_ctx *state = (sdc_sha512_ctx *)ctx->inner_state;
+    sdc_sha384_update(state, in, len);
+    return SDC_ERR_OK;
+}
+
+static int sha384_final_wrapper(sdc_hash_ctx *ctx, uint8_t *out, size_t *out_len) {
+    if (!ctx || !out || !out_len) return SDC_ERR_INVALID_PARAM;
+    if (*out_len < 48) {
+        *out_len = 48;
+        return SDC_ERR_BUFFER_TOO_SMALL;
+    }
+    sdc_sha512_ctx *state = (sdc_sha512_ctx *)ctx->inner_state;
+    sdc_sha384_final(state, out);
+    *out_len = 48;
+    return SDC_ERR_OK;
+}
+
+static int sha384_hash_wrapper(uint8_t *out, const uint8_t *in, size_t len, size_t *out_len) {
+    if (!out || !out_len) return SDC_ERR_INVALID_PARAM;
+    if (*out_len < 48) {
+        *out_len = 48;
+        return SDC_ERR_BUFFER_TOO_SMALL;
+    }
+    sdc_sha384_hash(out, in, len);
+    *out_len = 48;
+    return SDC_ERR_OK;
+}
+
+const sdc_hash_ops_t sdc_sha384_ops = {
+    .init = sha384_init_wrapper,
+    .update = sha384_update_wrapper,
+    .final = sha384_final_wrapper,
+    .hash = sha384_hash_wrapper,
+    .hash_len = 48,
+    .name = "SHA-384"
+};
+
 #endif /* SDC_ENABLE_SHA384 */
 
 #endif /* SDC_ENABLE_SHA384 || SDC_ENABLE_SHA512 */
