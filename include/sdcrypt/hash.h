@@ -111,6 +111,10 @@ const sdc_hash_ops_t *sdc_hash_find_by_oid_default(const uint8_t *oid, size_t oi
  */
 const sdc_hash_ops_t *sdc_hash_find_by_oid(const uint8_t *oid, size_t oid_len, sdc_hash_getter_t getter);
 
+static inline size_t sdc_hash_get_len(const sdc_hash_ops_t *ops) {
+    return ops ? ops->hash_len : 0;
+}
+
 #ifdef __cplusplus
 }
 #endif

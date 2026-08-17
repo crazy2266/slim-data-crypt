@@ -62,6 +62,11 @@ int sdc_hash_final(sdc_hash_ctx *ctx, uint8_t *out, size_t *out_len) {
 int sdc_hash_once(const sdc_hash_ops_t *ops, uint8_t *out, const uint8_t *in, size_t len, size_t *out_len) {
     if (!ops || !ops->hash) return SDC_ERR_INVALID_PARAM;
     if (!out || !out_len) return SDC_ERR_INVALID_PARAM;
+    if (*out_len < ops->hash_len) {
+        *out_len = ops->hash_len;
+        return SDC_ERR_BUFFER_TOO_SMALL;
+    }
+    *out_len = ops->hash_len;
     return ops->hash(out, in, len, out_len);
 }
 
@@ -69,7 +74,7 @@ const sdc_hash_ops_t *sdc_hash_find_by_oid_default(const uint8_t *oid, size_t oi
     if (!oid || !oid_len) return NULL;
     for (size_t i = 0; i < sizeof(hash_ops_table) / sizeof(hash_ops_table[0]); i++) {
         const sdc_hash_ops_t *ops = hash_ops_table[i];
-        if (ops->oid_len == oid_len && memcmp(ops->oid, oid, oid_len) == 0) {
+        if (ops->oid && ops->oid_len == oid_len && memcmp(ops->oid, oid, oid_len) == 0) {
             return ops;
         }
     }
