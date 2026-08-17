@@ -75,17 +75,19 @@ static const sdc_hash_ops_t custom_ops = {
     .final = custom_final,
     .hash = custom_hash,
     .hash_len = 32,
-    .name = "CUSTOM"
+    .name = "CUSTOM",
+    .oid = custom_oid,
+    .oid_len = CUSTOM_OID_LEN,
 };
 
 /* ---------- 自定义 getter（用于测试可替换查找） ---------- */
 static const sdc_hash_ops_t* custom_getter(const uint8_t *oid, size_t oid_len) {
-    if (oid_len == CUSTOM_OID_LEN &&
-        memcmp(oid, custom_oid, oid_len) == 0) {
+    if (oid_len == custom_ops.oid_len &&
+        memcmp(oid, custom_ops.oid, oid_len) == 0) {
         return &custom_ops;
     }
-    /* 回退到默认查找（通过递归调用，但注意避免无限循环） */
-    return sdc_hash_find_by_oid(oid, oid_len, NULL);
+    /* 回退到默认查找 */
+    return sdc_hash_find_by_oid_default(oid, oid_len);
 }
 
 /* ---------- 辅助函数：通过 OID 计算哈希 ---------- */

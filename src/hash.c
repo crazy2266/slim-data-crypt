@@ -21,24 +21,18 @@
 #include <sdcrypt/sha2.h>
 #include <sdcrypt/errcode.h>
 
-typedef struct {
-    const uint8_t *oid;
-    size_t oid_len;
-    const sdc_hash_ops_t *ops;
-} sdc_hash_oid_entry_t;
-
-static const sdc_hash_oid_entry_t hash_oid_table[] = {
+static const sdc_hash_ops_t *hash_ops_table[] = {
 #if SDC_ENABLE_SHA256
-    { SDC_OID_SHA256, SDC_OID_SHA256_LEN, &sdc_sha256_ops },
+    &sdc_sha256_ops,
 #endif
 #if SDC_ENABLE_SHA224
-    { SDC_OID_SHA224, SDC_OID_SHA224_LEN, &sdc_sha224_ops },
+    &sdc_sha224_ops,
 #endif
 #if SDC_ENABLE_SHA384
-    { SDC_OID_SHA384, SDC_OID_SHA384_LEN, &sdc_sha384_ops },
+    &sdc_sha384_ops,
 #endif
 #if SDC_ENABLE_SHA512
-    { SDC_OID_SHA512, SDC_OID_SHA512_LEN, &sdc_sha512_ops },
+    &sdc_sha512_ops,
 #endif
 };
 
@@ -71,17 +65,23 @@ int sdc_hash_once(const sdc_hash_ops_t *ops, uint8_t *out, const uint8_t *in, si
     return ops->hash(out, in, len, out_len);
 }
 
+const sdc_hash_ops_t *sdc_hash_find_by_oid_default(const uint8_t *oid, size_t oid_len) {
+    if (!oid || !oid_len) return NULL;
+    for (size_t i = 0; i < sizeof(hash_ops_table) / sizeof(hash_ops_table[0]); i++) {
+        const sdc_hash_ops_t *ops = hash_ops_table[i];
+        if (ops->oid_len == oid_len && memcmp(ops->oid, oid, oid_len) == 0) {
+            return ops;
+        }
+    }
+    return NULL;
+}
+
 const sdc_hash_ops_t *sdc_hash_find_by_oid(const uint8_t *oid, size_t oid_len, sdc_hash_getter_t getter) {
     if (!oid || !oid_len) return NULL;
     if (getter) {
         const sdc_hash_ops_t *ops = getter(oid, oid_len);
         if (ops) return ops;
+        return NULL;
     }
-    for (size_t i = 0; i < sizeof(hash_oid_table) / sizeof(hash_oid_table[0]); i++) {
-        if (hash_oid_table[i].oid_len == oid_len &&
-            memcmp(hash_oid_table[i].oid, oid, oid_len) == 0) {
-            return hash_oid_table[i].ops;
-        }
-    }
-    return NULL;
+    return sdc_hash_find_by_oid_default(oid, oid_len);
 }

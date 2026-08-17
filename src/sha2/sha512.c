@@ -18,6 +18,7 @@
 #include <sdcrypt/hash.h>
 #include <sdcrypt/errcode.h>
 #include <sdcrypt/sha2.h>
+#include <sdcrypt/oid.h>
 #include <sdcrypt/utils.h>
 
 #if SDC_ENABLE_SHA384 || SDC_ENABLE_SHA512
@@ -228,7 +229,9 @@ const sdc_hash_ops_t sdc_sha512_ops = {
     .final = sha512_final_wrapper,
     .hash = sha512_hash_wrapper,
     .hash_len = 64,
-    .name = "SHA-512"
+    .name = "SHA-512",
+    .oid = SDC_OID_SHA512,
+    .oid_len = SDC_OID_SHA512_LEN
 };
 
 #endif /* SDC_ENABLE_SHA512 */
@@ -324,7 +327,9 @@ const sdc_hash_ops_t sdc_sha384_ops = {
     .final = sha384_final_wrapper,
     .hash = sha384_hash_wrapper,
     .hash_len = 48,
-    .name = "SHA-384"
+    .name = "SHA-384",
+    .oid = SDC_OID_SHA384,
+    .oid_len = SDC_OID_SHA384_LEN
 };
 
 #endif /* SDC_ENABLE_SHA384 */
