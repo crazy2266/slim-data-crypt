@@ -112,7 +112,7 @@ static int hash_compute_by_oid(const uint8_t *oid, size_t oid_len,
 /* ---------- main ---------- */
 int main(void) {
     uint8_t hash[64];
-    size_t out_len;
+    size_t out_len = sizeof(hash);
     const uint8_t msg[] = "abc";
     int ret;
 
