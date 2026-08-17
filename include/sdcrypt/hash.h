@@ -3,6 +3,30 @@
  * Copyright (c) 2026 crazy2266
  *
  * Hash algorithm interface.
+ *
+ * ============================================================
+ * IMPORTANT: out_len parameter convention
+ * ============================================================
+ *
+ * All functions that accept a size_t* out_len parameter follow
+ * the same convention:
+ *
+ *   - INPUT:  Caller MUST initialize *out_len to the size of
+ *             the output buffer (in bytes).
+ *   - OUTPUT: On success, *out_len is updated to the actual
+ *             digest length of the algorithm.
+ *   - ERROR:  If *out_len is smaller than the required digest
+ *             length, the function returns SDC_ERR_BUFFER_TOO_SMALL
+ *             and sets *out_len to the required size.
+ *
+ * Example:
+ *   uint8_t digest[64];
+ *   size_t out_len = sizeof(digest);
+ *   sdc_hash_once(&sdc_sha256_ops, digest, data, len, &out_len);
+ *   // out_len is now 32
+ *
+ * DO NOT pass an uninitialized out_len. The library does not
+ * and cannot guess the size of your buffer.
  */
 
 #ifndef SDC_HASH_H
