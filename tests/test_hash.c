@@ -265,7 +265,25 @@ int main(void) {
     ret = sdc_hash_final(&ctx, small_buf, &small_len);
     TEST_ASSERT(ret == SDC_ERR_BUFFER_TOO_SMALL && small_len == 32,
                 "sdc_hash_final() returns SDC_ERR_BUFFER_TOO_SMALL and sets out_len=32");
+/* ============================================================
+   Test 11: SM3 via OID lookup
+   ============================================================ */
+    TEST_START("SM3 (OID lookup)");
+    out_len = sizeof(hash);
+    ret = hash_compute_by_oid(SDC_OID_SM3, SDC_OID_SM3_LEN,
+                              msg, sizeof(msg) - 1,
+                              hash, &out_len, NULL);
 
+    /* SM3("abc") = 66c7f0f462eeedd9d1f2d46bdc10e4e24167c4875cf2f7a2297da02b8f4ba8e0 */
+    const uint8_t expected_sm3[32] = {
+        0x66,0xc7,0xf0,0xf4,0x62,0xee,0xed,0xd9,
+        0xd1,0xf2,0xd4,0x6b,0xdc,0x10,0xe4,0xe2,
+        0x41,0x67,0xc4,0x87,0x5c,0xf2,0xf7,0xa2,
+        0x29,0x7d,0xa0,0x2b,0x8f,0x4b,0xa8,0xe0
+    };
+    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 32 &&
+                compare_bytes(hash, expected_sm3, 32),
+                "SM3(\"abc\") correct");
     /* ============================================================
        Final result
        ============================================================ */

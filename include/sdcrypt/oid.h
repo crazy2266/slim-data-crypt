@@ -37,6 +37,11 @@ extern const uint8_t SDC_OID_SHA384[SDC_OID_SHA384_LEN];
 #define SDC_OID_SHA512_LEN 9
 extern const uint8_t SDC_OID_SHA512[SDC_OID_SHA512_LEN];
 #endif
+// SM3
+#if SDC_ENABLE_SM3
+#define SDC_OID_SM3_LEN 8
+extern const uint8_t SDC_OID_SM3[SDC_OID_SM3_LEN];
+#endif
 
 #ifdef __cplusplus
 }
