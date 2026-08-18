@@ -336,9 +336,7 @@ static void test_crt(void) {
 
     /* t = (c1 - c2) mod p */
     sdc_int_sub(t, c1, c2, len1);
-    if (sdc_int_lt(c1, c2, len1)) {
-        sdc_int_add(t, t, privkey.p, len1);
-    }
+    sdc_int_add_ctl(t, privkey.p, len1, sdc_int_lt(c1, c2, len1));
 
     /* t = t * qinv mod p */
     sdc_int_mul(prod, t, privkey.qinv, len1);
