@@ -74,13 +74,13 @@ static void test_keygen(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    int ret = sdc_rsa_keypair(&pub, &priv, 0x10001, 2048);
+    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048);
     TEST_ASSERT(ret == SDC_ERR_OK, "2048-bit key generation");
 
     if (ret == SDC_ERR_OK) {
         TEST_ASSERT(pub.n != NULL, "pub.n != NULL");
         TEST_ASSERT(pub.nlen == 2048 / SDC_WORD_BITS, "pub.nlen correct");
-        TEST_ASSERT(pub.e == 0x10001, "pub.e correct");
+        TEST_ASSERT(pub.e == 65537, "pub.e correct");
 
         TEST_ASSERT(priv._block_start != NULL, "priv._block_start != NULL");
         TEST_ASSERT(priv.p != NULL, "priv.p != NULL");
@@ -107,16 +107,16 @@ static void test_keygen(void) {
     }
 
     /* invalid params */
-    ret = sdc_rsa_keypair(NULL, NULL, 0x10001, 2048);
+    ret = sdc_rsa_keypair(NULL, NULL, 65537, 2048);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL pubkey");
 
-    ret = sdc_rsa_keypair(&pub, NULL, 0x10001, 2048);
+    ret = sdc_rsa_keypair(&pub, NULL, 65537, 2048);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL privkey");
 
-    ret = sdc_rsa_keypair(&pub, &priv, 0x10001, 0);
+    ret = sdc_rsa_keypair(&pub, &priv, 65537, 0);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "bits == 0");
 
-    ret = sdc_rsa_keypair(&pub, &priv, 0x10001, 2047);
+    ret = sdc_rsa_keypair(&pub, &priv, 65537, 2047);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "bits not word-aligned");
 }
 
@@ -132,7 +132,7 @@ static void test_math(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    int ret = sdc_rsa_keypair(&pub, &priv, 0x10001, 2048);
+    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048);
     if (ret != SDC_ERR_OK) {
         TEST_ASSERT(0, "keypair generation failed");
         return;
@@ -184,7 +184,6 @@ static void test_math(void) {
     /* Test 4: e * d == 1 mod phi */
     sdc_int_mul_word(ed, priv.d, pub.e, len2);
     sdc_int_reduce(scratch, ed, len2 + 1, phi, len2);
-    sdc_int_reduce(scratch, ed, len2 + 1, phi, len2);
     TEST_ASSERT(sdc_int_eq_word(scratch, 1, len2) == 1, "e * d == 1 mod phi");
 
     /* Test 5: dp == d mod (p-1) */
@@ -200,11 +199,6 @@ static void test_math(void) {
     TEST_ASSERT(sdc_int_eq(scratch, priv.dq, len1) == 1, "dq == d mod (q-1)");
 
     /* Test 7: qinv == q^{-1} mod p */
-    /* 
-     * 修复别名冲突：
-     * mul_result 用于存储 q * qinv 的乘积
-     * reduce_result 用于存储模 p 后的结果
-     */
     sdc_int_mul(mul_result, priv.q, priv.qinv, len1);
     sdc_int_reduce(reduce_result, mul_result, len1 * 2, priv.p, len1);
     TEST_ASSERT(sdc_int_eq_word(reduce_result, 1, len1) == 1, "qinv == q^{-1} mod p");
@@ -225,7 +219,7 @@ static void test_roundtrip(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    int ret = sdc_rsa_keypair(&pub, &priv, 0x10001, 2048);
+    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048);
     if (ret != SDC_ERR_OK) {
         TEST_ASSERT(0, "keypair generation failed");
         return;
@@ -279,7 +273,7 @@ static void test_crt(void) {
     memset(&pubkey, 0, sizeof(pubkey));
     memset(&privkey, 0, sizeof(privkey));
 
-    ret = sdc_rsa_keypair(&pubkey, &privkey, 0x10001, 2048);
+    ret = sdc_rsa_keypair(&pubkey, &privkey, 65537, 2048);
     TEST_ASSERT(ret == SDC_ERR_OK, "Generate key for CRT test");
     if (ret != SDC_ERR_OK) {
         return;
@@ -289,7 +283,7 @@ static void test_crt(void) {
     size_t len2 = privkey.len2;
     size_t mod_bytes = len2 * SDC_WORD_SIZE;
 
-    /* 分配缓冲区 */
+    /* Allocate buffers */
     sdc_word_t *msg = sdc_malloc(len2 * SDC_WORD_SIZE);
     sdc_word_t *cipher = sdc_malloc(len2 * SDC_WORD_SIZE);
     sdc_word_t *dec_direct = sdc_malloc(len2 * SDC_WORD_SIZE);
@@ -301,7 +295,7 @@ static void test_crt(void) {
         goto cleanup;
     }
 
-    /* 生成随机消息并加密 */
+    /* Generate random message and encrypt */
     for (size_t i = 0; i < mod_bytes; i++) {
         ((uint8_t *)msg)[i] = (uint8_t)(i * 0x37 + 0x9e);
     }
@@ -311,11 +305,11 @@ static void test_crt(void) {
     sdc_int_mont_modexp_word(cipher, msg, &pubkey.e, 1,
                              pubkey.n, tmp, len2, ninv);
 
-    /* 1. 直接解密: m = c^d mod n */
+    /* 1. Direct decryption: m = c^d mod n */
     sdc_int_mont_modexp_word(dec_direct, cipher, privkey.d, len2,
                              pubkey.n, tmp, len2, ninv);
 
-    /* 2. CRT 解密 */
+    /* 2. CRT decryption */
     /* m1 = c mod p, m2 = c mod q */
     sdc_int_reduce(tmp, cipher, len2, privkey.p, len1);
     sdc_word_t *m1 = tmp;
@@ -335,7 +329,7 @@ static void test_crt(void) {
     sdc_int_mont_modexp_word(c2, m2, privkey.dq, len1,
                              privkey.q, scratch, len1, qinv);
 
-    /* CRT 组合: m = c2 + q * ((c1 - c2) * qinv mod p) */
+    /* CRT combination: m = c2 + q * ((c1 - c2) * qinv mod p) */
     sdc_word_t *t = scratch;
     sdc_word_t *prod = scratch + len1;
     sdc_word_t *qt = scratch + 2 * len1;
@@ -356,11 +350,11 @@ static void test_crt(void) {
     sdc_int_copy(dec_crt, c2, len1);
     sdc_int_add(dec_crt, dec_crt, qt, len2);
 
-    /* 比较直接解密和 CRT 解密 */
+    /* Compare direct decryption and CRT decryption */
     TEST_ASSERT(sdc_int_eq(dec_direct, dec_crt, len2) == 1,
                 "CRT decryption matches direct decryption");
 
-    /* 验证解密结果等于原始消息 */
+    /* Verify decrypted message matches original message */
     TEST_ASSERT(sdc_int_eq(msg, dec_direct, len2) == 1,
                 "Decrypted message matches original");
 
@@ -388,7 +382,7 @@ static void test_pubkey_init(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    ret = sdc_rsa_keypair(&pub, &priv, 0x10001, 1024);
+    ret = sdc_rsa_keypair(&pub, &priv, 65537, 1024);
     if (ret == SDC_ERR_OK) {
         sdc_rsa_pubkey_t pub2;
         memset(&pub2, 0, sizeof(pub2));
@@ -409,16 +403,16 @@ static void test_pubkey_init(void) {
     ret = sdc_rsa_pubkey_init(NULL, NULL, 0, 0);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL pubkey");
 
-    ret = sdc_rsa_pubkey_init(&pub, NULL, 32, 0x10001);
+    ret = sdc_rsa_pubkey_init(&pub, NULL, 32, 65537);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL n");
 
     ret = sdc_rsa_pubkey_init(&pub, (uint8_t *)"\x01\x02", 2, 0);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "e == 0");
 
-    ret = sdc_rsa_pubkey_init(&pub, (uint8_t *)"\x01\x02", 3, 0x10001);
+    ret = sdc_rsa_pubkey_init(&pub, (uint8_t *)"\x01\x02", 3, 65537);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "misaligned nlen");
 
-    ret = sdc_rsa_pubkey_init(&pub, (uint8_t *)"\x00\x00\x00\x00\x00\x00\x00\x00", 8, 0x10001);
+    ret = sdc_rsa_pubkey_init(&pub, (uint8_t *)"\x00\x00\x00\x00\x00\x00\x00\x00", 8, 65537);
     TEST_ASSERT(ret == SDC_ERR_KEY_INVALID || ret == SDC_ERR_INVALID_PARAM, "zero modulus");
 }
 
@@ -469,7 +463,7 @@ static void test_free(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    int ret = sdc_rsa_keypair(&pub, &priv, 0x10001, 1024);
+    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 1024);
     if (ret == SDC_ERR_OK) {
         sdc_rsa_free_keypair(&pub, &priv);
         TEST_ASSERT(pub.n == NULL, "pub.n == NULL");
