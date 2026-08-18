@@ -30,6 +30,7 @@
 
 // Enable features
 #define SDC_SWAPPABLE_ALLOCATOR           0
+#define SDC_SWAPPABLE_RANDOM_RNG          0
 #define SDC_RSA_ENABLE_BLIDING_MODE       1
 
 // Other options
