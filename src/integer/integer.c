@@ -73,8 +73,8 @@ void sdc_int_set_word(sdc_word_t *r, sdc_word_t val, size_t len) {
 }
 
 void sdc_int_copy(sdc_word_t *r, const sdc_word_t *a, size_t len) {
-    while (len--) {
-        r[len] = a[len];
+    for (size_t i = 0; i < len; i++) {
+        r[i] = a[i];
     }
 }
 
@@ -229,8 +229,8 @@ void sdc_int_reduce(sdc_word_t *r, const sdc_word_t *x, size_t x_len,
 
     for (i = x_len * SDC_WORD_BITS; i > 0; i--) {
         bit = (x[(i - 1) / SDC_WORD_BITS] >> ((i - 1) % SDC_WORD_BITS)) & 1;
-        r[0] |= bit;
-        c = sdc_int_add(r, r, r, n_len);
+        c = sdc_int_add(r, r, r, n_len);  /* r = r * 2 */
+        r[0] |= bit;                       /* r = r + bit */
         sdc_int_sub_ctl(r, n, n_len, c | sdc_int_gte(r, n, n_len));
     }
 }

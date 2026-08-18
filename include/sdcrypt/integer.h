@@ -207,7 +207,6 @@ void sdc_int_tobytes_be(const sdc_word_t *a, size_t len, uint8_t *out);
  * d = e^{-1} mod phi
  * d,phi should be at least len words long.
  * tmp should be at least (len+1) words long.
- * WARNING: phi must be odd, or the function will return immediately without setting d.
  */
 void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, sdc_word_t *tmp, size_t len);
 
