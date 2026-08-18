@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <sdcrypt/rsa.h>
 #include <sdcrypt/config.h>
 #include <sdcrypt/errcode.h>
@@ -474,6 +475,123 @@ static void test_free(void) {
 }
 
 /* ============================================================
+   Test: CRT performance comparison
+   ============================================================ */
+
+static void test_crt_performance(void) {
+    sdc_rsa_pubkey_t pubkey;
+    sdc_rsa_privkey_t privkey;
+    int ret;
+
+    TEST_START("CRT performance");
+
+    memset(&pubkey, 0, sizeof(pubkey));
+    memset(&privkey, 0, sizeof(privkey));
+
+    ret = sdc_rsa_keypair(&pubkey, &privkey, 65537, 2048);
+    if (ret != SDC_ERR_OK) {
+        TEST_ASSERT(0, "keypair generation failed");
+        return;
+    }
+
+    size_t len1 = privkey.len1;
+    size_t len2 = privkey.len2;
+    size_t mod_bytes = len2 * SDC_WORD_SIZE;
+
+    sdc_word_t *msg = sdc_malloc(len2 * SDC_WORD_SIZE);
+    sdc_word_t *cipher = sdc_malloc(len2 * SDC_WORD_SIZE);
+    sdc_word_t *dec_direct = sdc_malloc(len2 * SDC_WORD_SIZE);
+    sdc_word_t *dec_crt = sdc_malloc(len2 * SDC_WORD_SIZE);
+    sdc_word_t *tmp = sdc_malloc(len2 * 6 * SDC_WORD_SIZE);
+
+    if (!msg || !cipher || !dec_direct || !dec_crt || !tmp) {
+        TEST_ASSERT(0, "Memory allocation failed");
+        goto cleanup;
+    }
+
+    /* 生成随机消息并加密 */
+    for (size_t i = 0; i < mod_bytes; i++) {
+        ((uint8_t *)msg)[i] = (uint8_t)(i * 0x37 + 0x9e);
+    }
+    ((uint8_t *)msg)[0] = 0x01;
+
+    sdc_word_t ninv = sdc_int_calculate_ninv(pubkey.n[0]);
+    sdc_int_mont_modexp_word(cipher, msg, &pubkey.e, 1,
+                             pubkey.n, tmp, len2, ninv);
+
+    /* 预热：跑一次让缓存热起来 */
+    sdc_int_mont_modexp_word(dec_direct, cipher, privkey.d, len2,
+                             pubkey.n, tmp, len2, ninv);
+
+    /* 直接解密计时 */
+    clock_t start = clock();
+    int iterations = 10;
+    for (int i = 0; i < iterations; i++) {
+        sdc_int_mont_modexp_word(dec_direct, cipher, privkey.d, len2,
+                                 pubkey.n, tmp, len2, ninv);
+    }
+    clock_t end = clock();
+    double direct_time = (double)(end - start) / CLOCKS_PER_SEC * 1000.0 / iterations;
+
+    /* CRT 解密计时 */
+    start = clock();
+    for (int i = 0; i < iterations; i++) {
+        /* m1 = c mod p, m2 = c mod q */
+        sdc_int_reduce(tmp, cipher, len2, privkey.p, len1);
+        sdc_word_t *m1 = tmp;
+        sdc_word_t *m2 = tmp + len1;
+        sdc_int_reduce(m2, cipher, len2, privkey.q, len1);
+
+        sdc_word_t *c1 = tmp + 2 * len1;
+        sdc_word_t *c2 = tmp + 3 * len1;
+        sdc_word_t *scratch = tmp + 4 * len1;
+
+        sdc_word_t pinv = sdc_int_calculate_ninv(privkey.p[0]);
+        sdc_int_mont_modexp_word(c1, m1, privkey.dp, len1,
+                                 privkey.p, scratch, len1, pinv);
+
+        sdc_word_t qinv_n = sdc_int_calculate_ninv(privkey.q[0]);
+        sdc_int_mont_modexp_word(c2, m2, privkey.dq, len1,
+                                 privkey.q, scratch, len1, qinv_n);
+
+        sdc_word_t *t = scratch;
+        sdc_word_t *prod = scratch + len1;
+        sdc_word_t *qt = scratch + 2 * len1;
+
+        sdc_int_sub(t, c1, c2, len1);
+        sdc_int_add_ctl(t, privkey.p, len1, sdc_int_lt(c1, c2, len1));
+
+        sdc_int_mul(prod, t, privkey.qinv, len1);
+        sdc_int_reduce(t, prod, len1 * 2, privkey.p, len1);
+
+        sdc_int_mul(qt, privkey.q, t, len1);
+        sdc_int_set_word(dec_crt, 0, len2);
+        sdc_int_copy(dec_crt, c2, len1);
+        sdc_int_add(dec_crt, dec_crt, qt, len2);
+    }
+    end = clock();
+    double crt_time = (double)(end - start) / CLOCKS_PER_SEC * 1000.0 / iterations;
+
+    printf("  Direct decryption: %.3f ms (avg of %d iterations)\n", direct_time, iterations);
+    printf("  CRT decryption:    %.3f ms (avg of %d iterations)\n", crt_time, iterations);
+    printf("  Speedup:           %.2fx\n", direct_time / crt_time);
+
+    TEST_ASSERT(sdc_int_eq(msg, dec_direct, len2) == 1,
+                "Direct decryption correct");
+
+    TEST_ASSERT(sdc_int_eq(dec_direct, dec_crt, len2) == 1,
+                "CRT result matches direct");
+
+cleanup:
+    sdc_free(msg);
+    sdc_free(cipher);
+    sdc_free(dec_direct);
+    sdc_free(dec_crt);
+    sdc_free(tmp);
+    sdc_rsa_free_keypair(&pubkey, &privkey);
+}
+
+/* ============================================================
    main
    ============================================================ */
 
@@ -489,6 +607,7 @@ int main(void) {
     test_pubkey_init();
     test_privkey_init();
     test_free();
+    test_crt_performance();
 
     printf("\n========================================\n");
     printf("Result: %d/%d tests passed\n", g_passed, g_total);
