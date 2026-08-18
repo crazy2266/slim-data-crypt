@@ -34,67 +34,54 @@ int sdc_rsa_pubkey_init(sdc_rsa_pubkey_t *pubkey,
                         const uint8_t *n, size_t nlen,
                         sdc_word_t e) {
     size_t n_words = nlen / SDC_WORD_SIZE;
-
-    if (!pubkey || !n || e == 0 || n_words == 0 ||
-        nlen % SDC_WORD_SIZE != 0) {
+    size_t left_n  = nlen % SDC_WORD_SIZE;
+    if (!pubkey || !n || e == 0 || n_words == 0 || left_n != 0) {
         return SDC_ERR_INVALID_PARAM;
     }
 
     uint8_t acc = 0;
-    for (size_t i = 0; i < nlen; i++) {
-        acc |= n[i];
-    }
-    if (acc == 0) {
-        return SDC_ERR_KEY_INVALID;
-    }
+    for (size_t i = 0; i < nlen; i++) acc |= n[i];
+    if (acc == 0) return SDC_ERR_KEY_INVALID;
 
     sdc_word_t *N = sdc_malloc(nlen);
-    if (!N) {
-        return SDC_ERR_MEM_ALLOCATE_FAIL;
-    }
+    if (!N) return SDC_ERR_MEM_ALLOCATE_FAIL;
 
     sdc_int_frombytes_be(N, n_words, n);
     pubkey->n = N;
     pubkey->nlen = n_words;
     pubkey->e = e;
-
     return SDC_ERR_OK;
 }
 
 /* ============================================================
    Private key initialization
    ============================================================ */
-
 int sdc_rsa_privkey_init(sdc_rsa_privkey_t *privkey,
                          const uint8_t *p, const uint8_t *q,
                          const uint8_t *dp, const uint8_t *dq,
                          const uint8_t *qinv, size_t len1,
                          const uint8_t *d, const uint8_t *n,
                          size_t len2) {
-    if (!privkey) {
-        return SDC_ERR_INVALID_PARAM;
-    }
-
-    sdc_secure_memzero(privkey, sizeof(sdc_rsa_privkey_t));
+    if (!privkey) return SDC_ERR_INVALID_PARAM;
+    memset(privkey, 0, sizeof(sdc_rsa_privkey_t));
 
     size_t len1_words = len1 / SDC_WORD_SIZE;
+    size_t left1      = len1 % SDC_WORD_SIZE;
     size_t len2_words = len2 / SDC_WORD_SIZE;
+    size_t left2      = len2 % SDC_WORD_SIZE;
 
     if (!p || !q || !d || !n ||
         len1_words == 0 || len2_words == 0 ||
-        len1 % SDC_WORD_SIZE != 0 || len2 % SDC_WORD_SIZE != 0 ||
+        left1 != 0 || left2 != 0 ||
         len2 != len1 * 2) {
         return SDC_ERR_INVALID_PARAM;
     }
 
     size_t total_words = len1_words * 5 + len2_words * 2;
     sdc_word_t *block = sdc_malloc(total_words * SDC_WORD_SIZE);
-    if (!block) {
-        return SDC_ERR_MEM_ALLOCATE_FAIL;
-    }
+    if (!block) return SDC_ERR_MEM_ALLOCATE_FAIL;
 
     privkey->_block_start = block;
-
     privkey->p    = block;
     privkey->q    = block + len1_words;
     privkey->dp   = block + len1_words * 2;
@@ -160,29 +147,14 @@ int sdc_rsa_privkey_init(sdc_rsa_privkey_t *privkey,
 /* ============================================================
    Key pair cleanup
    ============================================================ */
-
 void sdc_rsa_free_keypair(sdc_rsa_pubkey_t *pubkey,
                           sdc_rsa_privkey_t *privkey) {
     if (pubkey) {
-        sdc_free(pubkey->n);
+        if (pubkey->n) sdc_free(pubkey->n);
         sdc_secure_memzero(pubkey, sizeof(sdc_rsa_pubkey_t));
     }
-
     if (privkey) {
-        if (privkey->_block_start) {
-            sdc_free(privkey->_block_start);
-            privkey->_block_start = NULL;
-
-            privkey->p = NULL;
-            privkey->q = NULL;
-            privkey->dp = NULL;
-            privkey->dq = NULL;
-            privkey->qinv = NULL;
-            privkey->d = NULL;
-            privkey->n = NULL;
-            privkey->len1 = 0;
-            privkey->len2 = 0;
-        }
+        if (privkey->_block_start) sdc_free(privkey->_block_start);
         sdc_secure_memzero(privkey, sizeof(sdc_rsa_privkey_t));
     }
 }
@@ -190,9 +162,7 @@ void sdc_rsa_free_keypair(sdc_rsa_pubkey_t *pubkey,
 /* ============================================================
    RSA key pair generation
    ============================================================ */
-
 #if SDC_ENABLE_RSA_KEYGEN
-
 int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
                     sdc_rsa_privkey_t *privkey,
                     sdc_word_t e,
@@ -202,23 +172,19 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
         return SDC_ERR_INVALID_PARAM;
     }
 
-    sdc_secure_memzero(privkey, sizeof(sdc_rsa_privkey_t));
-    sdc_secure_memzero(pubkey, sizeof(sdc_rsa_pubkey_t));
+    memset(privkey, 0, sizeof(sdc_rsa_privkey_t));
+    memset(pubkey, 0, sizeof(sdc_rsa_pubkey_t));
 
     int ret = SDC_ERR_OK;
     size_t len2 = bits / SDC_WORD_BITS;
     size_t len1 = len2 / 2;
 
-    if (len1 == 0 || len2 == 0) {
-        return SDC_ERR_INVALID_PARAM;
-    }
+    if (len1 == 0 || len2 == 0) return SDC_ERR_INVALID_PARAM;
 
     /* Allocate private key block */
     size_t total_words = len1 * 5 + len2 * 2;
     sdc_word_t *block = sdc_malloc(total_words * SDC_WORD_SIZE);
-    if (!block) {
-        return SDC_ERR_MEM_ALLOCATE_FAIL;
-    }
+    if (!block) return SDC_ERR_MEM_ALLOCATE_FAIL;
 
     privkey->_block_start = block;
     privkey->p    = block;
@@ -252,30 +218,23 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
 
     /* Generate p */
     ret = sdc_int_gen_prime(privkey->p, scratch, len1);
-    if (ret != SDC_ERR_OK) {
-        goto err_free_all;
-    }
+    if (ret != SDC_ERR_OK) goto err_free_all;
 
     /* Generate q, ensure q != p */
     do {
         ret = sdc_int_gen_prime(privkey->q, scratch, len1);
-        if (ret != SDC_ERR_OK) {
-            goto err_free_all;
-        }
+        if (ret != SDC_ERR_OK) goto err_free_all;
     } while (sdc_int_eq(privkey->p, privkey->q, len1) == 1);
 
     /* Ensure p > q */
-    ptr_cswap(&privkey->p, &privkey->q,
-              sdc_int_lt(privkey->p, privkey->q, len1));
+    ptr_cswap(&privkey->p, &privkey->q, sdc_int_lt(privkey->p, privkey->q, len1));
 
     /* n = p * q */
     sdc_int_mul(privkey->n, privkey->p, privkey->q, len1);
 
     /* phi = (p - 1) * (q - 1) */
-    sdc_int_copy(p_minus_1, privkey->p, len1);
-    sdc_int_copy(q_minus_1, privkey->q, len1);
-    p_minus_1[0]--;
-    q_minus_1[0]--;
+    sdc_int_sub_word(p_minus_1, privkey->p, 1, len1);
+    sdc_int_sub_word(q_minus_1, privkey->q, 1, len1);
     sdc_int_mul(phi, p_minus_1, q_minus_1, len1);
 
     /* d = e^{-1} mod phi */
@@ -283,13 +242,8 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
 
     /* CRT parameters */
     /* dp = d mod (p - 1) */
-    sdc_int_copy(p_minus_1, privkey->p, len1);
-    p_minus_1[0]--;
     sdc_int_reduce(privkey->dp, privkey->d, len2, p_minus_1, len1);
-
     /* dq = d mod (q - 1) */
-    sdc_int_copy(q_minus_1, privkey->q, len1);
-    q_minus_1[0]--;
     sdc_int_reduce(privkey->dq, privkey->d, len2, q_minus_1, len1);
 
     /* qinv = q^{-1} mod p = q^{p-2} mod p */
@@ -334,7 +288,6 @@ err_free_privkey:
     }
     return ret;
 }
-
 #endif /* SDC_ENABLE_RSA_KEYGEN */
 
 #endif /* SDC_ENABLE_RSA */

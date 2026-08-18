@@ -477,7 +477,6 @@ static void test_free(void) {
 /* ============================================================
    Test: CRT performance comparison
    ============================================================ */
-
 static void test_crt_performance(void) {
     sdc_rsa_pubkey_t pubkey;
     sdc_rsa_privkey_t privkey;
@@ -509,7 +508,7 @@ static void test_crt_performance(void) {
         goto cleanup;
     }
 
-    /* 生成随机消息并加密 */
+    /* Generate a random message and encrypt it */
     for (size_t i = 0; i < mod_bytes; i++) {
         ((uint8_t *)msg)[i] = (uint8_t)(i * 0x37 + 0x9e);
     }
@@ -519,11 +518,11 @@ static void test_crt_performance(void) {
     sdc_int_mont_modexp_word(cipher, msg, &pubkey.e, 1,
                              pubkey.n, tmp, len2, ninv);
 
-    /* 预热：跑一次让缓存热起来 */
+    /* Warmup: run once to warm up the cache */
     sdc_int_mont_modexp_word(dec_direct, cipher, privkey.d, len2,
                              pubkey.n, tmp, len2, ninv);
 
-    /* 直接解密计时 */
+    /* Direct decryption timing */
     clock_t start = clock();
     int iterations = 10;
     for (int i = 0; i < iterations; i++) {
@@ -533,7 +532,7 @@ static void test_crt_performance(void) {
     clock_t end = clock();
     double direct_time = (double)(end - start) / CLOCKS_PER_SEC * 1000.0 / iterations;
 
-    /* CRT 解密计时 */
+    /* CRT decryption timing */
     start = clock();
     for (int i = 0; i < iterations; i++) {
         /* m1 = c mod p, m2 = c mod q */
