@@ -757,13 +757,13 @@ static sdc_word_t modinv_word(sdc_word_t a, sdc_word_t m) {
 /*
  * Mathematical Derivation (independently discovered by the author):
  *
- * We want d such that d * e �?1 (mod φ).
+ * We want d such that d * e ≡ 1 (mod φ).
  * This means d * e = k * φ + 1 for some integer k.
  * Rearranging: d = (k * φ + 1) / e.
  *
  * For this to yield an integer, we need:
- *     k * φ �?-1 (mod e)
- *     k �?-φ^{-1} (mod e)
+ *     k * φ ≡ -1 (mod e)
+ *     k ≡ -φ^{-1} (mod e)
  *
  * Since e is a small public exponent (typically 65537), φ^{-1} mod e
  * can be computed with a SDC_WORD_BITS-bit constant-time modular inverse.
