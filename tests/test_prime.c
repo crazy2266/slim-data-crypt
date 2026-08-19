@@ -58,14 +58,37 @@ static void print_hex(const char *label, const sdc_word_t *a, size_t len) {
     putchar('\n');
 }
 
+/* ============================================================
+   High-resolution timer
+   ============================================================ */
+#if defined(_WIN32) || defined(_WIN64)
+#  include <windows.h>
+static LARGE_INTEGER timer_freq;
+static int timer_initialized = 0;
+
 static double get_time_ms(void) {
-    return (double)clock() * 1000.0 / CLOCKS_PER_SEC;
+    if (!timer_initialized) {
+        QueryPerformanceFrequency(&timer_freq);
+        timer_initialized = 1;
+    }
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    return (double)now.QuadPart * 1000.0 / (double)timer_freq.QuadPart;
 }
+#else
+#  include <time.h>
+static double get_time_ms(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
+}
+#endif
 
 static void print_time(const char *label, double ms) {
     if (ms >= 1000.0) printf("%s: %.3f s\n", label, ms / 1000.0);
     else if (ms >= 1.0) printf("%s: %.3f ms\n", label, ms);
-    else printf("%s: %.3f us\n", label, ms * 1000.0);
+    else if (ms >= 0.001) printf("%s: %.3f us\n", label, ms * 1000.0);
+    else printf("%s: %.3f ns\n", label, ms * 1000000.0);
 }
 
 static int test_rsa_keygen(size_t rsa_len, int do_perf) {
@@ -192,7 +215,7 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     printf("\nEncrypting with e=65537...\n");
     if (do_perf) t_start = get_time_ms();
     memset(c, 0, sizeof(c));
-    sdc_int_mont_modexp_with_ebits(c, m, e, e_bits, n, tmp, rsa_len, ninv);
+    sdc_int_mont_modexp_with_ebits_vartime(c, m, e, e_bits, n, tmp, rsa_len, ninv);
     if (do_perf) { t_end = get_time_ms(); t_enc = t_end - t_start; }
     print_hex("c (ciphertext)", c, rsa_len);
 

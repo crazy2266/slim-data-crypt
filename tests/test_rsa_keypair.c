@@ -247,7 +247,7 @@ static void test_roundtrip(void) {
     sdc_word_t ninv = sdc_int_calculate_ninv(pub.n[0]);
 
     /* encrypt: c = m^e mod n */
-    sdc_int_mont_modexp_with_ebits(cipher, msg, pub.e, pub.e_bits, pub.n, tmp, len2, ninv);
+    sdc_int_mont_modexp_with_ebits_vartime(cipher, msg, pub.e, pub.e_bits, pub.n, tmp, len2, ninv);
     /* decrypt: m' = c^d mod n */
     sdc_int_mont_modexp_word(decrypted, cipher, priv.d, len2, pub.n, tmp, len2, ninv);
     TEST_ASSERT(sdc_int_eq(msg, decrypted, len2) == 1, "round-trip: decrypt(encrypt(msg)) == msg");
@@ -303,7 +303,7 @@ static void test_crt(void) {
     ((uint8_t *)msg)[0] = 0x01;
 
     sdc_word_t ninv = sdc_int_calculate_ninv(pubkey.n[0]);
-    sdc_int_mont_modexp_with_ebits(cipher, msg, pubkey.e, pubkey.e_bits,
+    sdc_int_mont_modexp_with_ebits_vartime(cipher, msg, pubkey.e, pubkey.e_bits,
                              pubkey.n, tmp, len2, ninv);
 
     /* 1. Direct decryption: m = c^d mod n */
@@ -515,7 +515,7 @@ static void test_crt_performance(void) {
     ((uint8_t *)msg)[0] = 0x01;
 
     sdc_word_t ninv = sdc_int_calculate_ninv(pubkey.n[0]);
-    sdc_int_mont_modexp_with_ebits(cipher, msg, pubkey.e, pubkey.e_bits,
+    sdc_int_mont_modexp_with_ebits_vartime(cipher, msg, pubkey.e, pubkey.e_bits,
                              pubkey.n, tmp, len2, ninv);
 
     /* Warmup: run once to warm up the cache */
