@@ -70,6 +70,7 @@ typedef struct {
     sdc_word_t *n;
     size_t nlen;
     sdc_word_t e;
+    size_t e_bits;
 } sdc_rsa_pubkey_t;
 
 /**

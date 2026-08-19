@@ -89,7 +89,8 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     sdc_word_t d[rsa_len];
     sdc_word_t m[rsa_len], c[rsa_len], m_dec[rsa_len];
     sdc_word_t pq_full[2 * prime_len], phi_full[2 * rsa_len];
-    sdc_word_t e_arr[1] = {RSA_PUB_EXP};
+    sdc_word_t e = RSA_PUB_EXP;
+    size_t e_bits = SDC_WORD_BITS - sdc_word_clz(e);
     sdc_word_t *tmp = (sdc_word_t *)calloc(5 * rsa_len, sizeof(sdc_word_t));
     if (tmp == NULL) return test_fail("rsa_keygen", "scratch allocation failed");
 
@@ -191,7 +192,7 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     printf("\nEncrypting with e=65537...\n");
     if (do_perf) t_start = get_time_ms();
     memset(c, 0, sizeof(c));
-    sdc_int_mont_modexp_word(c, m, e_arr, 1, n, tmp, rsa_len, ninv);
+    sdc_int_mont_modexp_with_ebits(c, m, e, e_bits, n, tmp, rsa_len, ninv);
     if (do_perf) { t_end = get_time_ms(); t_enc = t_end - t_start; }
     print_hex("c (ciphertext)", c, rsa_len);
 

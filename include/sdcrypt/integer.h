@@ -154,6 +154,16 @@ void sdc_int_mont_modexp_word(sdc_word_t *r, const sdc_word_t *a, const sdc_word
  * Compute a^e mod n in the field Z_n.
  * r,a,n should be at least len words long.
  * a should be in normal field, and r will be in normal field after the operation.
+ * tmp should be at least 4*len words long.
+ * ninv should be precomputed by sdc_int_calculate_ninv.
+ */
+void sdc_int_mont_modexp_with_ebits(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t e, size_t e_bits,
+            const sdc_word_t *n, sdc_word_t *tmp, size_t len, sdc_word_t ninv);
+
+/*
+ * Compute a^e mod n in the field Z_n.
+ * r,a,n should be at least len words long.
+ * a should be in normal field, and r will be in normal field after the operation.
  * tmp should be at least 2*len words long.
  * ninv should be precomputed by sdc_int_calculate_ninv.
  * ATTENTION: e must be in little-endian format.

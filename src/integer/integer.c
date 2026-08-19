@@ -498,6 +498,39 @@ void sdc_int_mont_modexp_word(sdc_word_t *r, const sdc_word_t *a, const sdc_word
     sdc_int_copy(r, res, len);
 }
 
+void sdc_int_mont_modexp_with_ebits(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t e, size_t e_bits,
+            const sdc_word_t *n, sdc_word_t *tmp, size_t len, sdc_word_t ninv) {
+    size_t i;
+    sdc_word_t *buf1, *buf2, *buf3, *a_mont;
+    sdc_word_t *res, *base, *scratch;
+    sdc_word_t bit;
+
+    buf1 = tmp;                   /* len words */
+    buf2 = tmp + len;             /* len words */
+    buf3 = tmp + len * 2;         /* len words */
+    a_mont = tmp + len * 3;       /* len words */
+
+    sdc_int_copy(a_mont, a, len);
+    sdc_int_to_mont(a_mont, n, len);
+    sdc_int_set_word(buf1, 1, len);
+    sdc_int_to_mont(buf1, n, len);
+    sdc_int_copy(buf2, a_mont, len);
+
+    res = buf1;
+    base = buf2;
+    scratch = buf3;
+
+    for (i = 0; i < e_bits; i++) {
+        bit = (e >> i) & 1;
+        sdc_int_mont_mul(scratch, res, base, n, len, ninv);
+        ptr_cswap(&res, &scratch, bit);
+        sdc_int_mont_mul(scratch, base, base, n, len, ninv);
+        ptr_cswap(&base, &scratch, 1);
+    }
+    sdc_int_from_mont(res, n, len, ninv);
+    sdc_int_copy(r, res, len);
+}
+
 void sdc_int_mont_modexp_word_vartime(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *e, size_t elen,
             const sdc_word_t *n, sdc_word_t *tmp, size_t len, sdc_word_t ninv) {
     size_t i, bit_idx;
@@ -714,7 +747,7 @@ static sdc_word_t modinv_word(sdc_word_t a, sdc_word_t m) {
         }
     }
 
-    /* At termination (v == gcd == 1 assumed), x2 holds a*x2 ≡ v(final) ... 
+    /* At termination (v == gcd == 1 assumed), x2 holds a*x2 �?v(final) ... 
        Standard binary xgcd converges with u -> gcd, and x1 the corresponding
        coefficient for u. Since we assume gcd(a,m)=1, u should reach 1 (or v reaches 1
        depending on parity path); take whichever of u/v equals... */
@@ -729,13 +762,13 @@ static sdc_word_t modinv_word(sdc_word_t a, sdc_word_t m) {
 /*
  * Mathematical Derivation (independently discovered by the author):
  *
- * We want d such that d * e ≡ 1 (mod φ).
+ * We want d such that d * e �?1 (mod φ).
  * This means d * e = k * φ + 1 for some integer k.
  * Rearranging: d = (k * φ + 1) / e.
  *
  * For this to yield an integer, we need:
- *     k * φ ≡ -1 (mod e)
- *     k ≡ -φ^{-1} (mod e)
+ *     k * φ �?-1 (mod e)
+ *     k �?-φ^{-1} (mod e)
  *
  * Since e is a small public exponent (typically 65537), φ^{-1} mod e
  * can be computed with a SDC_WORD_BITS-bit constant-time modular inverse.

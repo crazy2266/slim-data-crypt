@@ -37,6 +37,7 @@
 typedef uint64_t sdc_word_t;
 typedef unsigned __int128 sdc_dword_t;
 #  define SDC_WORD_MASK 0xFFFFFFFFFFFFFFFFULL
+#  define sdc_word_clz __builtin_clzll
 #  define sdc_word_ctz __builtin_ctzll
 #elif SDC_32BIT
 #  define SDC_WORD_SIZE  4
@@ -45,6 +46,7 @@ typedef unsigned __int128 sdc_dword_t;
 typedef uint32_t sdc_word_t;
 typedef uint64_t sdc_dword_t;
 #  define SDC_WORD_MASK 0xFFFFFFFFU
+#  define sdc_word_clz __builtin_clz
 #  define sdc_word_ctz __builtin_ctz
 #endif
 

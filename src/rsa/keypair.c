@@ -35,7 +35,7 @@ int sdc_rsa_pubkey_init(sdc_rsa_pubkey_t *pubkey,
                         sdc_word_t e) {
     size_t n_words = nlen / SDC_WORD_SIZE;
     size_t left_n  = nlen % SDC_WORD_SIZE;
-    if (!pubkey || !n || e == 0 || n_words == 0 || left_n != 0) {
+    if (!pubkey || !n || (e & 1) == 0 || n_words == 0 || left_n != 0) {
         return SDC_ERR_INVALID_PARAM;
     }
 
@@ -50,6 +50,7 @@ int sdc_rsa_pubkey_init(sdc_rsa_pubkey_t *pubkey,
     pubkey->n = N;
     pubkey->nlen = n_words;
     pubkey->e = e;
+    pubkey->e_bits = SDC_WORD_BITS - sdc_word_clz(e);
     return SDC_ERR_OK;
 }
 
@@ -72,6 +73,7 @@ int sdc_rsa_privkey_init(sdc_rsa_privkey_t *privkey,
 
     if (!p || !q || !d || !n ||
         len1_words == 0 || len2_words == 0 ||
+        (d[0] & 1) == 0 ||
         left1 != 0 || left2 != 0 ||
         len2 != len1 * 2) {
         return SDC_ERR_INVALID_PARAM;
@@ -167,7 +169,7 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
                     sdc_rsa_privkey_t *privkey,
                     sdc_word_t e,
                     size_t bits) {
-    if (!pubkey || !privkey || bits == 0 ||
+    if (!pubkey || !privkey || bits == 0 || (e & 1) == 0 ||
         bits % SDC_WORD_BITS != 0) {
         return SDC_ERR_INVALID_PARAM;
     }
@@ -261,6 +263,7 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
     sdc_int_copy(pubkey->n, privkey->n, len2);
     pubkey->nlen = len2;
     pubkey->e = e;
+    pubkey->e_bits = SDC_WORD_BITS - sdc_word_clz(e);
 
     sdc_free(tmp_block);
     return SDC_ERR_OK;
