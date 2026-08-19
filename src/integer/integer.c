@@ -267,6 +267,38 @@ sdc_word_t sdc_int_sub_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word,
     return borrow;
 }
 
+sdc_word_t sdc_int_add_word_vartime(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word, size_t len) {
+    sdc_dword_t tmp;
+    sdc_word_t carry;
+    size_t i;
+    
+    tmp = (sdc_dword_t)a[0] + word;
+    r[0] = (sdc_word_t)tmp;
+    carry = (sdc_word_t)(tmp >> SDC_WORD_BITS);
+    for (i = 1; i < len && carry; i++) {
+        tmp = (sdc_dword_t)a[i] + carry;
+        r[i] = (sdc_word_t)tmp;
+        carry = (sdc_word_t)(tmp >> SDC_WORD_BITS);
+    }
+    return carry;
+}
+
+sdc_word_t sdc_int_sub_word_vartime(sdc_word_t *r, const sdc_word_t *a, sdc_word_t word, size_t len) {
+    sdc_dword_t tmp;
+    sdc_word_t borrow;
+    size_t i;
+
+    tmp = (sdc_dword_t)a[0] - word;
+    r[0] = (sdc_word_t)tmp;
+    borrow = (tmp >> SDC_WORD_BITS) & 1;
+    for (i = 1; i < len && borrow; i++) {
+        tmp = (sdc_dword_t)a[i] - borrow;
+        r[i] = (sdc_word_t)tmp;
+        borrow = (tmp >> SDC_WORD_BITS) & 1;
+    }
+    return borrow;
+}
+
 void sdc_int_shr(sdc_word_t *x, size_t bits, size_t len) {
     if (bits == 0) return;
     if (bits >= SDC_WORD_BITS * len) {
