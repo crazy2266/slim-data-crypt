@@ -218,9 +218,8 @@ void sdc_int_tobytes_be(const sdc_word_t *a, size_t len, uint8_t *out);
 /*
  * d = e^{-1} mod phi
  * d,phi should be at least len words long.
- * tmp should be at least (len+1) words long.
  */
-void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, sdc_word_t *tmp, size_t len);
+void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, size_t len);
 
 /*
  * Generate a random prime number with len words long.

@@ -240,7 +240,7 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
     sdc_int_mul(phi, p_minus_1, q_minus_1, len1);
 
     /* d = e^{-1} mod phi */
-    sdc_int_modinv(privkey->d, phi, e, scratch, len2);
+    sdc_int_modinv(privkey->d, phi, e, len2);
 
     /* CRT parameters */
     /* dp = d mod (p - 1) */

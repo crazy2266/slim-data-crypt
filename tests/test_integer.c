@@ -197,11 +197,10 @@ static int test_modinv(void) {
     size_t len = 4;
     sdc_word_t phi[4] = {0x00000c30, 0, 0, 0};
     sdc_word_t d[4];
-    sdc_word_t tmp[9];
     sdc_word_t expected[4] = {0x00000ac1, 0, 0, 0};
     sdc_word_t e = 17;
 
-    sdc_int_modinv(d, phi, e, tmp, len);
+    sdc_int_modinv(d, phi, e, len);
     print_hex("计算出的 d", d, len);
     print_hex("期望的 d", expected, len);
 

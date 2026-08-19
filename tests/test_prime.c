@@ -185,7 +185,7 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
     printf("\nCalculating d = e^-1 mod phi...\n");
     if (do_perf) t_start = get_time_ms();
     memset(d, 0, sizeof(d));
-    sdc_int_modinv(d, phi, RSA_PUB_EXP, tmp, rsa_len);
+    sdc_int_modinv(d, phi, RSA_PUB_EXP, rsa_len);
     if (do_perf) { t_end = get_time_ms(); t_total += t_end - t_start; }
     if (sdc_int_eq_word(d, 0, rsa_len)) {
         free(tmp);

@@ -346,9 +346,8 @@ void sdc_int_mul_word(sdc_word_t *r, const sdc_word_t *a, sdc_word_t b, size_t l
     sdc_dword_t tmp;
     size_t i;
     tmp = 0;
-    sdc_int_set_word(r, 0, len + 1);
     for (i = 0; i < len; i++) {
-        tmp += (sdc_dword_t)r[i] + (sdc_dword_t)a[i] * b;
+        tmp += (sdc_dword_t)a[i] * b;
         r[i] = (sdc_word_t)tmp;
         tmp >>= SDC_WORD_BITS;
     }
@@ -775,20 +774,31 @@ static sdc_word_t modinv_word(sdc_word_t a, sdc_word_t m) {
  * development of slim-data-crypt and is specific to RSA key
  * generation with small public exponents.
  */
-void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, sdc_word_t *tmp, size_t len) {
-    if (e == 0) return;
-    sdc_word_t k = 0;
-    sdc_word_t rem;
-
-    rem = sdc_int_mod_word(phi, e, len);
+void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, size_t len) {
+    if ((e & 1) == 0) return;
+    if (!d || !phi || len == 0) return;
+    sdc_dword_t t1, val;
+    sdc_word_t t2, k;
+    size_t i;
+    
     // k = -phi^{-1} (mod e)
-    k = e - modinv_word(rem, e);
-    // tmp = k * phi + 1
-    sdc_int_mul_word(tmp, phi, k, len);
-    tmp[0]++;  // We can directly add 1 because k*phi is always even.
-    sdc_int_div_word(tmp, tmp, e, len + 1, NULL);
-    // d = tmp / e = (k * phi + 1) / e
-    sdc_int_copy(d, tmp, len);
+    k = sdc_int_mod_word(phi, e, len);
+    k = e - modinv_word(k, e);
+    // d = k * phi + 1
+    t1 = 0;
+    for (i = 0; i < len; i++) {
+        t1 += (sdc_dword_t)phi[i] * k;
+        d[i] = (sdc_word_t)t1;
+        t1 >>= SDC_WORD_BITS;
+    }
+    d[0]++;  // We can directly add 1 because k*phi is always even.
+    // d = d / e = (k * phi + 1) / e
+    sdc_dword_t remainder = t1;
+    for (i = len; i > 0; i--) {
+        val = (remainder << SDC_WORD_BITS) | d[i - 1];
+        d[i - 1] = (sdc_word_t)div_word(val, e, &t2);
+        remainder = t2;
+    }
 }
 
 #endif /* SDC_ENABLE_INTEGER */
