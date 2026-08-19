@@ -157,7 +157,7 @@ void sdc_int_mont_modexp_word(sdc_word_t *r, const sdc_word_t *a, const sdc_word
  * tmp should be at least 2*len words long.
  * ninv should be precomputed by sdc_int_calculate_ninv.
  */
-void sdc_int_mont_modexp_with_ebits_vartime(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t e, size_t elen,
+void sdc_int_mont_modexp_with_ebits_vartime(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t e, size_t e_bits,
             const sdc_word_t *n, sdc_word_t *tmp, size_t len, sdc_word_t ninv);
 
 /*

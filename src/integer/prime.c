@@ -94,7 +94,6 @@ static int is_prime(const sdc_word_t *x, size_t len, sdc_word_t *tmp) {
     sdc_word_t *result = tmp + 3 * len;
     sdc_word_t *minus_one = tmp + 4 * len;
     sdc_word_t ninv;
-    const sdc_word_t exponent = 2;
     const sdc_word_t *bases;
 
     if (len == 0) return 0;
@@ -143,8 +142,8 @@ static int is_prime(const sdc_word_t *x, size_t len, sdc_word_t *tmp) {
         }
 
         for (j = 1; j < s; j++) {
-            sdc_int_mont_modexp_word_vartime(
-                result, result, &exponent, 1, x, scratch, len, ninv);
+            sdc_int_mont_modexp_with_ebits_vartime(
+                result, result, 2, 2, x, scratch, len, ninv);
             if (sdc_int_eq(result, minus_one, len)) {
                 witness_passed = 1;
                 break;
