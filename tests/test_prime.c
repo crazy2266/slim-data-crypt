@@ -8,6 +8,11 @@
  * and verifies that encryption/decryption works correctly.
  */
 
+#ifdef _WIN32
+#  include <windows.h>
+#else
+#  define _POSIX_C_SOURCE 200809L
+#endif
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -61,28 +66,18 @@ static void print_hex(const char *label, const sdc_word_t *a, size_t len) {
 /* ============================================================
    High-resolution timer
    ============================================================ */
-#if defined(_WIN32) || defined(_WIN64)
-#  include <windows.h>
-static LARGE_INTEGER timer_freq;
-static int timer_initialized = 0;
-
 static double get_time_ms(void) {
-    if (!timer_initialized) {
-        QueryPerformanceFrequency(&timer_freq);
-        timer_initialized = 1;
-    }
-    LARGE_INTEGER now;
-    QueryPerformanceCounter(&now);
-    return (double)now.QuadPart * 1000.0 / (double)timer_freq.QuadPart;
-}
+#ifdef _WIN32
+    LARGE_INTEGER freq, count;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&count);
+    return (double)count.QuadPart * 1000.0 / freq.QuadPart;
 #else
-#  include <time.h>
-static double get_time_ms(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (double)ts.tv_sec * 1000.0 + (double)ts.tv_nsec / 1000000.0;
-}
 #endif
+}
 
 static void print_time(const char *label, double ms) {
     if (ms >= 1000.0) printf("%s: %.3f s\n", label, ms / 1000.0);
