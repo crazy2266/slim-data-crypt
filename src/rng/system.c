@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * System RNG table definition.
+ */
+
 #include <sdcrypt/config.h>
 #include <sdcrypt/rng.h>
 #include <sdcrypt/errcode.h>
@@ -14,13 +21,14 @@
 #  include <errno.h>
 #endif
 
-static int system_rng_init(sdc_rng_ctx *ctx, const uint8_t *seed, size_t seed_len) {
-    (void)ctx; (void)seed; (void)seed_len;
+static int system_rng_init(sdc_rng_ctx *ctx, const uint8_t *seed) {
+    (void)ctx; (void)seed;
     return SDC_ERR_OK;
 }
 
 static int system_rng_generate(sdc_rng_ctx *ctx, uint8_t *out, size_t len) {
     (void)ctx;
+    if (out == NULL || len == 0) return SDC_ERR_INVALID_PARAM;
 #ifdef _WIN32
     uint8_t *p = (uint8_t *)out;
     size_t remaining = len;
@@ -60,7 +68,8 @@ static int system_rng_generate(sdc_rng_ctx *ctx, uint8_t *out, size_t len) {
 
 const sdc_rng_ops_t sdc_system_rng_ops = {
     .init = system_rng_init,
-    .generate = system_rng_generate
+    .generate = system_rng_generate,
+    .seed_len = 0,
 };
 
-#endif
+#endif /* SDC_ENABLE_SYSTEM_RNG */

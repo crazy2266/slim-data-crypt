@@ -235,7 +235,7 @@ void sdc_chacha20raw_crypt(sdc_chacha20_ctx *ctx, const uint8_t *in,
 
     size_t i = 0;
     while (i < len) {
-        if (ctx->buf_used >= 320) next_block(ctx);
+        if (ctx->buf_used == 320) next_block(ctx);
 
         size_t available = 320 - ctx->buf_used;
         size_t remaining = len - i;
