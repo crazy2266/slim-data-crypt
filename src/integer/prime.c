@@ -9,7 +9,7 @@
 #include <sdcrypt/integer.h>
 #include <sdcrypt/platform.h>
 #include <sdcrypt/errcode.h>
-#include <sdcrypt/random.h>
+#include <sdcrypt/rng.h>
 #include <sdcrypt/utils.h>
 
 #if SDC_ENABLE_INTEGER
@@ -42,9 +42,9 @@ static const uint32_t SMALL_PRIMES[168] = {
  * This ensures that the number has exactly `SDC_WORD_BITS * len` bits and is large enough
  * that `n = p * q` will have the desired bit length.
  */
-static int int_gen_random_odd(sdc_word_t *x, size_t len) {
+static int int_gen_random_odd(sdc_word_t *x, size_t len, sdc_rng_ctx *rng_ctx) {
     if (len == 0) return SDC_ERR_INVALID_PARAM;
-    int ret = sdc_random_bytes((uint8_t *)x, len * SDC_WORD_SIZE);
+    int ret = sdc_rng_generate(rng_ctx, (uint8_t *)x, len * SDC_WORD_SIZE);
     if (ret != 0) return ret;
     x[0] |= 1;                           /* Set the least significant bit to 1 */
 #if SDC_64BIT
@@ -155,12 +155,12 @@ static int is_prime(const sdc_word_t *x, size_t len, sdc_word_t *tmp) {
     return 1;
 }
 
-int sdc_int_gen_prime(sdc_word_t *x, sdc_word_t *tmp, size_t len) {
-    if (x == NULL || tmp == NULL || len == 0) return SDC_ERR_INVALID_PARAM;
+int sdc_int_gen_prime(sdc_word_t *x, sdc_word_t *tmp, size_t len, sdc_rng_ctx *rng_ctx) {
+    if (x == NULL || tmp == NULL || rng_ctx == NULL || len == 0) return SDC_ERR_INVALID_PARAM;
     int attempt = 0;
     while (attempt < GEN_PRIME_MAX_ATTEMPT) {
         attempt++;
-        int ret = int_gen_random_odd(x, len);
+        int ret = int_gen_random_odd(x, len, rng_ctx);
         if (ret != 0) return ret;
         /* Fast rejection before the expensive Miller-Rabin test. */
         if (is_divisible_by_small_prime(x, len)) continue;

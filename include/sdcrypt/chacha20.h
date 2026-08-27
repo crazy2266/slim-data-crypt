@@ -43,6 +43,13 @@ void sdc_chacha20_crypt(sdc_chacha20_ctx *ctx, const uint8_t *in,
                         uint8_t *out, size_t len);
 #endif /* SDC_ENABLE_CHACHA20 */
 
+#if SDC_ENABLE_CHACHA20RAW
+void sdc_chacha20raw_init(sdc_chacha20_ctx *ctx, const uint8_t key[32],
+                          const uint8_t nonce[8], uint64_t counter);
+void sdc_chacha20raw_crypt(sdc_chacha20_ctx *ctx, const uint8_t *in,
+                           uint8_t *out, size_t len);
+#endif /* SDC_ENABLE_CHACHA20RAW */
+
 #if SDC_ENABLE_XCHACHA20
 void sdc_xchacha20_init(sdc_chacha20_ctx *ctx, const uint8_t key[32],
                         const uint8_t nonce[24], uint64_t counter);

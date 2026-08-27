@@ -47,7 +47,7 @@ typedef struct sdc_hash_ops_t sdc_hash_ops_t;
 
 typedef struct {
     const sdc_hash_ops_t *ops;
-    alignas(8) uint8_t inner_state[SDC_HASH_CUSTOM_MAX];
+    alignas(8) uint8_t inner_state[SDC_HASH_STATE_MAX_SIZE];
 } sdc_hash_ctx;
 
 /* ---------- Hash operation table ---------- */

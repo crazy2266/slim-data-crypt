@@ -46,6 +46,7 @@
 #include <stddef.h>
 #include <sdcrypt/config.h>
 #include <sdcrypt/hash.h>
+#include <sdcrypt/rng.h>
 #include <sdcrypt/platform.h>
 
 #ifdef __cplusplus
@@ -54,6 +55,8 @@ extern "C" {
 
 #define SDC_ENABLE_RSA (SDC_ENABLE_RSA_KEYGEN || SDC_ENABLE_RSAES_PKCS1V15 || SDC_ENABLE_RSAES_OAEP || \
                         SDC_ENABLE_RSASSA_PKCS1V15 || SDC_ENABLE_RSASSA_PSS)
+
+#if SDC_ENABLE_RSA
 
 /* ============================================================
    Key structures
@@ -144,13 +147,15 @@ int sdc_rsa_privkey_init(sdc_rsa_privkey_t *privkey,
  * @param privkey Output private key (must be initialized)
  * @param e       Public exponent (single word, typically 0x10001)
  * @param bits    Key size in bits (must be multiple of SDC_WORD_BITS)
+ * @param rng_ctx Random number generator context
  * @return        SDC_ERR_OK on success, error code otherwise
  */
 #if SDC_ENABLE_RSA_KEYGEN
 int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
                     sdc_rsa_privkey_t *privkey,
                     sdc_word_t e,
-                    size_t bits);
+                    size_t bits,
+                    sdc_rng_ctx *rng_ctx);
 #endif
 
 /**
@@ -399,6 +404,8 @@ int sdc_rsassa_pss_verify_hash(const sdc_hash_ops_t *hash_ops,
                                const uint8_t *sig, size_t sig_len);
 
 #endif /* SDC_ENABLE_RSASSA_PSS */
+
+#endif /* SDC_ENABLE_RSA */
 
 #ifdef __cplusplus
 }

@@ -21,13 +21,14 @@
 #include <time.h>
 #include <sdcrypt/config.h>
 #include <sdcrypt/integer.h>
-#include <sdcrypt/random.h>
+#include <sdcrypt/rng.h>
 
 #if SDC_ENABLE_INTEGER
 
 #define RSA_PUB_EXP UINT64_C(65537)
 
 static unsigned g_failures = 0;
+static sdc_rng_ctx rng_ctx = {&sdc_system_rng_ops, {0}};
 
 static void test_ok(const char *name) {
     printf("  [PASS] %s\n", name);
@@ -116,14 +117,14 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
 
     printf("\nGenerating %zu-bit prime p...\n", prime_bits);
     if (do_perf) t_start = get_time_ms();
-    ret = sdc_int_gen_prime(p, tmp, prime_len);
+    ret = sdc_int_gen_prime(p, tmp, prime_len, &rng_ctx);
     if (do_perf) { t_end = get_time_ms(); t_total += t_end - t_start; }
     if (ret != 0) { free(tmp); return test_fail("p generation", "sdc_int_gen_prime failed"); }
     print_hex("p", p, prime_len);
 
     printf("\nGenerating %zu-bit prime q...\n", prime_bits);
     if (do_perf) t_start = get_time_ms();
-    do { ret = sdc_int_gen_prime(q, tmp, prime_len); } while (ret == 0 && eq_words(p, q, prime_len));
+    do { ret = sdc_int_gen_prime(q, tmp, prime_len, &rng_ctx); } while (ret == 0 && eq_words(p, q, prime_len));
     if (do_perf) { t_end = get_time_ms(); t_total += t_end - t_start; }
     if (ret != 0) { free(tmp); return test_fail("q generation", "sdc_int_gen_prime failed"); }
     print_hex("q", q, prime_len);
@@ -191,7 +192,7 @@ static int test_rsa_keygen(size_t rsa_len, int do_perf) {
 
     printf("\nGenerating random message m < n...\n");
     for (;;) {
-        ret = sdc_random_bytes((uint8_t *)m, rsa_len * sizeof(sdc_word_t));
+        ret = sdc_rng_generate(&rng_ctx, (uint8_t *)m, rsa_len * sizeof(sdc_word_t));
         if (ret != 0) { free(tmp); return test_fail("message", "random generation failed"); }
         if (!sdc_int_gte(m, n, rsa_len)) break;
     }

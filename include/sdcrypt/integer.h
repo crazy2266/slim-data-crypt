@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sdcrypt/platform.h>
+#include <sdcrypt/rng.h>
 #include <sdcrypt/config.h>
 
 #if SDC_ENABLE_INTEGER
@@ -236,7 +237,7 @@ void sdc_int_modinv(sdc_word_t *d, const sdc_word_t *phi, sdc_word_t e, size_t l
  *   SDC_ERR_INVALID_PARAM: invalid input
  *   SDC_ERR_INTEGER_GENPRIME_TIMEOUT: failed to find a prime within the maximum attempts.
  */
-int sdc_int_gen_prime(sdc_word_t *x, sdc_word_t *tmp, size_t len);
+int sdc_int_gen_prime(sdc_word_t *x, sdc_word_t *tmp, size_t len, sdc_rng_ctx *rng_ctx);
 
 // A helper function to calculate the length of an unsigned integer in words.
 static inline size_t sdc_get_len_by_bits(size_t bits) {

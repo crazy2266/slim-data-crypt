@@ -168,8 +168,9 @@ void sdc_rsa_free_keypair(sdc_rsa_pubkey_t *pubkey,
 int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
                     sdc_rsa_privkey_t *privkey,
                     sdc_word_t e,
-                    size_t bits) {
-    if (!pubkey || !privkey || bits == 0 || (e & 1) == 0 ||
+                    size_t bits,
+                    sdc_rng_ctx *rng_ctx) {
+    if (!pubkey || !privkey || !rng_ctx || bits == 0 || (e & 1) == 0 ||
         bits % SDC_WORD_BITS != 0) {
         return SDC_ERR_INVALID_PARAM;
     }
@@ -219,12 +220,12 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
     sdc_word_t *scratch = phi + len2;
 
     /* Generate p */
-    ret = sdc_int_gen_prime(privkey->p, scratch, len1);
+    ret = sdc_int_gen_prime(privkey->p, scratch, len1, rng_ctx);
     if (ret != SDC_ERR_OK) goto err_free_all;
 
     /* Generate q, ensure q != p */
     do {
-        ret = sdc_int_gen_prime(privkey->q, scratch, len1);
+        ret = sdc_int_gen_prime(privkey->q, scratch, len1, rng_ctx);
         if (ret != SDC_ERR_OK) goto err_free_all;
     } while (sdc_int_eq(privkey->p, privkey->q, len1) == 1);
 

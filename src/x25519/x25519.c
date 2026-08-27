@@ -10,7 +10,7 @@
  */
 
 #include <sdcrypt/x25519.h>
-#include <sdcrypt/random.h>
+#include <sdcrypt/rng.h>
 #include <sdcrypt/utils.h>
 #include <sdcrypt/config.h>
 #include <sdcrypt/errcode.h>
@@ -75,9 +75,9 @@ void sdc_x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8
     sdc_x25519_scalarmult(shared, priv, pub);
 }
 
-int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32]) {
-    if (!pub || !priv) return SDC_ERR_INVALID_PARAM;
-    int ret = sdc_random_bytes(priv, 32);
+int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32], sdc_rng_ctx *rng_ctx) {
+    if (!pub || !priv || !rng_ctx) return SDC_ERR_INVALID_PARAM;
+    int ret = sdc_rng_generate(rng_ctx, priv, 32);
     if (ret != 0) return SDC_ERR_RANDOM_FAIL;
 
     priv[0]  &= 0xf8;

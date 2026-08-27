@@ -21,11 +21,13 @@
 #include <sdcrypt/config.h>
 #include <sdcrypt/errcode.h>
 #include <sdcrypt/mem.h>
+#include <sdcrypt/rng.h>
 #include <sdcrypt/integer.h>
 #include <sdcrypt/utils.h>
 
 static int g_passed = 0;
 static int g_total = 0;
+static sdc_rng_ctx rng_ctx = {&sdc_system_rng_ops, {0}};
 
 #define TEST_START(name) printf("\n=== %s ===\n", name)
 #define TEST_ASSERT(cond, msg) \
@@ -75,7 +77,7 @@ static void test_keygen(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048);
+    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048, &rng_ctx);
     TEST_ASSERT(ret == SDC_ERR_OK, "2048-bit key generation");
 
     if (ret == SDC_ERR_OK) {
@@ -98,7 +100,7 @@ static void test_keygen(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    ret = sdc_rsa_keypair(&pub, &priv, 3, 1024);
+    ret = sdc_rsa_keypair(&pub, &priv, 3, 1024, &rng_ctx);
     TEST_ASSERT(ret == SDC_ERR_OK, "1024-bit with e=3");
 
     if (ret == SDC_ERR_OK) {
@@ -108,16 +110,16 @@ static void test_keygen(void) {
     }
 
     /* invalid params */
-    ret = sdc_rsa_keypair(NULL, NULL, 65537, 2048);
+    ret = sdc_rsa_keypair(NULL, NULL, 65537, 2048, &rng_ctx);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL pubkey");
 
-    ret = sdc_rsa_keypair(&pub, NULL, 65537, 2048);
+    ret = sdc_rsa_keypair(&pub, NULL, 65537, 2048, &rng_ctx);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL privkey");
 
-    ret = sdc_rsa_keypair(&pub, &priv, 65537, 0);
+    ret = sdc_rsa_keypair(&pub, &priv, 65537, 0, &rng_ctx);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "bits == 0");
 
-    ret = sdc_rsa_keypair(&pub, &priv, 65537, 2047);
+    ret = sdc_rsa_keypair(&pub, &priv, 65537, 2047, &rng_ctx);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "bits not word-aligned");
 }
 
@@ -133,7 +135,7 @@ static void test_math(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048);
+    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048, &rng_ctx);
     if (ret != SDC_ERR_OK) {
         TEST_ASSERT(0, "keypair generation failed");
         return;
@@ -220,7 +222,7 @@ static void test_roundtrip(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048);
+    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048, &rng_ctx);
     if (ret != SDC_ERR_OK) {
         TEST_ASSERT(0, "keypair generation failed");
         return;
@@ -274,7 +276,7 @@ static void test_crt(void) {
     memset(&pubkey, 0, sizeof(pubkey));
     memset(&privkey, 0, sizeof(privkey));
 
-    ret = sdc_rsa_keypair(&pubkey, &privkey, 65537, 2048);
+    ret = sdc_rsa_keypair(&pubkey, &privkey, 65537, 2048, &rng_ctx);
     TEST_ASSERT(ret == SDC_ERR_OK, "Generate key for CRT test");
     if (ret != SDC_ERR_OK) {
         return;
@@ -381,7 +383,7 @@ static void test_pubkey_init(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    ret = sdc_rsa_keypair(&pub, &priv, 65537, 1024);
+    ret = sdc_rsa_keypair(&pub, &priv, 65537, 1024, &rng_ctx);
     if (ret == SDC_ERR_OK) {
         sdc_rsa_pubkey_t pub2;
         memset(&pub2, 0, sizeof(pub2));
@@ -462,7 +464,7 @@ static void test_free(void) {
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
-    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 1024);
+    int ret = sdc_rsa_keypair(&pub, &priv, 65537, 1024, &rng_ctx);
     if (ret == SDC_ERR_OK) {
         sdc_rsa_free_keypair(&pub, &priv);
         TEST_ASSERT(pub.n == NULL, "pub.n == NULL");
@@ -487,7 +489,7 @@ static void test_crt_performance(void) {
     memset(&pubkey, 0, sizeof(pubkey));
     memset(&privkey, 0, sizeof(privkey));
 
-    ret = sdc_rsa_keypair(&pubkey, &privkey, 65537, 2048);
+    ret = sdc_rsa_keypair(&pubkey, &privkey, 65537, 2048, &rng_ctx);
     if (ret != SDC_ERR_OK) {
         TEST_ASSERT(0, "keypair generation failed");
         return;

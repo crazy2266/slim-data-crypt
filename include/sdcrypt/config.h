@@ -19,6 +19,7 @@
 #define SDC_ENABLE_X25519                 1
 #define SDC_ENABLE_PBKDF2                 1
 #define SDC_ENABLE_CHACHA20               1
+#define SDC_ENABLE_CHACHA20RAW            1
 #define SDC_ENABLE_XCHACHA20              1
 #define SDC_ENABLE_POLY1305               1
 #define SDC_ENABLE_CHACHA20POLY1305_AEAD  1
@@ -28,6 +29,8 @@
 #define SDC_ENABLE_RSASSA_PKCS1V15        1
 #define SDC_ENABLE_RSAES_OAEP             1
 #define SDC_ENABLE_RSASSA_PSS             1
+#define SDC_ENABLE_SYSTEM_RNG             1
+#define SDC_ENABLE_CHACHA20_RNG           1
 
 // Enable features
 #define SDC_SWAPPABLE_ALLOCATOR           0
@@ -35,7 +38,7 @@
 #define SDC_RSA_ENABLE_BLIDING_MODE       1
 
 // Other options
-#define SDC_HASH_CUSTOM_MAX 256
-
+#define SDC_HASH_STATE_MAX_SIZE 256
+#define SDC_RNG_STATE_MAX_SIZE  680
 
 #endif /* SDC_CONFIG_H */

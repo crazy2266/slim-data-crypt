@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sdcrypt/config.h>
+#include <sdcrypt/rng.h>
 
 #if SDC_ENABLE_X25519
 
@@ -19,23 +20,23 @@ extern "C" {
 #endif
 
 /**
- * X25519 密钥交换
+ * X25519 Key Exchange
  *
- * @param out       输出共享密钥（32 字节）
- * @param priv      私钥（32 字节）
- * @param pub       对方公钥（32 字节）
+ * @param shared    Output Shared key (32 bytes)
+ * @param priv      Private key (32 bytes)
+ * @param pub       Public key (32 bytes)
  */
 void sdc_x25519_exchange(uint8_t shared[32], const uint8_t priv[32], const uint8_t pub[32]);
 
 /**
- * 生成 X25519 密钥对
+ * X25519 Key Generation
  *
- * @param pub       输出公钥（32 字节）
- * @param priv      输出私钥（32 字节）
- * @param rng       随机数生成器（可为 NULL，使用默认）
- * @return SDC_ERR_OK 成功，其他错误码
+ * @param pub       Output public key (32 bytes)
+ * @param priv      Output private key (32 bytes)
+ * @param rng_ctx   Random number generator context
+ * @return SDC_ERR_OK on success, other error codes
  */
-int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32]);
+int sdc_x25519_keygen(uint8_t pub[32], uint8_t priv[32], sdc_rng_ctx *rng_ctx);
 
 #ifdef __cplusplus
 }
