@@ -36,6 +36,11 @@ static inline int sdc_rng_generate(sdc_rng_ctx *ctx, uint8_t *out, size_t len) {
     return ctx->ops->generate(ctx, out, len);
 }
 
+static inline size_t sdc_rng_get_seed_len(const sdc_rng_ctx *ctx) {
+    if (!ctx) return SDC_ERR_INVALID_PARAM;
+    return ctx->ops->seed_len;
+}
+
 // Get seed by default rng.
 int sdc_rng_default_seed(uint8_t *seed, size_t len);
 // Get seed by custom rng. If user did not set seed generator, then use default rng.
