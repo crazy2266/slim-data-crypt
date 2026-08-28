@@ -26,9 +26,10 @@ struct sdc_rng_ops_t {
     size_t seed_len;
 };
 
-static inline int sdc_rng_init(sdc_rng_ctx *ctx, const uint8_t *seed) {
-    if (!ctx) return SDC_ERR_INVALID_PARAM;
-    return ctx->ops->init(ctx, seed);
+static inline int sdc_rng_init(sdc_rng_ctx *ctx, const sdc_rng_ops_t *ops, const uint8_t *seed) {
+    if (!ctx || !ops) return SDC_ERR_INVALID_PARAM;
+    ctx->ops = ops;
+    return ops->init(ctx, seed);
 }
 
 static inline int sdc_rng_generate(sdc_rng_ctx *ctx, uint8_t *out, size_t len) {

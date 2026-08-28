@@ -58,6 +58,10 @@ extern "C" {
 
 #if SDC_ENABLE_RSA
 
+#  if !SDC_ENABLE_INTEGER
+#    error "integer module is required for RSA"
+#  endif
+
 /* ============================================================
    Key structures
    ============================================================ */
@@ -188,7 +192,8 @@ void sdc_rsa_free_keypair(sdc_rsa_pubkey_t *pubkey,
  */
 int sdc_rsaes_pkcs1v15_encrypt(const sdc_rsa_pubkey_t *pubkey,
                                const uint8_t *msg, size_t msg_len,
-                               uint8_t *out, size_t *out_len);
+                               uint8_t *out, size_t *out_len,
+                               sdc_rng_ctx *rng_ctx);
 
 /**
  * Decrypt a ciphertext using RSAES-PKCS#1 v1.5.
@@ -232,7 +237,8 @@ int sdc_rsaes_oaep_encrypt(const sdc_hash_ops_t *hash_ops,
                            const sdc_rsa_pubkey_t *pubkey,
                            const uint8_t *msg, size_t msg_len,
                            const uint8_t *label, size_t label_len,
-                           uint8_t *out, size_t *out_len);
+                           uint8_t *out, size_t *out_len,
+                           sdc_rng_ctx *rng_ctx);
 
 /**
  * Decrypt a ciphertext using RSAES-OAEP.
@@ -268,14 +274,14 @@ int sdc_rsaes_oaep_decrypt(const sdc_hash_ops_t *hash_ops,
  * @param privkey      Private key
  * @param msg          Message to sign
  * @param msg_len      Length of message in bytes
- * @param out          Output buffer for signature
- * @param out_len      Input: buffer size; Output: signature length
+ * @param sig          Output buffer for signature
+ * @param sig_len      Input: buffer size; Output: signature length
  * @return             SDC_ERR_OK on success, error code otherwise
  */
 int sdc_rsassa_pkcs1v15_sign(const sdc_hash_ops_t *hash_ops,
                              const sdc_rsa_privkey_t *privkey,
                              const uint8_t *msg, size_t msg_len,
-                             uint8_t *out, size_t *out_len);
+                             uint8_t *sig, size_t *sig_len);
 
 /**
  * Sign a pre-computed hash using RSASSA-PKCS#1 v1.5.
@@ -353,7 +359,8 @@ int sdc_rsassa_pkcs1v15_verify_hash(const sdc_hash_ops_t *hash_ops,
 int sdc_rsassa_pss_sign(const sdc_hash_ops_t *hash_ops,
                         const sdc_rsa_privkey_t *privkey,
                         const uint8_t *msg, size_t msg_len,
-                        uint8_t *out, size_t *out_len);
+                        uint8_t *out, size_t *out_len,
+                        sdc_rng_ctx *rng_ctx);
 
 /**
  * Sign a pre-computed hash using RSASSA-PSS.
@@ -369,7 +376,8 @@ int sdc_rsassa_pss_sign(const sdc_hash_ops_t *hash_ops,
 int sdc_rsassa_pss_sign_hash(const sdc_hash_ops_t *hash_ops,
                              const sdc_rsa_privkey_t *privkey,
                              const uint8_t *digest, size_t digest_len,
-                             uint8_t *out, size_t *out_len);
+                             uint8_t *out, size_t *out_len,
+                             sdc_rng_ctx *rng_ctx);
 
 /**
  * Verify a signature using RSASSA-PSS.

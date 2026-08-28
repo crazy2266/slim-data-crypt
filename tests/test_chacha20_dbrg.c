@@ -42,21 +42,20 @@ static void test_init(void) {
 
     TEST_START("sdc_rng_init with ChaCha20 RNG");
 
-    ctx.ops = &sdc_chacha20_rng_ops;
     memset(seed, 0x11, 32);
-    ret = sdc_rng_init(&ctx, seed);
+    ret = sdc_rng_init(&ctx, &sdc_chacha20_rng_ops, seed);
     TEST_ASSERT(ret == SDC_ERR_OK, "init with valid seed");
 
     /* 测试 NULL seed */
-    ret = sdc_rng_init(&ctx, NULL);
+    ret = sdc_rng_init(&ctx, &sdc_chacha20_rng_ops, NULL);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL seed returns error");
 
     /* 测试 NULL ctx */
-    ret = sdc_rng_init(NULL, seed);
+    ret = sdc_rng_init(NULL, &sdc_chacha20_rng_ops, NULL);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL ctx returns error");
 
     /* 测试 NULL ops */
-    ret = sdc_rng_init(&ctx, NULL);
+    ret = sdc_rng_init(&ctx, NULL, NULL);
     TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL ops returns error");
 }
 
@@ -72,13 +71,11 @@ static void test_non_deterministic(void) {
     TEST_START("Deterministic output");
 
     memset(seed, 0x22, 32);
-    ctx1.ops = &sdc_chacha20_rng_ops;
-    ctx2.ops = &sdc_chacha20_rng_ops;
     
     /* 用相同 seed 初始化两个 DRBG */
-    ret = sdc_rng_init(&ctx1, seed);
+    ret = sdc_rng_init(&ctx1, &sdc_chacha20_rng_ops, seed);
     TEST_ASSERT(ret == SDC_ERR_OK, "init ctx1");
-    ret = sdc_rng_init(&ctx2, seed);
+    ret = sdc_rng_init(&ctx2, &sdc_chacha20_rng_ops, seed);
     TEST_ASSERT(ret == SDC_ERR_OK, "init ctx2");
 
     /* 各生成 64 字节 */
@@ -104,12 +101,10 @@ static void test_different_seeds(void) {
 
     memset(seed1, 0x33, 32);
     memset(seed2, 0x44, 32);
-    ctx1.ops = &sdc_chacha20_rng_ops;
-    ctx2.ops = &sdc_chacha20_rng_ops;
     
-    ret = sdc_rng_init(&ctx1, seed1);
+    ret = sdc_rng_init(&ctx1, &sdc_chacha20_rng_ops, seed1);
     TEST_ASSERT(ret == SDC_ERR_OK, "init ctx1");
-    ret = sdc_rng_init(&ctx2, seed2);
+    ret = sdc_rng_init(&ctx2, &sdc_chacha20_rng_ops, seed2);
     TEST_ASSERT(ret == SDC_ERR_OK, "init ctx2");
 
     ret = sdc_rng_generate(&ctx1, out1, 64);
@@ -133,8 +128,7 @@ static void test_arbitrary_length(void) {
     TEST_START("Arbitrary length generation");
     
     memset(seed, 0x55, 32);
-    ctx.ops = &sdc_chacha20_rng_ops;
-    ret = sdc_rng_init(&ctx, seed);
+    ret = sdc_rng_init(&ctx, &sdc_chacha20_rng_ops, seed);
     TEST_ASSERT(ret == SDC_ERR_OK, "init");
 
     ret = sdc_rng_generate(&ctx, out1, 1);
@@ -173,8 +167,7 @@ static void test_error_handling(void) {
     TEST_START("Error handling");
 
     memset(seed, 0x66, 32);
-    ctx.ops = &sdc_chacha20_rng_ops;
-    ret = sdc_rng_init(&ctx, seed);
+    ret = sdc_rng_init(&ctx, &sdc_chacha20_rng_ops, seed);
     TEST_ASSERT(ret == SDC_ERR_OK, "init");
 
     /* NULL out */
@@ -198,8 +191,7 @@ static void test_large_generation(void) {
     TEST_START("Large generation (2048 bytes)");
 
     memset(seed, 0x77, 32);
-    ctx.ops = &sdc_chacha20_rng_ops;
-    ret = sdc_rng_init(&ctx, seed);
+    ret = sdc_rng_init(&ctx, &sdc_chacha20_rng_ops, seed);
     TEST_ASSERT(ret == SDC_ERR_OK, "init");
 
     ret = sdc_rng_generate(&ctx, out, 2048);
@@ -222,8 +214,7 @@ static void test_multiple_generations(void) {
     TEST_START("Multiple generations");
 
     memset(seed, 0x88, 32);
-    ctx.ops = &sdc_chacha20_rng_ops;
-    ret = sdc_rng_init(&ctx, seed);
+    ret = sdc_rng_init(&ctx, &sdc_chacha20_rng_ops, seed);
     TEST_ASSERT(ret == SDC_ERR_OK, "init");
 
     ret = sdc_rng_generate(&ctx, out1, 32);

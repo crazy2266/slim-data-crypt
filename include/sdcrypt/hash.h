@@ -85,6 +85,7 @@ int sdc_hash_once(const sdc_hash_ops_t *ops, uint8_t *out, const uint8_t *in, si
  * @param oid     DER-encoded OID
  * @param oid_len Length of OID in bytes
  * @return        Pointer to sdc_hash_ops_t if found, NULL otherwise
+ * @note This function can be called as a getter.
  */
 const sdc_hash_ops_t *sdc_hash_find_by_oid_default(const uint8_t *oid, size_t oid_len);
 

@@ -650,16 +650,16 @@ void sdc_int_tobytes_be(const sdc_word_t *a, size_t len, uint8_t *out) {
 }
 
 /*
-* Binary extended GCD, constant time w.r.t. the number of iterations
-* (fixed at 4*SDC_WORD_BITS rounds) and control flow (branchless updates).
-*
-* Invariants maintained (classic binary xgcd):
-*   u, v : current remainders (start: u = a mod m, v = m)
-*   x1, x2: coefficients such that u = a*x1 mod m, v = a*x2 mod m
-*
-* We track everything modulo m using SDC_DWORD_BITS-bit intermediate arithmetic
-* to avoid overflow, and use branchless conditional swaps/updates.
-*/
+ * Binary extended GCD, constant time w.r.t. the number of iterations
+ * (fixed at 4*SDC_WORD_BITS rounds) and control flow (branchless updates).
+ *
+ * Invariants maintained (classic binary xgcd):
+ *   u, v : current remainders (start: u = a mod m, v = m)
+ *   x1, x2: coefficients such that u = a*x1 mod m, v = a*x2 mod m
+ *
+ * We track everything modulo m using SDC_DWORD_BITS-bit intermediate arithmetic
+ * to avoid overflow, and use branchless conditional swaps/updates.
+ */
 static sdc_word_t modinv_word(sdc_word_t a, sdc_word_t m) {
     if (m == 1) return 0;
 

@@ -10,6 +10,8 @@ Supported Algorithms and Functions:
 - X25519
 - Integer arithmetic
 - ASN.1 parse and write
+- RSA key generation
+- RSA-PKCS#1 v1.5 signing and verification
 
 How to build tests:
 - On Linux or Termux (Android), you can directly use "make".

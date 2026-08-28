@@ -89,13 +89,13 @@ int main(void) {
     printf("(Higher is better)\n\n");
 
     sdc_rng_ctx chacha_ctx;
-    chacha_ctx.ops = &sdc_chacha20_rng_ops;
+
     uint8_t seed[32];
     memset(seed, 0x55, 32);
 
 #if SDC_ENABLE_SYSTEM_RNG && SDC_ENABLE_CHACHA20_RNG
     /* 初始化 ChaCha20 DRBG */
-    int ret = sdc_rng_init(&chacha_ctx, seed);
+    int ret = sdc_rng_init(&chacha_ctx, &sdc_chacha20_rng_ops, seed);
     if (ret != SDC_ERR_OK) {
         printf("Failed to init ChaCha20 DRBG\n");
         return 1;
@@ -109,7 +109,7 @@ int main(void) {
     for (int i = 0; i < 6; i++) {
         bench_rng("ChaCha20", sdc_rng_generate, &chacha_ctx,
                   sizes[i], iterations[i]);
-        sdc_rng_init(&chacha_ctx, seed);
+        sdc_rng_init(&chacha_ctx, &sdc_chacha20_rng_ops, seed);
     }
 
     printf("\n=== System RNG ===\n");
