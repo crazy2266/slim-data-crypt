@@ -222,12 +222,14 @@ int sdc_rsaes_pkcs1v15_decrypt(const sdc_rsa_privkey_t *privkey,
     /* em = c^d mod n */
     size_t n_words = privkey->len2;
     size_t tmp_words = privkey->len2 * 4;
-    sdc_word_t *scratch = (sdc_word_t *)sdc_malloc((n_words * 2 + tmp_words) * SDC_WORD_SIZE);
+    size_t em_bytes = n_words * SDC_WORD_SIZE;
+    sdc_word_t *scratch = (sdc_word_t *)sdc_malloc((n_words * 2 + tmp_words) * SDC_WORD_SIZE + em_bytes);
     if (!scratch) return SDC_ERR_MEM_ALLOCATE_FAIL;
 
     sdc_word_t *c_w = scratch;
     sdc_word_t *em_w = scratch + n_words;
     sdc_word_t *tmp = scratch + n_words * 2;
+    uint8_t *em = (uint8_t *)(scratch + n_words * 2 + tmp_words);
 
     sdc_int_frombytes_be(c_w, n_words, cipher);
     int ret = _sdc_rsa_private(em_w, c_w, privkey, tmp);
@@ -236,7 +238,6 @@ int sdc_rsaes_pkcs1v15_decrypt(const sdc_rsa_privkey_t *privkey,
         return ret;
     }
 
-    uint8_t em[512];
     sdc_int_tobytes_be(em_w, n_words, em);
     sdc_free(scratch);
 
