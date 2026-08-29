@@ -55,28 +55,33 @@ static inline uint32_t rotl32(uint32_t x, int n) {
         bs = rotl32(bs, 7); \
     } while (0)
 
-static inline void transpose_4x4_u32(uint32x4_t *out, uint32x4_t v0, uint32x4_t v1,
-                                     uint32x4_t v2, uint32x4_t v3) {
+static inline void transpose_4x4_u32(uint32x4_t *out, uint32x4_t v0, uint32x4_t v1, uint32x4_t v2, uint32x4_t v3) {
+#if SDC_64BIT  // ARM64, ARMv8.0 neon is always available
     uint32x4_t t0 = vzip1q_u32(v0, v1);  // [a0,b0,a1,b1]
     uint32x4_t t1 = vzip2q_u32(v0, v1);  // [a2,b2,a3,b3]
     uint32x4_t t2 = vzip1q_u32(v2, v3);  // [c0,d0,c1,d1]
     uint32x4_t t3 = vzip2q_u32(v2, v3);  // [c2,d2,c3,d3]
-    
-    out[0] = vreinterpretq_u32_u64(
-        vzip1q_u64(vreinterpretq_u64_u32(t0), vreinterpretq_u64_u32(t2)));
-    // [a0,b0,c0,d0]
-    
-    out[1] = vreinterpretq_u32_u64(
-        vzip2q_u64(vreinterpretq_u64_u32(t0), vreinterpretq_u64_u32(t2)));
-    // [a1,b1,c1,d1]
-    
-    out[2] = vreinterpretq_u32_u64(
-        vzip1q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));
-    // [a2,b2,c2,d2]
-    
-    out[3] = vreinterpretq_u32_u64(
-        vzip2q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));
-    // [a3,b3,c3,d3]
+
+    out[0] = vreinterpretq_u32_u64(vzip1q_u64(vreinterpretq_u64_u32(t0), vreinterpretq_u64_u32(t2)));  // [a0,b0,c0,d0]
+    out[1] = vreinterpretq_u32_u64(vzip2q_u64(vreinterpretq_u64_u32(t0), vreinterpretq_u64_u32(t2)));  // [a1,b1,c1,d1]
+    out[2] = vreinterpretq_u32_u64(vzip1q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));  // [a2,b2,c2,d2]
+    out[3] = vreinterpretq_u32_u64(vzip2q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));  // [a3,b3,c3,d3]
+#elif SDC_32BIT  // ARM32, normally ARMv7l neon
+    uint32_t d[16];
+    d[0]  = vgetq_lane_u32(v0, 0); d[1]  = vgetq_lane_u32(v1, 0);
+    d[2]  = vgetq_lane_u32(v2, 0); d[3]  = vgetq_lane_u32(v3, 0);
+    d[4]  = vgetq_lane_u32(v0, 1); d[5]  = vgetq_lane_u32(v1, 1);
+    d[6]  = vgetq_lane_u32(v2, 1); d[7]  = vgetq_lane_u32(v3, 1);
+    d[8]  = vgetq_lane_u32(v0, 2); d[9]  = vgetq_lane_u32(v1, 2);
+    d[10] = vgetq_lane_u32(v2, 2); d[11] = vgetq_lane_u32(v3, 2);
+    d[12] = vgetq_lane_u32(v0, 3); d[13] = vgetq_lane_u32(v1, 3);
+    d[14] = vgetq_lane_u32(v2, 3); d[15] = vgetq_lane_u32(v3, 3);
+
+    out[0] = vld1q_u32(d + 0);   // [a0, b0, c0, d0]
+    out[1] = vld1q_u32(d + 4);   // [a1, b1, c1, d1]
+    out[2] = vld1q_u32(d + 8);   // [a2, b2, c2, d2]
+    out[3] = vld1q_u32(d + 12);  // [a3, b3, c3, d3]
+#endif
 }
 
 static void transpose_and_store(uint8_t buf[256], const uint32x4_t ne[16]) {
