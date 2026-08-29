@@ -11,7 +11,7 @@ Supported Algorithms and Functions:
 - Integer arithmetic
 - ASN.1 parse and write
 - RSA key generation
-- RSA-PKCS#1 v1.5 signing and verification
+- RSA-PKCS#1 v1.5 (encryption/decryption, signing/verification)
 
 How to build tests:
 - On Linux or Termux (Android), you can directly use "make".

@@ -188,6 +188,7 @@ void sdc_rsa_free_keypair(sdc_rsa_pubkey_t *pubkey,
  * @param msg_len      Length of message in bytes
  * @param out          Output buffer for ciphertext
  * @param out_len      Input: buffer size; Output: ciphertext length
+ * @param rng_ctx      Random number generator context
  * @return             SDC_ERR_OK on success, error code otherwise
  */
 int sdc_rsaes_pkcs1v15_encrypt(const sdc_rsa_pubkey_t *pubkey,
@@ -293,14 +294,14 @@ int sdc_rsassa_pkcs1v15_sign(const sdc_hash_ops_t *hash_ops,
  * @param privkey      Private key
  * @param digest       Pre-computed message digest
  * @param digest_len   Length of digest (must match hash_ops->hash_len)
- * @param out          Output buffer for signature
- * @param out_len      Input: buffer size; Output: signature length
+ * @param sig          Output buffer for signature
+ * @param sig_len      Input: buffer size; Output: signature lengths
  * @return             SDC_ERR_OK on success, error code otherwise
  */
 int sdc_rsassa_pkcs1v15_sign_hash(const sdc_hash_ops_t *hash_ops,
                                   const sdc_rsa_privkey_t *privkey,
                                   const uint8_t *digest, size_t digest_len,
-                                  uint8_t *out, size_t *out_len);
+                                  uint8_t *sig, size_t *sig_len);
 
 /**
  * Verify a signature using RSASSA-PKCS#1 v1.5.
@@ -352,14 +353,14 @@ int sdc_rsassa_pkcs1v15_verify_hash(const sdc_hash_ops_t *hash_ops,
  * @param privkey      Private key
  * @param msg          Message to sign
  * @param msg_len      Length of message in bytes
- * @param out          Output buffer for signature
- * @param out_len      Input: buffer size; Output: signature length
+ * @param sig          Output buffer for signature
+ * @param sig_len      Input: buffer size; Output: signature length
  * @return             SDC_ERR_OK on success, error code otherwise
  */
 int sdc_rsassa_pss_sign(const sdc_hash_ops_t *hash_ops,
                         const sdc_rsa_privkey_t *privkey,
                         const uint8_t *msg, size_t msg_len,
-                        uint8_t *out, size_t *out_len,
+                        uint8_t *sig, size_t *sig_len,
                         sdc_rng_ctx *rng_ctx);
 
 /**
@@ -369,14 +370,14 @@ int sdc_rsassa_pss_sign(const sdc_hash_ops_t *hash_ops,
  * @param privkey      Private key
  * @param digest       Pre-computed message digest
  * @param digest_len   Length of digest (must match hash_ops->hash_len)
- * @param out          Output buffer for signature
- * @param out_len      Input: buffer size; Output: signature length
+ * @param sig          Output buffer for signature
+ * @param sig_len      Input: buffer size; Output: signature length
  * @return             SDC_ERR_OK on success, error code otherwise
  */
 int sdc_rsassa_pss_sign_hash(const sdc_hash_ops_t *hash_ops,
                              const sdc_rsa_privkey_t *privkey,
                              const uint8_t *digest, size_t digest_len,
-                             uint8_t *out, size_t *out_len,
+                             uint8_t *sig, size_t *sig_len,
                              sdc_rng_ctx *rng_ctx);
 
 /**

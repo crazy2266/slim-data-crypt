@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O0 -g -Iinclude -std=c99 -D__USE_MINGW_ANSI_STDIO=1
+CFLAGS = -Wall -Wextra -O2 -g -Iinclude -std=c99 -D__USE_MINGW_ANSI_STDIO=1
 LDFLAGS = -lm -lbcrypt
 
 SRC_DIR = src
