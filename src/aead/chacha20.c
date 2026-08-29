@@ -59,21 +59,21 @@ static inline void transpose_4x4_u32(uint32x4_t *out, uint32x4_t v0, uint32x4_t 
     out[1] = vreinterpretq_u32_u64(vzip2q_u64(vreinterpretq_u64_u32(t0), vreinterpretq_u64_u32(t2)));  // [a1,b1,c1,d1]
     out[2] = vreinterpretq_u32_u64(vzip1q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));  // [a2,b2,c2,d2]
     out[3] = vreinterpretq_u32_u64(vzip2q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));  // [a3,b3,c3,d3]
-#elif SDC_32BIT  // ARM32, normally ARMv7l neon
-    uint32_t d[16];
-    d[0]  = vgetq_lane_u32(v0, 0); d[1]  = vgetq_lane_u32(v1, 0);
-    d[2]  = vgetq_lane_u32(v2, 0); d[3]  = vgetq_lane_u32(v3, 0);
-    d[4]  = vgetq_lane_u32(v0, 1); d[5]  = vgetq_lane_u32(v1, 1);
-    d[6]  = vgetq_lane_u32(v2, 1); d[7]  = vgetq_lane_u32(v3, 1);
-    d[8]  = vgetq_lane_u32(v0, 2); d[9]  = vgetq_lane_u32(v1, 2);
-    d[10] = vgetq_lane_u32(v2, 2); d[11] = vgetq_lane_u32(v3, 2);
-    d[12] = vgetq_lane_u32(v0, 3); d[13] = vgetq_lane_u32(v1, 3);
-    d[14] = vgetq_lane_u32(v2, 3); d[15] = vgetq_lane_u32(v3, 3);
+#elif SDC_32BIT  // ARM32, ARMv7l neon is always available
+    uint32x2_t v0_lo = vget_low_u32(v0), v0_hi = vget_high_u32(v0);
+    uint32x2_t v1_lo = vget_low_u32(v1), v1_hi = vget_high_u32(v1);
+    uint32x2_t v2_lo = vget_low_u32(v2), v2_hi = vget_high_u32(v2);
+    uint32x2_t v3_lo = vget_low_u32(v3), v3_hi = vget_high_u32(v3);
 
-    out[0] = vld1q_u32(d + 0);   // [a0, b0, c0, d0]
-    out[1] = vld1q_u32(d + 4);   // [a1, b1, c1, d1]
-    out[2] = vld1q_u32(d + 8);   // [a2, b2, c2, d2]
-    out[3] = vld1q_u32(d + 12);  // [a3, b3, c3, d3]
+    uint32x2x2_t t01_lo = vzip_u32(v0_lo, v1_lo);
+    uint32x2x2_t t01_hi = vzip_u32(v0_hi, v1_hi);
+    uint32x2x2_t t23_lo = vzip_u32(v2_lo, v3_lo);
+    uint32x2x2_t t23_hi = vzip_u32(v2_hi, v3_hi);
+
+    out[0] = vcombine_u32(t01_lo.val[0], t23_lo.val[0]);  // [a0,b0,c0,d0]
+    out[1] = vcombine_u32(t01_lo.val[1], t23_lo.val[1]);  // [a1,b1,c1,d1]
+    out[2] = vcombine_u32(t01_hi.val[0], t23_hi.val[0]);  // [a2,b2,c2,d2]
+    out[3] = vcombine_u32(t01_hi.val[1], t23_hi.val[1]);  // [a3,b3,c3,d3]
 #endif
 }
 
