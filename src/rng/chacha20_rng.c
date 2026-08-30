@@ -63,15 +63,15 @@ static inline uint32_t rotl32(uint32_t x, int n) {
 
 static inline void transpose_4x4_u32(uint32x4_t *out, uint32x4_t v0, uint32x4_t v1, uint32x4_t v2, uint32x4_t v3) {
 #if SDC_64BIT  // ARM64, ARMv8.0 neon is always available
-    uint32x4_t t0 = vzip1q_u32(v0, v1);  // [a0,b0,a1,b1]
-    uint32x4_t t1 = vzip2q_u32(v0, v1);  // [a2,b2,a3,b3]
-    uint32x4_t t2 = vzip1q_u32(v2, v3);  // [c0,d0,c1,d1]
-    uint32x4_t t3 = vzip2q_u32(v2, v3);  // [c2,d2,c3,d3]
+    uint32x4_t t0 = vzip1q_u32(v0, v2);  // [a0,c0,a1,c1]
+    uint32x4_t t1 = vzip1q_u32(v1, v3);  // [b0,d0,b1,d1]
+    uint32x4_t t2 = vzip2q_u32(v0, v2);  // [a2,c2,a3,c3]
+    uint32x4_t t3 = vzip2q_u32(v1, v3);  // [b2,d2,b3,d3]
 
-    out[0] = vreinterpretq_u32_u64(vzip1q_u64(vreinterpretq_u64_u32(t0), vreinterpretq_u64_u32(t2)));  // [a0,b0,c0,d0]
-    out[1] = vreinterpretq_u32_u64(vzip2q_u64(vreinterpretq_u64_u32(t0), vreinterpretq_u64_u32(t2)));  // [a1,b1,c1,d1]
-    out[2] = vreinterpretq_u32_u64(vzip1q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));  // [a2,b2,c2,d2]
-    out[3] = vreinterpretq_u32_u64(vzip2q_u64(vreinterpretq_u64_u32(t1), vreinterpretq_u64_u32(t3)));  // [a3,b3,c3,d3]
+    out[0] = vzip1q_u32(t0, t1);          // [a0,b0,c0,d0]
+    out[1] = vzip2q_u32(t0, t1);          // [a1,b1,c1,d1]
+    out[2] = vzip1q_u32(t2, t3);          // [a2,b2,c2,d2]
+    out[3] = vzip2q_u32(t2, t3);          // [a3,b3,c3,d3]
 #elif SDC_32BIT  // ARM32, ARMv7l neon is always available
     uint32x2_t v0_lo = vget_low_u32(v0), v0_hi = vget_high_u32(v0);
     uint32x2_t v1_lo = vget_low_u32(v1), v1_hi = vget_high_u32(v1);
@@ -98,11 +98,18 @@ static void transpose_and_store(uint8_t buf[256], const uint32x4_t ne[16]) {
     transpose_4x4_u32(out[2], ne[8], ne[9], ne[10], ne[11]);
     transpose_4x4_u32(out[3], ne[12], ne[13], ne[14], ne[15]);
     
+#if SDC_64BIT  // vst1q_u32_x4 is available on ARMv8 and later
+    vst1q_u32_x4((uint32_t*)(buf + 0),   ((uint32x4x4_t){out[0][0], out[1][0], out[2][0], out[3][0]}));
+    vst1q_u32_x4((uint32_t*)(buf + 64),  ((uint32x4x4_t){out[0][1], out[1][1], out[2][1], out[3][1]}));
+    vst1q_u32_x4((uint32_t*)(buf + 128), ((uint32x4x4_t){out[0][2], out[1][2], out[2][2], out[3][2]}));
+    vst1q_u32_x4((uint32_t*)(buf + 192), ((uint32x4x4_t){out[0][3], out[1][3], out[2][3], out[3][3]}));
+#elif SDC_32BIT  // ARM32, ARMv7l neon is always available
     for (int block = 0; block < 4; block++) {
         for (int group = 0; group < 4; group++) {
             vst1q_u32((uint32_t*)(buf + block * 64 + group * 16), out[group][block]);
         }
     }
+#endif
 }
 
 /* ---------------------------------------------------------------------
@@ -244,7 +251,7 @@ static int chacha20_rng_generate(sdc_rng_ctx *ctx, uint8_t *out, size_t len) {
         size_t available = 320 - chacha20->buf_used;
         size_t remaining = len - i;
         size_t n = (available < remaining) ? available : remaining;
-
+    #if SDC_64BIT  // vld1q_u8_x4 is available on ARMv8 and later
         while (n >= 64) {
             if (i + 128 < len) {
                 __builtin_prefetch(chacha20->buf + chacha20->buf_used + 64, 0, 3);
@@ -253,6 +260,7 @@ static int chacha20_rng_generate(sdc_rng_ctx *ctx, uint8_t *out, size_t len) {
             vst1q_u8_x4(out + i, ks);
             i += 64; chacha20->buf_used += 64; n -= 64;
         }
+    #endif
         while (n >= 16) {
             uint8x16_t ks = vld1q_u8(chacha20->buf + chacha20->buf_used);
             vst1q_u8(out + i, ks);
