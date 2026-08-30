@@ -16,6 +16,7 @@
 #define SDC_ENABLE_SHA384                 1
 #define SDC_ENABLE_SHA512                 1
 #define SDC_ENABLE_SM3                    1
+#define SDC_ENABLE_SM4                    1
 #define SDC_ENABLE_X25519                 1
 #define SDC_ENABLE_PBKDF2                 1
 #define SDC_ENABLE_CHACHA20               1
@@ -35,7 +36,9 @@
 // Enable features
 #define SDC_SWAPPABLE_ALLOCATOR           0
 #define SDC_SWAPPABLE_RNG_SEED            1
-#define SDC_RSA_ENABLE_BLIDING_MODE       1
+#define SDC_RSA_ENABLE_BLINDING           1
+#define SDC_RSA_BLINDING_BITS             256
+#define SDC_SM4_CONSTANT_TIME             1
 
 // Other options
 #define SDC_HASH_STATE_MAX_SIZE 256

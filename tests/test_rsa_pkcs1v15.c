@@ -63,7 +63,7 @@ static void test_sign_verify(void) {
     /* 签名 */
     ret = sdc_rsassa_pkcs1v15_sign(&sdc_sha256_ops, &privkey,
                                    msg, sizeof(msg) - 1,
-                                   sig, &sig_len);
+                                   sig, &sig_len, &rng_ctx);
     TEST_ASSERT(ret == SDC_ERR_OK, "Sign");
     TEST_ASSERT(sig_len == 2048 / 8, "Signature length correct");
 
@@ -129,7 +129,7 @@ static void test_encrypt_decrypt(void) {
     /* 解密 */
     ret = sdc_rsaes_pkcs1v15_decrypt(&privkey,
                                      cipher, cipher_len,
-                                     decrypted, &decrypted_len);
+                                     decrypted, &decrypted_len, &rng_ctx);
     TEST_ASSERT(ret == SDC_ERR_OK, "Decrypt");
     TEST_ASSERT(decrypted_len == sizeof(plaintext) - 1, "Plaintext length correct");
     TEST_ASSERT(compare_bytes(plaintext, decrypted, decrypted_len), "Plaintext matches");
@@ -140,7 +140,7 @@ static void test_encrypt_decrypt(void) {
     bad_cipher[0] ^= 0xFF;
     ret = sdc_rsaes_pkcs1v15_decrypt(&privkey,
                                      bad_cipher, cipher_len,
-                                     decrypted, &decrypted_len);
+                                     decrypted, &decrypted_len, &rng_ctx);
     TEST_ASSERT(ret != SDC_ERR_OK, "Decrypt with tampered ciphertext fails");
 
     sdc_rsa_free_keypair(&pubkey, &privkey);

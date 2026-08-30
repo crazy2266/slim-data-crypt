@@ -86,7 +86,7 @@ static int test_rsa_roundtrip(void) {
     }
 
     /* m' = c^d mod n */
-    ret = _sdc_rsa_private(decrypted_w, cipher_w, &privkey, tmp);
+    ret = _sdc_rsa_private(decrypted_w, cipher_w, &privkey, tmp, &rng_ctx);
     if (ret != SDC_ERR_OK) {
         printf("  [FAIL] _sdc_rsa_private: %d\n", ret);
         goto cleanup;

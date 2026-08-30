@@ -204,63 +204,15 @@ int sdc_rsaes_pkcs1v15_encrypt(const sdc_rsa_pubkey_t *pubkey,
  * @param cipher_len   Length of ciphertext in bytes
  * @param out          Output buffer for plaintext
  * @param out_len      Input: buffer size; Output: plaintext length
+ * @param rng_ctx      Random number generator context (can be NULL if SDC_RSA_ENABLE_BLINDING is disabled)
  * @return             SDC_ERR_OK on success, error code otherwise
  */
 int sdc_rsaes_pkcs1v15_decrypt(const sdc_rsa_privkey_t *privkey,
                                const uint8_t *cipher, size_t cipher_len,
-                               uint8_t *out, size_t *out_len);
+                               uint8_t *out, size_t *out_len,
+                               sdc_rng_ctx *rng_ctx);
 
 #endif /* SDC_ENABLE_RSAES_PKCS1V15 */
-
-/* ============================================================
-   RSAES-OAEP
-   ============================================================ */
-
-#if SDC_ENABLE_RSAES_OAEP
-
-/**
- * Encrypt a message using RSAES-OAEP.
- *
- * Uses the hash algorithm specified by the caller for both the
- * message digest and the MGF1 mask generation.
- *
- * @param hash_ops     Hash algorithm for OAEP
- * @param pubkey       Public key
- * @param msg          Message to encrypt
- * @param msg_len      Length of message in bytes
- * @param label        Optional label (can be NULL)
- * @param label_len    Length of label in bytes
- * @param out          Output buffer for ciphertext
- * @param out_len      Input: buffer size; Output: ciphertext length
- * @return             SDC_ERR_OK on success, error code otherwise
- */
-int sdc_rsaes_oaep_encrypt(const sdc_hash_ops_t *hash_ops,
-                           const sdc_rsa_pubkey_t *pubkey,
-                           const uint8_t *msg, size_t msg_len,
-                           const uint8_t *label, size_t label_len,
-                           uint8_t *out, size_t *out_len,
-                           sdc_rng_ctx *rng_ctx);
-
-/**
- * Decrypt a ciphertext using RSAES-OAEP.
- *
- * @param hash_ops     Hash algorithm for OAEP (must match encryption)
- * @param privkey      Private key
- * @param cipher       Ciphertext
- * @param cipher_len   Length of ciphertext in bytes
- * @param label        Optional label (can be NULL)
- * @param label_len    Length of label in bytes
- * @param out          Output buffer for plaintext
- * @param out_len      Input: buffer size; Output: plaintext length
- * @return             SDC_ERR_OK on success, error code otherwise
- */
-int sdc_rsaes_oaep_decrypt(const sdc_hash_ops_t *hash_ops,
-                           const sdc_rsa_privkey_t *privkey,
-                           const uint8_t *cipher, size_t cipher_len,
-                           const uint8_t *label, size_t label_len,
-                           uint8_t *out, size_t *out_len);
-
-#endif /* SDC_ENABLE_RSAES_OAEP */
 
 /* ============================================================
    RSASSA-PKCS#1 v1.5
@@ -277,12 +229,14 @@ int sdc_rsaes_oaep_decrypt(const sdc_hash_ops_t *hash_ops,
  * @param msg_len      Length of message in bytes
  * @param sig          Output buffer for signature
  * @param sig_len      Input: buffer size; Output: signature length
+ * @param rng_ctx      Random number generator context (can be NULL if SDC_RSA_ENABLE_BLINDING is disabled)
  * @return             SDC_ERR_OK on success, error code otherwise
  */
 int sdc_rsassa_pkcs1v15_sign(const sdc_hash_ops_t *hash_ops,
                              const sdc_rsa_privkey_t *privkey,
                              const uint8_t *msg, size_t msg_len,
-                             uint8_t *sig, size_t *sig_len);
+                             uint8_t *sig, size_t *sig_len,
+                             sdc_rng_ctx *rng_ctx);
 
 /**
  * Sign a pre-computed hash using RSASSA-PKCS#1 v1.5.
@@ -295,13 +249,15 @@ int sdc_rsassa_pkcs1v15_sign(const sdc_hash_ops_t *hash_ops,
  * @param digest       Pre-computed message digest
  * @param digest_len   Length of digest (must match hash_ops->hash_len)
  * @param sig          Output buffer for signature
- * @param sig_len      Input: buffer size; Output: signature lengths
+ * @param sig_len      Input: buffer size; Output: signature length
+ * @param rng_ctx      Random number generator context (can be NULL if SDC_RSA_ENABLE_BLINDING is disabled)
  * @return             SDC_ERR_OK on success, error code otherwise
  */
 int sdc_rsassa_pkcs1v15_sign_hash(const sdc_hash_ops_t *hash_ops,
                                   const sdc_rsa_privkey_t *privkey,
                                   const uint8_t *digest, size_t digest_len,
-                                  uint8_t *sig, size_t *sig_len);
+                                  uint8_t *sig, size_t *sig_len,
+                                  sdc_rng_ctx *rng_ctx);
 
 /**
  * Verify a signature using RSASSA-PKCS#1 v1.5.
@@ -336,83 +292,6 @@ int sdc_rsassa_pkcs1v15_verify_hash(const sdc_hash_ops_t *hash_ops,
                                     const uint8_t *sig, size_t sig_len);
 
 #endif /* SDC_ENABLE_RSASSA_PKCS1V15 */
-
-/* ============================================================
-   RSASSA-PSS
-   ============================================================ */
-
-#if SDC_ENABLE_RSASSA_PSS
-
-/**
- * Sign a message using RSASSA-PSS.
- *
- * Uses the same hash algorithm for both the message digest and
- * the MGF1 mask generation. Salt length is set to hash_len.
- *
- * @param hash_ops     Hash algorithm to use
- * @param privkey      Private key
- * @param msg          Message to sign
- * @param msg_len      Length of message in bytes
- * @param sig          Output buffer for signature
- * @param sig_len      Input: buffer size; Output: signature length
- * @return             SDC_ERR_OK on success, error code otherwise
- */
-int sdc_rsassa_pss_sign(const sdc_hash_ops_t *hash_ops,
-                        const sdc_rsa_privkey_t *privkey,
-                        const uint8_t *msg, size_t msg_len,
-                        uint8_t *sig, size_t *sig_len,
-                        sdc_rng_ctx *rng_ctx);
-
-/**
- * Sign a pre-computed hash using RSASSA-PSS.
- *
- * @param hash_ops     Hash algorithm to use
- * @param privkey      Private key
- * @param digest       Pre-computed message digest
- * @param digest_len   Length of digest (must match hash_ops->hash_len)
- * @param sig          Output buffer for signature
- * @param sig_len      Input: buffer size; Output: signature length
- * @return             SDC_ERR_OK on success, error code otherwise
- */
-int sdc_rsassa_pss_sign_hash(const sdc_hash_ops_t *hash_ops,
-                             const sdc_rsa_privkey_t *privkey,
-                             const uint8_t *digest, size_t digest_len,
-                             uint8_t *sig, size_t *sig_len,
-                             sdc_rng_ctx *rng_ctx);
-
-/**
- * Verify a signature using RSASSA-PSS.
- *
- * @param hash_ops     Hash algorithm to use
- * @param pubkey       Public key
- * @param msg          Message that was signed
- * @param msg_len      Length of message in bytes
- * @param sig          Signature to verify
- * @param sig_len      Length of signature in bytes
- * @return             SDC_ERR_OK on success, error code otherwise
- */
-int sdc_rsassa_pss_verify(const sdc_hash_ops_t *hash_ops,
-                          const sdc_rsa_pubkey_t *pubkey,
-                          const uint8_t *msg, size_t msg_len,
-                          const uint8_t *sig, size_t sig_len);
-
-/**
- * Verify a signature against a pre-computed hash using RSASSA-PSS.
- *
- * @param hash_ops     Hash algorithm to use
- * @param pubkey       Public key
- * @param digest       Pre-computed message digest
- * @param digest_len   Length of digest (must match hash_ops->hash_len)
- * @param sig          Signature to verify
- * @param sig_len      Length of signature in bytes
- * @return             SDC_ERR_OK on success, error code otherwise
- */
-int sdc_rsassa_pss_verify_hash(const sdc_hash_ops_t *hash_ops,
-                               const sdc_rsa_pubkey_t *pubkey,
-                               const uint8_t *digest, size_t digest_len,
-                               const uint8_t *sig, size_t sig_len);
-
-#endif /* SDC_ENABLE_RSASSA_PSS */
 
 #endif /* SDC_ENABLE_RSA */
 

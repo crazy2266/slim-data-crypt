@@ -21,7 +21,6 @@
 #  include <sdcrypt/asn1.h>
 #endif
 
-
 #if SDC_ENABLE_RSAES_PKCS1V15 || SDC_ENABLE_RSASSA_PKCS1V15
 static uint8_t NEQ(uint8_t a, uint8_t b) {
     uint8_t diff = a ^ b;
@@ -50,6 +49,7 @@ static int pad_pkcs1v15(uint8_t *out, size_t out_len, const uint8_t *di,
                         size_t di_len, uint8_t type, sdc_rng_ctx *rng) {
     if (!out || !di || out_len < 11 + di_len) return SDC_ERR_INVALID_PARAM;
     if (type != 0x01 && type != 0x02) return SDC_ERR_INVALID_PARAM;
+    if (type == 0x02 && !rng) return SDC_ERR_INVALID_PARAM;
     int ret = SDC_ERR_OK;
     size_t ps_len = out_len - 3 - di_len;
     if (ps_len < 8) return SDC_ERR_INVALID_PARAM;
@@ -147,7 +147,7 @@ static int unpad_pkcs1v15(const uint8_t *em, size_t em_len,
     if (type == 0x01) {
         /* Verify DigestInfo matches expected */
         size_t expected_len = *out_len;
-        if (di_len != expected_len) return SDC_ERR_INVALID_PARAM;
+        if (di_len != expected_len) return SDC_ERR_KEY_INVALID;
         for (size_t i = 0; i < di_len; i++) {
             di_ok &= EQ(em[di_start + i], out[i]);
         }
@@ -213,15 +213,18 @@ int sdc_rsaes_pkcs1v15_encrypt(const sdc_rsa_pubkey_t *pubkey,
 
 int sdc_rsaes_pkcs1v15_decrypt(const sdc_rsa_privkey_t *privkey,
                                const uint8_t *cipher, size_t cipher_len,
-                               uint8_t *out, size_t *out_len) {
+                               uint8_t *out, size_t *out_len,
+                               sdc_rng_ctx *rng_ctx) {
     if (!privkey || !cipher || !out || !out_len) return SDC_ERR_INVALID_PARAM;
-
+#if SDC_RSA_ENABLE_BLINDING
+    if (!rng_ctx) return SDC_ERR_INVALID_PARAM;
+#endif
     size_t mod_bytes = privkey->len2 * SDC_WORD_SIZE;
     if (cipher_len != mod_bytes) return SDC_ERR_INVALID_PARAM;
 
     /* em = c^d mod n */
     size_t n_words = privkey->len2;
-    size_t tmp_words = privkey->len2 * 4;
+    size_t tmp_words = SDC_RSA_PRIVATE_TMP_SIZE(privkey->len1);
     size_t em_bytes = n_words * SDC_WORD_SIZE;
     sdc_word_t *scratch = (sdc_word_t *)sdc_malloc((n_words * 2 + tmp_words) * SDC_WORD_SIZE + em_bytes);
     if (!scratch) return SDC_ERR_MEM_ALLOCATE_FAIL;
@@ -232,7 +235,7 @@ int sdc_rsaes_pkcs1v15_decrypt(const sdc_rsa_privkey_t *privkey,
     uint8_t *em = (uint8_t *)(scratch + n_words * 2 + tmp_words);
 
     sdc_int_frombytes_be(c_w, n_words, cipher);
-    int ret = _sdc_rsa_private(em_w, c_w, privkey, tmp);
+    int ret = _sdc_rsa_private(em_w, c_w, privkey, tmp, rng_ctx);
     if (ret != SDC_ERR_OK) {
         sdc_free(scratch);
         return ret;
@@ -277,8 +280,12 @@ static size_t build_digestinfo(const sdc_hash_ops_t *ops,
 int sdc_rsassa_pkcs1v15_sign_hash(const sdc_hash_ops_t *hash_ops,
                                   const sdc_rsa_privkey_t *privkey,
                                   const uint8_t *digest, size_t digest_len,
-                                  uint8_t *sig, size_t *sig_len) {
+                                  uint8_t *sig, size_t *sig_len,
+                                  sdc_rng_ctx *rng_ctx) {
     if (!hash_ops || !privkey || !digest || !sig || !sig_len) return SDC_ERR_INVALID_PARAM;
+#if SDC_RSA_ENABLE_BLINDING
+    if (!rng_ctx) return SDC_ERR_INVALID_PARAM;
+#endif
     if (digest_len != hash_ops->hash_len) return SDC_ERR_INVALID_PARAM;
 
     size_t mod_bytes = privkey->len2 * SDC_WORD_SIZE;
@@ -299,16 +306,16 @@ int sdc_rsassa_pkcs1v15_sign_hash(const sdc_hash_ops_t *hash_ops,
 
     /* Private key modular exponentiation */
     size_t n_words = privkey->len2;
-    size_t tmp_words = privkey->len2 * 4;
+    size_t tmp_words = SDC_RSA_PRIVATE_TMP_SIZE(privkey->len1);
     sdc_word_t *scratch = (sdc_word_t *)sdc_malloc((n_words * 2 + tmp_words) * SDC_WORD_SIZE);
     if (!scratch) return SDC_ERR_MEM_ALLOCATE_FAIL;
 
     sdc_word_t *em_w = scratch;
-    sdc_word_t *sig_w = scratch + n_words;
-    sdc_word_t *tmp = scratch + n_words * 2;
+    sdc_word_t *sig_w = em_w + n_words;
+    sdc_word_t *tmp = sig_w + n_words;
 
     sdc_int_frombytes_be(em_w, n_words, em);
-    ret = _sdc_rsa_private(sig_w, em_w, privkey, tmp);
+    ret = _sdc_rsa_private(sig_w, em_w, privkey, tmp, rng_ctx);
     if (ret == SDC_ERR_OK) {
         sdc_int_tobytes_be(sig_w, n_words, sig);
         *sig_len = mod_bytes;
@@ -321,8 +328,9 @@ int sdc_rsassa_pkcs1v15_sign_hash(const sdc_hash_ops_t *hash_ops,
 int sdc_rsassa_pkcs1v15_sign(const sdc_hash_ops_t *hash_ops,
                              const sdc_rsa_privkey_t *privkey,
                              const uint8_t *msg, size_t msg_len,
-                             uint8_t *sig, size_t *sig_len) {
-    if (!hash_ops || !privkey || !msg || !sig || !sig_len) return SDC_ERR_INVALID_PARAM;
+                             uint8_t *sig, size_t *sig_len,
+                             sdc_rng_ctx *rng_ctx) {
+    if (!hash_ops || !privkey || !msg || !sig || !sig_len || !rng_ctx) return SDC_ERR_INVALID_PARAM;
 
     uint8_t digest[64];
     size_t digest_len = sizeof(digest);
@@ -331,7 +339,7 @@ int sdc_rsassa_pkcs1v15_sign(const sdc_hash_ops_t *hash_ops,
 
     return sdc_rsassa_pkcs1v15_sign_hash(hash_ops, privkey,
                                          digest, digest_len,
-                                         sig, sig_len);
+                                         sig, sig_len, rng_ctx);
 }
 
 int sdc_rsassa_pkcs1v15_verify_hash(const sdc_hash_ops_t *hash_ops,
@@ -352,12 +360,12 @@ int sdc_rsassa_pkcs1v15_verify_hash(const sdc_hash_ops_t *hash_ops,
     /* Recover em from signature */
     size_t n_words = pubkey->nlen;
     size_t tmp_words = n_words * 4;
-    sdc_word_t *scratch = (sdc_word_t *)sdc_malloc((n_words * 2 + tmp_words) * SDC_WORD_SIZE);
+    sdc_word_t *scratch = (sdc_word_t *)sdc_malloc((n_words * 2 + tmp_words) * SDC_WORD_SIZE + mod_bytes);
     if (!scratch) return SDC_ERR_MEM_ALLOCATE_FAIL;
-
     sdc_word_t *sig_w = scratch;
     sdc_word_t *em_w = scratch + n_words;
-    sdc_word_t *tmp = scratch + n_words * 2;
+    sdc_word_t *tmp = em_w + n_words;
+    uint8_t *em = (uint8_t *)(tmp + tmp_words);
 
     sdc_int_frombytes_be(sig_w, n_words, sig);
     int ret = _sdc_rsa_public(em_w, sig_w, pubkey, tmp);
@@ -366,7 +374,6 @@ int sdc_rsassa_pkcs1v15_verify_hash(const sdc_hash_ops_t *hash_ops,
         return ret;
     }
 
-    uint8_t em[512];
     sdc_int_tobytes_be(em_w, n_words, em);
     sdc_free(scratch);
 

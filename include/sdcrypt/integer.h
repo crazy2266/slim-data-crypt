@@ -70,8 +70,8 @@ void sdc_int_mul(sdc_word_t *r, const sdc_word_t *a, const sdc_word_t *b, size_t
 
 /*
  * Constant-time divide two unsigned integers.
- * q should be at least alen words long.
- * r should be at least blen words long.
+ * q should be at least alen words long or it can be NULL.
+ * r should be at least blen words long and it cannot be NULL.
  * a,b should be at least alen words long.
  * WARNING: q,r must be distinct from a and b, and b shouldn't be zero.
  */
