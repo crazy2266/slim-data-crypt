@@ -18,7 +18,7 @@
 #include <sdcrypt/hash.h>
 #include <sdcrypt/config.h>
 #include <sdcrypt/oid.h>
-#include <sdcrypt/sha2.h>
+#include <sdcrypt/sha.h>
 #include <sdcrypt/sm3.h>
 #include <sdcrypt/errcode.h>
 
@@ -37,6 +37,12 @@ static const sdc_hash_ops_t *hash_ops_table[] = {
 #endif
 #if SDC_ENABLE_SM3
     &sdc_sm3_ops,
+#endif
+#if SDC_ENABLE_SHA3
+    &sdc_sha3_224_ops,
+    &sdc_sha3_256_ops,
+    &sdc_sha3_384_ops,
+    &sdc_sha3_512_ops,
 #endif
 };
 

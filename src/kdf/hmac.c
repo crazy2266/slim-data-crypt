@@ -13,7 +13,7 @@
 
 #include <sdcrypt/config.h>
 #include <sdcrypt/hmac.h>
-#include <sdcrypt/sha2.h>
+#include <sdcrypt/sha.h>
 #include <sdcrypt/utils.h>
 #include <string.h>
 

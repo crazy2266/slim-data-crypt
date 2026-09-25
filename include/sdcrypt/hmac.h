@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <sdcrypt/sha2.h>
+#include <sdcrypt/sha.h>
 #include <sdcrypt/config.h>
 
 #if SDC_ENABLE_HMAC

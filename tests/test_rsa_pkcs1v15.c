@@ -11,7 +11,7 @@
 #include <sdcrypt/config.h>
 #include <sdcrypt/rsa.h>
 #include <sdcrypt/hash.h>
-#include <sdcrypt/sha2.h>
+#include <sdcrypt/sha.h>
 #include <sdcrypt/errcode.h>
 #include <sdcrypt/rng.h>
 

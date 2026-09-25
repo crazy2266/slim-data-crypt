@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sdcrypt/hash.h>
-#include <sdcrypt/sha2.h>
+#include <sdcrypt/sha.h>
 #include <sdcrypt/config.h>
 #include <sdcrypt/errcode.h>
 #include <sdcrypt/oid.h>
@@ -265,9 +265,9 @@ int main(void) {
     ret = sdc_hash_final(&ctx, small_buf, &small_len);
     TEST_ASSERT(ret == SDC_ERR_BUFFER_TOO_SMALL && small_len == 32,
                 "sdc_hash_final() returns SDC_ERR_BUFFER_TOO_SMALL and sets out_len=32");
-/* ============================================================
-   Test 11: SM3 via OID lookup
-   ============================================================ */
+    /* ============================================================
+       Test 11: SM3 via OID lookup
+       ============================================================ */
     TEST_START("SM3 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SM3, SDC_OID_SM3_LEN,
@@ -284,6 +284,93 @@ int main(void) {
     TEST_ASSERT(ret == SDC_ERR_OK && out_len == 32 &&
                 compare_bytes(hash, expected_sm3, 32),
                 "SM3(\"abc\") correct");
+#if SDC_ENABLE_SHA3
+    /* ============================================================
+       Test 12: SHA3-224 via OID lookup
+       ============================================================ */
+    TEST_START("SHA3-224 (OID lookup)");
+    out_len = sizeof(hash);
+    ret = hash_compute_by_oid(SDC_OID_SHA3_224, SDC_OID_SHA3_224_LEN,
+                              msg, sizeof(msg) - 1,
+                              hash, &out_len, NULL);
+
+    /* SHA3-224("abc") = e642824c3f8cf24ad09234ee7d3c766fc9a3a5168d0c94ad73b46fdf */
+    const uint8_t expected_sha3_224[28] = {
+        0xe6,0x42,0x82,0x4c,0x3f,0x8c,0xf2,0x4a,
+        0xd0,0x92,0x34,0xee,0x7d,0x3c,0x76,0x6f,
+        0xc9,0xa3,0xa5,0x16,0x8d,0x0c,0x94,0xad,
+        0x73,0xb4,0x6f,0xdf
+    };
+    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 28 &&
+                compare_bytes(hash, expected_sha3_224, 28),
+                "SHA3-224(\"abc\") correct");
+    /* ============================================================
+       Test 13: SHA3-256 via OID lookup
+       ============================================================ */
+    TEST_START("SHA3-256 (OID lookup)");
+    out_len = sizeof(hash);
+    ret = hash_compute_by_oid(SDC_OID_SHA3_256, SDC_OID_SHA3_256_LEN,
+                              msg, sizeof(msg) - 1,
+                              hash, &out_len, NULL);
+
+    /* SHA3-256("abc") = 3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532 */
+    const uint8_t expected_sha3_256[32] = {
+        0x3a,0x98,0x5d,0xa7,0x4f,0xe2,0x25,0xb2,
+        0x04,0x5c,0x17,0x2d,0x6b,0xd3,0x90,0xbd,
+        0x85,0x5f,0x08,0x6e,0x3e,0x9d,0x52,0x5b,
+        0x46,0xbf,0xe2,0x45,0x11,0x43,0x15,0x32
+    };
+    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 32 &&
+                compare_bytes(hash, expected_sha3_256, 32),
+                "SHA3-256(\"abc\") correct");
+
+    /* ============================================================
+       Test 14: SHA3-384 via OID lookup
+       ============================================================ */
+    TEST_START("SHA3-384 (OID lookup)");
+    out_len = sizeof(hash);
+    ret = hash_compute_by_oid(SDC_OID_SHA3_384, SDC_OID_SHA3_384_LEN,
+                              msg, sizeof(msg) - 1,
+                              hash, &out_len, NULL);
+
+    /* SHA3-384("abc") = ec01498288516fc926459f58e2c6ad8df9b473cb0fc08c2596da7cf0e49be4b298d88cea927ac7f539f1edf228376d25 */
+    const uint8_t expected_sha3_384[48] = {
+        0xec,0x01,0x49,0x82,0x88,0x51,0x6f,0xc9,
+        0x26,0x45,0x9f,0x58,0xe2,0xc6,0xad,0x8d,
+        0xf9,0xb4,0x73,0xcb,0x0f,0xc0,0x8c,0x25,
+        0x96,0xda,0x7c,0xf0,0xe4,0x9b,0xe4,0xb2,
+        0x98,0xd8,0x8c,0xea,0x92,0x7a,0xc7,0xf5,
+        0x39,0xf1,0xed,0xf2,0x28,0x37,0x6d,0x25
+    };
+    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 48 &&
+                compare_bytes(hash, expected_sha3_384, 48),
+                "SHA3-384(\"abc\") correct");
+
+    /* ============================================================
+       Test 15: SHA3-512 via OID lookup
+       ============================================================ */
+    TEST_START("SHA3-512 (OID lookup)");
+    out_len = sizeof(hash);
+    ret = hash_compute_by_oid(SDC_OID_SHA3_512, SDC_OID_SHA3_512_LEN,
+                              msg, sizeof(msg) - 1,
+                              hash, &out_len, NULL);
+
+    /* SHA3-512("abc") = b751850b1a57168a5693cd924b6b096e08f621827444f70d884f5d0240d2712e10e116e9192af3c91a7ec57647e3934057340b4cf408d5a56592f8274eec53f0 */
+    const uint8_t expected_sha3_512[64] = {
+        0xb7,0x51,0x85,0x0b,0x1a,0x57,0x16,0x8a,
+        0x56,0x93,0xcd,0x92,0x4b,0x6b,0x09,0x6e,
+        0x08,0xf6,0x21,0x82,0x74,0x44,0xf7,0x0d,
+        0x88,0x4f,0x5d,0x02,0x40,0xd2,0x71,0x2e,
+        0x10,0xe1,0x16,0xe9,0x19,0x2a,0xf3,0xc9,
+        0x1a,0x7e,0xc5,0x76,0x47,0xe3,0x93,0x40,
+        0x57,0x34,0x0b,0x4c,0xf4,0x08,0xd5,0xa5,
+        0x65,0x92,0xf8,0x27,0x4e,0xec,0x53,0xf0
+    };
+    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 64 &&
+                compare_bytes(hash, expected_sha3_512, 64),
+                "SHA3-512(\"abc\") correct");
+#endif
+
     /* ============================================================
        Final result
        ============================================================ */

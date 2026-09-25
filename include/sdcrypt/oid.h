@@ -42,6 +42,21 @@ extern const uint8_t SDC_OID_SHA512[SDC_OID_SHA512_LEN];
 #define SDC_OID_SM3_LEN 8
 extern const uint8_t SDC_OID_SM3[SDC_OID_SM3_LEN];
 #endif
+// SHA-3 family
+#if SDC_ENABLE_SHA3
+#define SDC_OID_SHA3_224_LEN 9
+extern const uint8_t SDC_OID_SHA3_224[SDC_OID_SHA3_224_LEN];
+#define SDC_OID_SHA3_256_LEN 9
+extern const uint8_t SDC_OID_SHA3_256[SDC_OID_SHA3_256_LEN];
+#define SDC_OID_SHA3_384_LEN 9
+extern const uint8_t SDC_OID_SHA3_384[SDC_OID_SHA3_384_LEN];
+#define SDC_OID_SHA3_512_LEN 9
+extern const uint8_t SDC_OID_SHA3_512[SDC_OID_SHA3_512_LEN];
+#define SDC_OID_SHAKE128_LEN 9
+extern const uint8_t SDC_OID_SHAKE128[SDC_OID_SHAKE128_LEN];
+#define SDC_OID_SHAKE256_LEN 9
+extern const uint8_t SDC_OID_SHAKE256[SDC_OID_SHAKE256_LEN];
+#endif
 
 #ifdef __cplusplus
 }

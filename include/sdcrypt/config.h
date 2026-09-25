@@ -15,6 +15,7 @@
 #define SDC_ENABLE_SHA256                 1
 #define SDC_ENABLE_SHA384                 1
 #define SDC_ENABLE_SHA512                 1
+#define SDC_ENABLE_SHA3                   1
 #define SDC_ENABLE_SM3                    1
 #define SDC_ENABLE_SM4                    1
 #define SDC_ENABLE_X25519                 1
