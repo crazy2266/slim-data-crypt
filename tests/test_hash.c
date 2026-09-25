@@ -369,6 +369,92 @@ int main(void) {
     TEST_ASSERT(ret == SDC_ERR_OK && out_len == 64 &&
                 compare_bytes(hash, expected_sha3_512, 64),
                 "SHA3-512(\"abc\") correct");
+    /* ============================================================
+       Test 16: SHAKE128
+       ============================================================ */
+    TEST_START("SHAKE128");
+    {
+        uint8_t shake_out[32];
+        sdc_shake128_xof(shake_out, msg, sizeof(msg) - 1, 32);
+
+        /* SHAKE128("abc", 32 bytes) */
+        const uint8_t expected_shake128[32] = {
+            0x58,0x81,0x09,0x2d,0xd8,0x18,0xbf,0x5c,
+            0xf8,0xa3,0xdd,0xb7,0x93,0xfb,0xcb,0xa7,
+            0x40,0x97,0xd5,0xc5,0x26,0xa6,0xd3,0x5f,
+            0x97,0xb8,0x33,0x51,0x94,0x0f,0x2c,0xc8
+        };
+        TEST_ASSERT(compare_bytes(shake_out, expected_shake128, 32),
+                    "SHAKE128(\"abc\", 32) correct");
+    }
+
+    /* ============================================================
+       Test 17: SHAKE128 streaming (update + final + squeeze)
+       ============================================================ */
+    TEST_START("SHAKE128 (streaming)");
+    {
+        sdc_sha3_ctx ctx;
+        uint8_t shake_out[32];
+
+        sdc_shake128_init(&ctx);
+        sdc_shake128_update(&ctx, msg, sizeof(msg) - 1);
+        sdc_shake128_final(&ctx);
+        sdc_shake128_squeeze(&ctx, shake_out, 32);
+
+        const uint8_t expected_shake128[32] = {
+            0x58,0x81,0x09,0x2d,0xd8,0x18,0xbf,0x5c,
+            0xf8,0xa3,0xdd,0xb7,0x93,0xfb,0xcb,0xa7,
+            0x40,0x97,0xd5,0xc5,0x26,0xa6,0xd3,0x5f,
+            0x97,0xb8,0x33,0x51,0x94,0x0f,0x2c,0xc8
+        };
+        TEST_ASSERT(compare_bytes(shake_out, expected_shake128, 32),
+                    "SHAKE128 streaming matches one-shot");
+    }
+
+    /* ============================================================
+       Test 18: SHAKE128 multi-squeeze (XOF property)
+       ============================================================ */
+    TEST_START("SHAKE128 (multi-squeeze)");
+    {
+        sdc_sha3_ctx ctx;
+        uint8_t part1[16], part2[16], full[32];
+
+        sdc_shake128_xof(full, msg, sizeof(msg) - 1, 32);
+
+        sdc_shake128_init(&ctx);
+        sdc_shake128_update(&ctx, msg, sizeof(msg) - 1);
+        sdc_shake128_final(&ctx);
+        sdc_shake128_squeeze(&ctx, part1, 16);
+        sdc_shake128_squeeze(&ctx, part2, 16);
+
+        TEST_ASSERT(compare_bytes(part1, full, 16) &&
+                    compare_bytes(part2, full + 16, 16),
+                    "SHAKE128 multi-squeeze equals one-shot");
+    }
+
+    /* ============================================================
+       Test 19: SHAKE256
+       ============================================================ */
+    TEST_START("SHAKE256");
+    {
+        uint8_t shake_out[64];
+        sdc_shake256_xof(shake_out, msg, sizeof(msg) - 1, 64);
+
+        /* SHAKE256("abc", 64 bytes) */
+        const uint8_t expected_shake256[64] = {
+            0x48,0x33,0x66,0x60,0x13,0x60,0xa8,0x77,
+            0x1c,0x68,0x63,0x08,0x0c,0xc4,0x11,0x4d,
+            0x8d,0xb4,0x45,0x30,0xf8,0xf1,0xe1,0xee,
+            0x4f,0x94,0xea,0x37,0xe7,0x8b,0x57,0x39,
+            0xd5,0xa1,0x5b,0xef,0x18,0x6a,0x53,0x86,
+            0xc7,0x57,0x44,0xc0,0x52,0x7e,0x1f,0xaa,
+            0x9f,0x87,0x26,0xe4,0x62,0xa1,0x2a,0x4f,
+            0xeb,0x06,0xbd,0x88,0x01,0xe7,0x51,0xe4
+        };
+
+        TEST_ASSERT(compare_bytes(shake_out, expected_shake256, 64),
+                    "SHAKE256(\"abc\", 64) correct");
+    }
 #endif
 
     /* ============================================================

@@ -262,7 +262,7 @@ void sdc_shake128_squeeze(sdc_sha3_ctx *ctx, uint8_t *out, size_t len) {
     keccak_squeeze(ctx, out, len);
 }
 
-void sdc_shake128_hash(uint8_t *out, const uint8_t *in, size_t len, size_t out_len) {
+void sdc_shake128_xof(uint8_t *out, const uint8_t *in, size_t len, size_t out_len) {
     sdc_sha3_ctx ctx;
     sdc_shake128_init(&ctx);
     sdc_shake128_update(&ctx, in, len);
@@ -288,7 +288,7 @@ void sdc_shake256_squeeze(sdc_sha3_ctx *ctx, uint8_t *out, size_t len) {
     keccak_squeeze(ctx, out, len);
 }
 
-void sdc_shake256_hash(uint8_t *out, const uint8_t *in, size_t len, size_t out_len) {
+void sdc_shake256_xof(uint8_t *out, const uint8_t *in, size_t len, size_t out_len) {
     sdc_sha3_ctx ctx;
     sdc_shake256_init(&ctx);
     sdc_shake256_update(&ctx, in, len);

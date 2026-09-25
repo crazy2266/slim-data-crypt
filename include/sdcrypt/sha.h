@@ -79,7 +79,7 @@ extern const sdc_hash_ops_t sdc_sha512_ops;
 
 typedef struct {
     uint64_t state[25];
-    uint8_t  buffer[200];
+    uint8_t  buffer[168];
     size_t   buf_len;
     size_t   rate;
     size_t   out_len;
@@ -114,13 +114,13 @@ void sdc_shake128_init(sdc_sha3_ctx *ctx);
 void sdc_shake128_update(sdc_sha3_ctx *ctx, const uint8_t *data, size_t len);
 void sdc_shake128_final(sdc_sha3_ctx *ctx);
 void sdc_shake128_squeeze(sdc_sha3_ctx *ctx, uint8_t *out, size_t len);
-void sdc_shake128_hash(uint8_t *out, const uint8_t *in, size_t len, size_t out_len);
+void sdc_shake128_xof(uint8_t *out, const uint8_t *in, size_t len, size_t out_len);
 /* SHAKE256 */
 void sdc_shake256_init(sdc_sha3_ctx *ctx);
 void sdc_shake256_update(sdc_sha3_ctx *ctx, const uint8_t *data, size_t len);
 void sdc_shake256_final(sdc_sha3_ctx *ctx);
 void sdc_shake256_squeeze(sdc_sha3_ctx *ctx, uint8_t *out, size_t len);
-void sdc_shake256_hash(uint8_t *out, const uint8_t *in, size_t len, size_t out_len);
+void sdc_shake256_xof(uint8_t *out, const uint8_t *in, size_t len, size_t out_len);
 
 #endif /* SDC_ENABLE_SHA3 */
 
