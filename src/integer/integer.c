@@ -225,11 +225,12 @@ void sdc_int_reduce(sdc_word_t *r, const sdc_word_t *x, size_t x_len,
     if (n_len == 0 || sdc_int_eq_word(n, 0, n_len)) return;
     size_t i;
     sdc_word_t bit, c;
+    // TODO: What if x_len < n_len?
     sdc_int_set_word(r, 0, n_len);
 
     for (i = x_len * SDC_WORD_BITS; i > 0; i--) {
         bit = (x[(i - 1) / SDC_WORD_BITS] >> ((i - 1) % SDC_WORD_BITS)) & 1;
-        c = sdc_int_add(r, r, r, n_len);  /* r = r * 2 */
+        c = sdc_int_add(r, r, r, n_len);   /* r = r * 2 */
         r[0] |= bit;                       /* r = r + bit */
         sdc_int_sub_ctl(r, n, n_len, c | sdc_int_gte(r, n, n_len));
     }
