@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: MIT
  * Copyright (c) 2026 crazy2266
  *
- * SHA2 hash functions.
+ * SHA hash functions.
  */
 
 #ifndef SDC_SHA_H

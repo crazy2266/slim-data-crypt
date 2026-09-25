@@ -4,7 +4,16 @@
  *
  * SHA-3 (Secure Hash Algorithm 3) family implementation.
  *
- * Implementation conforms to FIPS 180-4 for SHA-3 family.
+ * References:
+ *   - FIPS PUB 202: SHA-3 Standard: Permutation-Based Hash and
+ *     Extendable-Output Functions
+ *     (https://csrc.nist.gov/publications/fips/fips202/fips202.pdf)
+ *   - NIST SP 800-185: SHA-3 Derived Functions: cSHAKE, KMAC, TupleHash,
+ *     and ParallelHash
+ *     (https://csrc.nist.gov/publications/sp800-185)
+ *
+ * Implementation conforms to FIPS 202 for SHA3-224, SHA3-256,
+ * SHA3-384, SHA3-512, SHAKE128, and SHAKE256.
  */
 
 #include <string.h>
