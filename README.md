@@ -4,6 +4,7 @@ But it is not limited to ARM architecture, you can use it on other architectures
 
 Supported Algorithms and Functions:
 - SHA-2 and SM3 (with hash interface)
+- SHA-3 family with SHAKE128 and SHAKE256
 - ChaCha20-Poly1305
 - XChaCha20-Poly1305
 - PBKDF2-HMAC-SHA256
