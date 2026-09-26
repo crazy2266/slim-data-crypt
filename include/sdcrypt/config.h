@@ -42,7 +42,7 @@
 #define SDC_SM4_CONSTANT_TIME             1
 
 // Other options
-#define SDC_HASH_STATE_MAX_SIZE 256
+#define SDC_HASH_STATE_MAX_SIZE 512
 #define SDC_RNG_STATE_MAX_SIZE  680
 
 #endif /* SDC_CONFIG_H */
