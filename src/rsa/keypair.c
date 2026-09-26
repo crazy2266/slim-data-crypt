@@ -126,7 +126,15 @@ int sdc_rsa_privkey_init(sdc_rsa_privkey_t *privkey,
         sdc_int_reduce(DQ, D, len2_words, Q, len1_words);
         P[0]++; Q[0]++;
 
-        sdc_word_t *tmp = sdc_malloc(len1_words * 2 * SDC_WORD_SIZE);
+        /*
+         * Compute qinv = q^{-1} mod p = q^{p-2} mod p.
+         *
+         * tmp layout (5 * len1_words total):
+         *   [0 .. len1-1]          = p - 2   (exponent)
+         *   [len1 .. 5*len1-1]     = scratch for mont_modexp_word (4*len1)
+         */
+        size_t tmp_words = len1_words * 5;
+        sdc_word_t *tmp = sdc_malloc(tmp_words * SDC_WORD_SIZE);
         if (!tmp) {
             sdc_free(block);
             privkey->_block_start = NULL;
@@ -202,9 +210,11 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
 
     /*
      * Temporary workspace:
-     *   p_minus_1, q_minus_1 (len1 each)
-     *   phi (len2)
-     *   scratch (len1 * 5, enough for gen_prime and mont_exp)
+     *   p_minus_1, q_minus_1 : len1 each
+     *   phi                  : len2
+     *   scratch              : 5 * len1 (for gen_prime and mont_exp)
+     *
+     * total_tmp_words = 2*len1 + len2 + 5*len1 = 7*len1 + len2
      */
     size_t scratch_words = len1 * 5;
     size_t total_tmp_words = len1 * 2 + len2 + scratch_words;
@@ -240,7 +250,7 @@ int sdc_rsa_keypair(sdc_rsa_pubkey_t *pubkey,
     sdc_int_sub_word(q_minus_1, privkey->q, 1, len1);
     sdc_int_mul(phi, p_minus_1, q_minus_1, len1);
 
-    /* d = e^{-1} mod phi */
+    /* d = e^{-1} mod phi (in-place, no tmp needed) */
     sdc_int_modinv(privkey->d, phi, e, len2);
 
     /* CRT parameters */
