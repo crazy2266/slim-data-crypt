@@ -26,7 +26,7 @@
 
 #if SDC_ENABLE_SHA3
 
-#define ROTL64(x, n) (((x) << (n)) | ((x) >> (64 - (n))))
+#define ROTL64(x, n) (((x) << (n)) | ((x) >> ((64 - (n)) & 63)))
 
 static const uint64_t RC[24] = {
     0x0000000000000001ULL, 0x0000000000008082ULL,
