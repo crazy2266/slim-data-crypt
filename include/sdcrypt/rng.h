@@ -12,12 +12,15 @@
 #include <stddef.h>
 #include <sdcrypt/errcode.h>
 #include <sdcrypt/config.h>
+#ifndef __cplusplus
+#  include <stdalign.h>
+#endif
 
 typedef struct sdc_rng_ops_t sdc_rng_ops_t;
 
 typedef struct {
     const sdc_rng_ops_t *ops;
-    uint8_t inner_state[SDC_RNG_STATE_MAX_SIZE];
+    alignas(16) uint8_t inner_state[SDC_RNG_STATE_MAX_SIZE];
 } sdc_rng_ctx;
 
 struct sdc_rng_ops_t {
