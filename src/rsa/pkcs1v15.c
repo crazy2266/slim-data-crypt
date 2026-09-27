@@ -151,7 +151,8 @@ static int unpad_pkcs1v15(const uint8_t *em, size_t em_len,
     uint8_t t1 = (uint8_t)(0 - (type & 1)); /* 0xFF for type 1, 0x00 for type 2 */
     uint8_t t2 = (uint8_t)(type & 1);       /* 1 => require em[i] != t1 */
     for (size_t i = ps_start; i < em_len; i++) {
-        uint8_t in_range = (uint8_t)((i < ps_end) ? 1u : 0u);
+        /* i and ps_end are guaranteed to be <= 2^63. */
+        uint8_t in_range = (uint8_t)(((uint64_t)i - (uint64_t)ps_end) >> 63);  // i < ps_end
         uint8_t byte_ok = (uint8_t)(NEQ(em[i], t1) ^ t2);
         ps_ok = (uint8_t)(ps_ok & (uint8_t)(byte_ok | (uint8_t)(in_range ^ 1)));
     }
@@ -190,7 +191,8 @@ static int unpad_pkcs1v15(const uint8_t *em, size_t em_len,
      */
     uint8_t fits = 1;
     if (out) {
-        fits = (uint8_t)((*out_len >= di_len) ? 1u : 0u);
+        /* *out_len and di_len will never be larger than 2^63 */
+        fits = (uint8_t)(((uint64_t)*out_len - (uint64_t)di_len) >> 63) ^ 1;
     }
     ok &= ps_ok & ps_len_ok & fits;
 
