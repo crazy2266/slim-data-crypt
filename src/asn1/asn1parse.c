@@ -1,3 +1,10 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * ASN.1 DER decoder.
+ */
+
 #include <string.h>
 #include <sdcrypt/asn1.h>
 #include <sdcrypt/integer.h>
@@ -50,37 +57,49 @@ int sdc_asn1_peek_tag(const sdc_asn1_reader_t *reader, uint8_t *tag) {
 int sdc_asn1_read_tag(sdc_asn1_reader_t *reader, uint8_t *tag, size_t *length) {
     uint8_t b;
     int ret;
-    
+
     if (!reader || !tag || !length) return SDC_ERR_INVALID_PARAM;
-    
+
     ret = read_bytes(reader, &b, 1);
     if (ret != SDC_ERR_OK) return ret;
     *tag = b;
-    
+
     ret = read_bytes(reader, &b, 1);
     if (ret != SDC_ERR_OK) return ret;
-    
+
     if (!(b & 0x80)) {
         *length = b;
-        if (*length > reader->length - reader->pos) {
+        if (*length > reader->length - reader->pos)
             return SDC_ERR_ASN1_TRUNCATED;
-        }
         return SDC_ERR_OK;
     }
-    
+
+    /* DER forbids indefinite-length encoding. */
     size_t nbytes = b & 0x7F;
-    if (nbytes > 4) return SDC_ERR_ASN1_BAD_LENGTH;
-    
+    if (nbytes == 0 || nbytes > sizeof(size_t))
+        return SDC_ERR_ASN1_BAD_LENGTH;
+
     size_t len = 0;
     for (size_t i = 0; i < nbytes; i++) {
         ret = read_bytes(reader, &b, 1);
         if (ret != SDC_ERR_OK) return ret;
+
+        /* A long-form length must be minimally encoded. */
+        if (i == 0 && b == 0x00)
+            return SDC_ERR_ASN1_BAD_LENGTH;
+
+        if (len > (SIZE_MAX >> 8))
+            return SDC_ERR_ASN1_BAD_LENGTH;
         len = (len << 8) | b;
     }
+
+    /* DER requires short form for lengths below 128. */
+    if (len < 0x80)
+        return SDC_ERR_ASN1_BAD_LENGTH;
+
     *length = len;
-    if (*length > reader->length - reader->pos) {
+    if (*length > reader->length - reader->pos)
         return SDC_ERR_ASN1_TRUNCATED;
-    }
     return SDC_ERR_OK;
 }
 
@@ -158,9 +177,15 @@ int sdc_asn1_read_integer_to_words(sdc_asn1_reader_t *reader, sdc_word_t *data, 
     if (ret != SDC_ERR_OK) return ret;
     if (tag != ASN1_TAG_INTEGER) return SDC_ERR_ASN1_BAD_TAG;
     if (len == 0) return SDC_ERR_ASN1_BAD_FORMAT;
+    if (reader->data[reader->pos] & 0x80) return SDC_ERR_NOT_IMPLEMENTED;
+    if (len > 1 && reader->data[reader->pos] == 0x00 &&
+        !(reader->data[reader->pos + 1] & 0x80))
+        return SDC_ERR_ASN1_BAD_FORMAT;
     
-    size_t need = (len + SDC_WORD_SIZE - 1) / SDC_WORD_SIZE;
-    if (need == 0) need = 1;
+    size_t need = len / SDC_WORD_SIZE;
+    if (len % SDC_WORD_SIZE) need++;
+    if (need == 0 || need > SIZE_MAX / SDC_WORD_SIZE)
+        return SDC_ERR_ASN1_BAD_LENGTH;
     
     if (data == NULL) {
         *limbs = need;
@@ -172,7 +197,6 @@ int sdc_asn1_read_integer_to_words(sdc_asn1_reader_t *reader, sdc_word_t *data, 
         return SDC_ERR_BUFFER_TOO_SMALL;
     }
     
-    if (reader->data[reader->pos] & 0x80) return SDC_ERR_NOT_IMPLEMENTED;
     memset(data, 0, need * SDC_WORD_SIZE);
     const uint8_t *src = reader->data + reader->pos;
     size_t total_bytes = need * SDC_WORD_SIZE;
@@ -202,6 +226,9 @@ int sdc_asn1_read_integer_to_u64(sdc_asn1_reader_t *reader, uint64_t *out) {
     if (ret != SDC_ERR_OK) return ret;
     if (tag != ASN1_TAG_INTEGER) return SDC_ERR_ASN1_BAD_TAG;
     if (len == 0) return SDC_ERR_ASN1_BAD_FORMAT;
+    if (len > 1 && reader->data[reader->pos] == 0x00 &&
+        !(reader->data[reader->pos + 1] & 0x80))
+        return SDC_ERR_ASN1_BAD_FORMAT;
     if (len > 9) return SDC_ERR_ASN1_INTEGER_TOO_LARGE;
     ret = read_bytes(reader, buf, len);
     if (ret != SDC_ERR_OK) return ret;
@@ -259,6 +286,24 @@ int sdc_asn1_read_oid(sdc_asn1_reader_t *reader, uint8_t *oid, size_t *oid_len) 
     return SDC_ERR_OK;
 }
 
+int sdc_asn1_read_utf8_string(sdc_asn1_reader_t *reader, const uint8_t **data, size_t *len) {
+    uint8_t tag;
+    size_t length;
+    int ret;
+
+    if (!reader || !len) return SDC_ERR_INVALID_PARAM;
+    ret = sdc_asn1_read_tag(reader, &tag, &length);
+    if (ret != SDC_ERR_OK) return ret;
+    if (tag != ASN1_TAG_UTF8_STRING) return SDC_ERR_ASN1_BAD_TAG;
+    if (data == NULL) {
+        *len = length;
+        return SDC_ERR_OK;
+    }
+    *data = reader->data + reader->pos;
+    *len = length;
+    return read_bytes(reader, NULL, length);
+}
+
 int sdc_asn1_read_octet_string(sdc_asn1_reader_t *reader, const uint8_t **data, size_t *len) {
     uint8_t tag;
     size_t length;
@@ -282,19 +327,29 @@ int sdc_asn1_read_bit_string(sdc_asn1_reader_t *reader, const uint8_t **data, si
     size_t value_len;
     int ret;
     uint8_t unused_bits;
-    
+
     if (!reader || !len) return SDC_ERR_INVALID_PARAM;
     ret = sdc_asn1_read_tag(reader, &tag, &value_len);
     if (ret != SDC_ERR_OK) return ret;
     if (tag != ASN1_TAG_BIT_STRING) return SDC_ERR_ASN1_BAD_TAG;
     if (value_len < 1) return SDC_ERR_ASN1_BAD_FORMAT;
-    if (data == NULL) {
-        *len = value_len - 1;
-        return SDC_ERR_OK;
-    }
-    ret = read_bytes(reader, &unused_bits, 1);
-    if (ret != SDC_ERR_OK) return ret;
+
+    unused_bits = reader->data[reader->pos];
     if (unused_bits > 7) return SDC_ERR_ASN1_BAD_FORMAT;
+
+    /* X.690: an empty BIT STRING must have zero unused bits. */
+    if (value_len == 1 && unused_bits != 0)
+        return SDC_ERR_ASN1_BAD_FORMAT;
+
+    /* For a non-empty BIT STRING, unused low bits of the final octet are zero. */
+    if (value_len > 1 && unused_bits != 0) {
+        uint8_t last = reader->data[reader->pos + value_len - 1];
+        if (last & ((uint8_t)0xFF >> (8 - unused_bits)))
+            return SDC_ERR_ASN1_BAD_FORMAT;
+    }
+
+    ret = read_bytes(reader, NULL, 1);
+    if (ret != SDC_ERR_OK) return ret;
     *data = reader->data + reader->pos;
     *len = value_len - 1;
     return read_bytes(reader, NULL, value_len - 1);
