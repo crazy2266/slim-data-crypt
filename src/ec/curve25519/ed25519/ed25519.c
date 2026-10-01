@@ -17,7 +17,7 @@
 #if SDC_ENABLE_ED25519
 
 #if !SDC_ENABLE_SHA512
-#error "Ed25519 requires SHA-512 (set SDC_ENABLE_SHA512 to 1)"
+#  error "Ed25519 requires SHA-512 (set SDC_ENABLE_SHA512 to 1)"
 #endif
 
 #include "ge.h"
