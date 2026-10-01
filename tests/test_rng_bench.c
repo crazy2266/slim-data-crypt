@@ -13,6 +13,7 @@
 #include <sdcrypt/rng.h>
 #include <sdcrypt/errcode.h>
 #include <sdcrypt/utils.h>
+#include "test_common.h"
 
 /* ============================================================
    Timer
@@ -94,14 +95,14 @@ int main(void) {
     memset(seed, 0x55, 32);
 
 #if SDC_ENABLE_SYSTEM_RNG && SDC_ENABLE_CHACHA20_RNG
-    /* 初始化 ChaCha20 DRBG */
+    /* Initialize the ChaCha20 DRBG */
     int ret = sdc_rng_init(&chacha_ctx, &sdc_chacha20_rng_ops, seed);
     if (ret != SDC_ERR_OK) {
         printf("Failed to init ChaCha20 DRBG\n");
         return 1;
     }
 
-    /* 测试不同大小 */
+    /* Test different sizes */
     size_t sizes[] = {64, 256, 1024, 4096, 16384, 65536};
     int iterations[] = {100000, 50000, 20000, 5000, 1000, 200};
 
@@ -122,6 +123,5 @@ int main(void) {
     printf("[SKIP] One or both RNGs are disabled\n");
 #endif
 
-    printf("\n===========================================\n");
-    return 0;
+    T_SUMMARY();
 }

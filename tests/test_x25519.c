@@ -1,11 +1,19 @@
+/*
+ * SPDX-License-Identifier: MIT
+ * Copyright (c) 2026 crazy2266
+ *
+ * X25519 key exchange known-answer tests (RFC 7748).
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <sdcrypt/x25519.h>
 #include <sdcrypt/config.h>
+#include "test_common.h"
 
 #if SDC_ENABLE_X25519
 
-/* 测试向量（RFC 7748） */
+/* RFC 7748 test vectors */
 static const uint8_t rfc_private_a[32] = {
     0x77, 0x07, 0x6d, 0x0a, 0x73, 0x18, 0xa5, 0x7d,
     0x3c, 0x16, 0xc1, 0x72, 0x51, 0xb2, 0x66, 0x45,
@@ -41,53 +49,31 @@ static const uint8_t rfc_shared_secret[32] = {
     0x76, 0xf0, 0x9b, 0x3c, 0x1e, 0x16, 0x17, 0x42
 };
 
-static int compare_bytes(const uint8_t *a, const uint8_t *b, size_t len) {
-    for (size_t i = 0; i < len; i++) {
-        if (a[i] != b[i]) return 0;
-    }
-    return 1;
-}
-
 int main(void) {
-    uint8_t shared_a[32], shared_b[32];
-    int passed = 0;
-    
-    printf("Testing X25519...\n");
-    
-    /* 测试1: Alice 计算共享秘密 */
+    uint8_t shared_a[32] = {0};
+    uint8_t shared_b[32] = {0};
+
+    T_SUITE("X25519 Key Exchange Tests (RFC 7748)");
+
+    T_SECTION("Diffie-Hellman exchange");
     sdc_x25519_exchange(shared_a, rfc_private_a, rfc_public_b);
-    if (compare_bytes(shared_a, rfc_shared_secret, 32)) {
-        printf("[PASS] Alice's shared secret correct\n");
-        passed++;
-    } else {
-        printf("[FAIL] Alice's shared secret wrong\n");
-    }
-    
-    /* 测试2: Bob 计算共享秘密 */
+    T_CHECK_MEM(shared_a, rfc_shared_secret, 32,
+                "Alice shared secret matches RFC 7748");
+
     sdc_x25519_exchange(shared_b, rfc_private_b, rfc_public_a);
-    if (compare_bytes(shared_b, rfc_shared_secret, 32)) {
-        printf("[PASS] Bob's shared secret correct\n");
-        passed++;
-    } else {
-        printf("[FAIL] Bob's shared secret wrong\n");
-    }
-    
-    /* 测试3: 一致性 */
-    if (compare_bytes(shared_a, shared_b, 32)) {
-        printf("[PASS] Shared secrets match\n");
-        passed++;
-    } else {
-        printf("[FAIL] Shared secrets mismatch\n");
-    }
-    
-    printf("\nResult: %d/3 passed\n", passed);
-    return (passed == 3) ? 0 : 1;
+    T_CHECK_MEM(shared_b, rfc_shared_secret, 32,
+                "Bob shared secret matches RFC 7748");
+
+    T_CHECK_MEM(shared_a, shared_b, 32,
+                "Alice and Bob derive identical secret");
+
+    T_SUMMARY();
 }
 
 #else
 
 int main(void) {
-    printf("[SKIP] X25519 测试未启用\n");
+    printf("[SKIP] X25519 disabled in config.h\n");
     return 0;
 }
 

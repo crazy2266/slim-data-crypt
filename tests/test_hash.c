@@ -12,21 +12,9 @@
 #include <sdcrypt/config.h>
 #include <sdcrypt/errcode.h>
 #include <sdcrypt/oid.h>
+#include "test_common.h"
 
-static int test_passed = 0;
-static int test_total = 0;
 
-#define TEST_START(name) printf("\n=== %s ===\n", name)
-#define TEST_ASSERT(cond, msg) \
-    do { \
-        test_total++; \
-        if (cond) { \
-            printf("  [PASS] %s\n", msg); \
-            test_passed++; \
-        } else { \
-            printf("  [FAIL] %s\n", msg); \
-        } \
-    } while (0)
 
 static int compare_bytes(const uint8_t *a, const uint8_t *b, size_t len) {
     for (size_t i = 0; i < len; i++) {
@@ -35,7 +23,7 @@ static int compare_bytes(const uint8_t *a, const uint8_t *b, size_t len) {
     return 1;
 }
 
-/* ---------- 自定义哈希（用于测试插件机制） ---------- */
+/* ---------- Custom hash (for testing the plugin mechanism) ---------- */
 static int custom_init(sdc_hash_ctx *ctx) {
     (void)ctx;
     return SDC_ERR_OK;
@@ -65,7 +53,7 @@ static int custom_hash(uint8_t *out, const uint8_t *in, size_t len, size_t *out_
     return SDC_ERR_OK;
 }
 
-/* 自定义 OID（1.2.3.4） */
+/* Custom OID (1.2.3.4) */
 static const uint8_t custom_oid[] = {0x2A, 0x03, 0x04};
 #define CUSTOM_OID_LEN 3
 
@@ -80,17 +68,17 @@ static const sdc_hash_ops_t custom_ops = {
     .oid_len = CUSTOM_OID_LEN,
 };
 
-/* ---------- 自定义 getter（用于测试可替换查找） ---------- */
+/* ---------- Custom getter (for testing replaceable lookup) ---------- */
 static const sdc_hash_ops_t* custom_getter(const uint8_t *oid, size_t oid_len) {
     if (oid_len == custom_ops.oid_len &&
         memcmp(oid, custom_ops.oid, oid_len) == 0) {
         return &custom_ops;
     }
-    /* 回退到默认查找 */
+    /* Fall back to the default lookup */
     return sdc_hash_find_by_oid_default(oid, oid_len);
 }
 
-/* ---------- 辅助函数：通过 OID 计算哈希 ---------- */
+/* ---------- Helper: compute hash by OID ---------- */
 static int hash_compute_by_oid(const uint8_t *oid, size_t oid_len,
                                const uint8_t *msg, size_t msg_len,
                                uint8_t *out, size_t *out_len,
@@ -98,13 +86,13 @@ static int hash_compute_by_oid(const uint8_t *oid, size_t oid_len,
     const sdc_hash_ops_t *ops = sdc_hash_find_by_oid(oid, oid_len, getter);
     if (!ops) return SDC_ERR_NOT_FOUND;
 
-    // 检查输出缓冲区是否足够大
+    // Check that the output buffer is large enough
     if (*out_len < ops->hash_len) {
         *out_len = ops->hash_len;
         return SDC_ERR_BUFFER_TOO_SMALL;
     }
 
-    // 使用一次性哈希接口
+    // Use the one-shot hash interface
     int ret = sdc_hash_once(ops, out, msg, msg_len, out_len);
     return ret;
 }
@@ -123,9 +111,9 @@ int main(void) {
     /* ============================================================
        Test 1: SHA-256 via sdc_hash_once
        ============================================================ */
-    TEST_START("SHA-256 (sdc_hash_once)");
+    T_SECTION("SHA-256 (sdc_hash_once)");
     ret = sdc_hash_once(&sdc_sha256_ops, hash, msg, sizeof(msg) - 1, &out_len);
-    TEST_ASSERT(ret == SDC_ERR_OK, "sdc_hash_once(SHA-256)");
+    T_CHECK(ret == SDC_ERR_OK, "sdc_hash_once(SHA-256)");
 
     const uint8_t expected_sha256[32] = {
         0xba,0x78,0x16,0xbf,0x8f,0x01,0xcf,0xea,
@@ -133,25 +121,25 @@ int main(void) {
         0xb0,0x03,0x61,0xa3,0x96,0x17,0x7a,0x9c,
         0xb4,0x10,0xff,0x61,0xf2,0x00,0x15,0xad
     };
-    TEST_ASSERT(compare_bytes(hash, expected_sha256, 32),
+    T_CHECK(compare_bytes(hash, expected_sha256, 32),
                 "SHA-256(\"abc\") correct");
 
     /* ============================================================
        Test 2: SHA-256 via OID lookup (default getter)
        ============================================================ */
-    TEST_START("SHA-256 (OID lookup)");
+    T_SECTION("SHA-256 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SHA256, SDC_OID_SHA256_LEN,
                               msg, sizeof(msg) - 1,
                               hash, &out_len, NULL);
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 32 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 32 &&
                 compare_bytes(hash, expected_sha256, 32),
                 "OID lookup finds SHA-256 and computes correctly");
 
     /* ============================================================
        Test 3: SHA-224 via OID lookup
        ============================================================ */
-    TEST_START("SHA-224 (OID lookup)");
+    T_SECTION("SHA-224 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SHA224, SDC_OID_SHA224_LEN,
                               msg, sizeof(msg) - 1,
@@ -163,14 +151,14 @@ int main(void) {
         0x2a,0xad,0xbc,0xe4,0xbd,0xa0,0xb3,0xf7,
         0xe3,0x6c,0x9d,0xa7
     };
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 28 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 28 &&
                 compare_bytes(hash, expected_sha224, 28),
                 "SHA-224(\"abc\") correct");
 
     /* ============================================================
        Test 4: SHA-384 via OID lookup
        ============================================================ */
-    TEST_START("SHA-384 (OID lookup)");
+    T_SECTION("SHA-384 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SHA384, SDC_OID_SHA384_LEN,
                               msg, sizeof(msg) - 1,
@@ -184,14 +172,14 @@ int main(void) {
         0x80,0x86,0x07,0x2b,0xa1,0xe7,0xcc,0x23,
         0x58,0xba,0xec,0xa1,0x34,0xc8,0x25,0xa7
     };
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 48 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 48 &&
                 compare_bytes(hash, expected_sha384, 48),
                 "SHA-384(\"abc\") correct");
 
     /* ============================================================
        Test 5: SHA-512 via OID lookup
        ============================================================ */
-    TEST_START("SHA-512 (OID lookup)");
+    T_SECTION("SHA-512 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SHA512, SDC_OID_SHA512_LEN,
                               msg, sizeof(msg) - 1,
@@ -207,22 +195,22 @@ int main(void) {
         0x45,0x4d,0x44,0x23,0x64,0x3c,0xe8,0x0e,
         0x2a,0x9a,0xc9,0x4f,0xa5,0x4c,0xa4,0x9f
     };
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 64 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 64 &&
                 compare_bytes(hash, expected_sha512, 64),
                 "SHA-512(\"abc\") correct");
 
     /* ============================================================
        Test 6: Unknown OID (should return NULL)
        ============================================================ */
-    TEST_START("Unknown OID");
+    T_SECTION("Unknown OID");
     const uint8_t unknown_oid[] = {0x01, 0x02, 0x03};
     const sdc_hash_ops_t *ops = sdc_hash_find_by_oid(unknown_oid, sizeof(unknown_oid), NULL);
-    TEST_ASSERT(ops == NULL, "Unknown OID returns NULL");
+    T_CHECK(ops == NULL, "Unknown OID returns NULL");
 
     /* ============================================================
        Test 7: Custom OID via custom getter
        ============================================================ */
-    TEST_START("Custom OID (custom getter)");
+    T_SECTION("Custom OID (custom getter)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(custom_oid, CUSTOM_OID_LEN,
                               msg, sizeof(msg) - 1,
@@ -230,45 +218,45 @@ int main(void) {
 
     uint8_t expected_custom[32];
     memset(expected_custom, 0xAA, 32);
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 32 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 32 &&
                 compare_bytes(hash, expected_custom, 32),
                 "Custom getter finds custom OID and returns expected 0xAA bytes");
 
     /* ============================================================
        Test 8: Custom OID with default getter (should fail)
        ============================================================ */
-    TEST_START("Custom OID (default getter, should fail)");
+    T_SECTION("Custom OID (default getter, should fail)");
     ops = sdc_hash_find_by_oid(custom_oid, CUSTOM_OID_LEN, NULL);
-    TEST_ASSERT(ops == NULL, "Default getter does NOT find custom OID");
+    T_CHECK(ops == NULL, "Default getter does NOT find custom OID");
 
     /* ============================================================
        Test 9: sdc_hash_once with NULL ops (should fail)
        ============================================================ */
-    TEST_START("sdc_hash_once NULL ops");
+    T_SECTION("sdc_hash_once NULL ops");
     ret = sdc_hash_once(NULL, hash, msg, sizeof(msg) - 1, &out_len);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL ops returns SDC_ERR_INVALID_PARAM");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "NULL ops returns SDC_ERR_INVALID_PARAM");
 
     /* ============================================================
        Test 10: sdc_hash_final with too-small buffer
        ============================================================ */
-    TEST_START("sdc_hash_final buffer too small");
+    T_SECTION("sdc_hash_final buffer too small");
     sdc_hash_ctx ctx;
     uint8_t small_buf[16];
     size_t small_len = 16;
 
     ret = sdc_hash_init(&ctx, &sdc_sha256_ops);
-    TEST_ASSERT(ret == SDC_ERR_OK, "sdc_hash_init()");
+    T_CHECK(ret == SDC_ERR_OK, "sdc_hash_init()");
 
     ret = sdc_hash_update(&ctx, msg, sizeof(msg) - 1);
-    TEST_ASSERT(ret == SDC_ERR_OK, "sdc_hash_update()");
+    T_CHECK(ret == SDC_ERR_OK, "sdc_hash_update()");
 
     ret = sdc_hash_final(&ctx, small_buf, &small_len);
-    TEST_ASSERT(ret == SDC_ERR_BUFFER_TOO_SMALL && small_len == 32,
+    T_CHECK(ret == SDC_ERR_BUFFER_TOO_SMALL && small_len == 32,
                 "sdc_hash_final() returns SDC_ERR_BUFFER_TOO_SMALL and sets out_len=32");
     /* ============================================================
        Test 11: SM3 via OID lookup
        ============================================================ */
-    TEST_START("SM3 (OID lookup)");
+    T_SECTION("SM3 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SM3, SDC_OID_SM3_LEN,
                               msg, sizeof(msg) - 1,
@@ -281,14 +269,14 @@ int main(void) {
         0x41,0x67,0xc4,0x87,0x5c,0xf2,0xf7,0xa2,
         0x29,0x7d,0xa0,0x2b,0x8f,0x4b,0xa8,0xe0
     };
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 32 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 32 &&
                 compare_bytes(hash, expected_sm3, 32),
                 "SM3(\"abc\") correct");
 #if SDC_ENABLE_SHA3
     /* ============================================================
        Test 12: SHA3-224 via OID lookup
        ============================================================ */
-    TEST_START("SHA3-224 (OID lookup)");
+    T_SECTION("SHA3-224 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SHA3_224, SDC_OID_SHA3_224_LEN,
                               msg, sizeof(msg) - 1,
@@ -301,13 +289,13 @@ int main(void) {
         0xc9,0xa3,0xa5,0x16,0x8d,0x0c,0x94,0xad,
         0x73,0xb4,0x6f,0xdf
     };
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 28 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 28 &&
                 compare_bytes(hash, expected_sha3_224, 28),
                 "SHA3-224(\"abc\") correct");
     /* ============================================================
        Test 13: SHA3-256 via OID lookup
        ============================================================ */
-    TEST_START("SHA3-256 (OID lookup)");
+    T_SECTION("SHA3-256 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SHA3_256, SDC_OID_SHA3_256_LEN,
                               msg, sizeof(msg) - 1,
@@ -320,14 +308,14 @@ int main(void) {
         0x85,0x5f,0x08,0x6e,0x3e,0x9d,0x52,0x5b,
         0x46,0xbf,0xe2,0x45,0x11,0x43,0x15,0x32
     };
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 32 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 32 &&
                 compare_bytes(hash, expected_sha3_256, 32),
                 "SHA3-256(\"abc\") correct");
 
     /* ============================================================
        Test 14: SHA3-384 via OID lookup
        ============================================================ */
-    TEST_START("SHA3-384 (OID lookup)");
+    T_SECTION("SHA3-384 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SHA3_384, SDC_OID_SHA3_384_LEN,
                               msg, sizeof(msg) - 1,
@@ -342,14 +330,14 @@ int main(void) {
         0x98,0xd8,0x8c,0xea,0x92,0x7a,0xc7,0xf5,
         0x39,0xf1,0xed,0xf2,0x28,0x37,0x6d,0x25
     };
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 48 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 48 &&
                 compare_bytes(hash, expected_sha3_384, 48),
                 "SHA3-384(\"abc\") correct");
 
     /* ============================================================
        Test 15: SHA3-512 via OID lookup
        ============================================================ */
-    TEST_START("SHA3-512 (OID lookup)");
+    T_SECTION("SHA3-512 (OID lookup)");
     out_len = sizeof(hash);
     ret = hash_compute_by_oid(SDC_OID_SHA3_512, SDC_OID_SHA3_512_LEN,
                               msg, sizeof(msg) - 1,
@@ -366,13 +354,13 @@ int main(void) {
         0x57,0x34,0x0b,0x4c,0xf4,0x08,0xd5,0xa5,
         0x65,0x92,0xf8,0x27,0x4e,0xec,0x53,0xf0
     };
-    TEST_ASSERT(ret == SDC_ERR_OK && out_len == 64 &&
+    T_CHECK(ret == SDC_ERR_OK && out_len == 64 &&
                 compare_bytes(hash, expected_sha3_512, 64),
                 "SHA3-512(\"abc\") correct");
     /* ============================================================
        Test 16: SHAKE128
        ============================================================ */
-    TEST_START("SHAKE128");
+    T_SECTION("SHAKE128");
     {
         uint8_t shake_out[32];
         sdc_shake128_xof(shake_out, msg, sizeof(msg) - 1, 32);
@@ -384,14 +372,14 @@ int main(void) {
             0x40,0x97,0xd5,0xc5,0x26,0xa6,0xd3,0x5f,
             0x97,0xb8,0x33,0x51,0x94,0x0f,0x2c,0xc8
         };
-        TEST_ASSERT(compare_bytes(shake_out, expected_shake128, 32),
+        T_CHECK(compare_bytes(shake_out, expected_shake128, 32),
                     "SHAKE128(\"abc\", 32) correct");
     }
 
     /* ============================================================
        Test 17: SHAKE128 streaming (update + final + squeeze)
        ============================================================ */
-    TEST_START("SHAKE128 (streaming)");
+    T_SECTION("SHAKE128 (streaming)");
     {
         sdc_sha3_ctx ctx;
         uint8_t shake_out[32];
@@ -407,14 +395,14 @@ int main(void) {
             0x40,0x97,0xd5,0xc5,0x26,0xa6,0xd3,0x5f,
             0x97,0xb8,0x33,0x51,0x94,0x0f,0x2c,0xc8
         };
-        TEST_ASSERT(compare_bytes(shake_out, expected_shake128, 32),
+        T_CHECK(compare_bytes(shake_out, expected_shake128, 32),
                     "SHAKE128 streaming matches one-shot");
     }
 
     /* ============================================================
        Test 18: SHAKE128 multi-squeeze (XOF property)
        ============================================================ */
-    TEST_START("SHAKE128 (multi-squeeze)");
+    T_SECTION("SHAKE128 (multi-squeeze)");
     {
         sdc_sha3_ctx ctx;
         uint8_t part1[16], part2[16], full[32];
@@ -427,7 +415,7 @@ int main(void) {
         sdc_shake128_squeeze(&ctx, part1, 16);
         sdc_shake128_squeeze(&ctx, part2, 16);
 
-        TEST_ASSERT(compare_bytes(part1, full, 16) &&
+        T_CHECK(compare_bytes(part1, full, 16) &&
                     compare_bytes(part2, full + 16, 16),
                     "SHAKE128 multi-squeeze equals one-shot");
     }
@@ -435,7 +423,7 @@ int main(void) {
     /* ============================================================
        Test 19: SHAKE256
        ============================================================ */
-    TEST_START("SHAKE256");
+    T_SECTION("SHAKE256");
     {
         uint8_t shake_out[64];
         sdc_shake256_xof(shake_out, msg, sizeof(msg) - 1, 64);
@@ -452,7 +440,7 @@ int main(void) {
             0xeb,0x06,0xbd,0x88,0x01,0xe7,0x51,0xe4
         };
 
-        TEST_ASSERT(compare_bytes(shake_out, expected_shake256, 64),
+        T_CHECK(compare_bytes(shake_out, expected_shake256, 64),
                     "SHAKE256(\"abc\", 64) correct");
     }
 #endif
@@ -460,8 +448,5 @@ int main(void) {
     /* ============================================================
        Final result
        ============================================================ */
-    printf("\n========================================\n");
-    printf("Result: %d/%d tests passed\n", test_passed, test_total);
-    printf("========================================\n");
-    return (test_passed == test_total) ? 0 : 1;
+    T_SUMMARY();
 }

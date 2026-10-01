@@ -2,140 +2,69 @@
  * SPDX-License-Identifier: MIT
  * Copyright (c) 2026 crazy2266
  *
- * Test ASN.1 time module.
+ * ASN.1 time module tests: known timestamps, edge cases, cache behavior.
  */
 
 #include <stdio.h>
 #include <string.h>
 #include <sdcrypt/asn1time.h>
 #include <sdcrypt/errcode.h>
-
-static int test_passed = 0;
-static int test_total = 0;
-
-#define TEST_START(name) printf("\n=== %s ===\n", name)
-#define TEST_ASSERT(cond, msg) \
-    do { \
-        test_total++; \
-        if (cond) { \
-            printf("  [PASS] %s\n", msg); \
-            test_passed++; \
-        } else { \
-            printf("  [FAIL] %s\n", msg); \
-        } \
-    } while (0)
+#include <sdcrypt/config.h>
+#include "test_common.h"
 
 int main(void) {
     uint64_t ts;
     int ret;
 
-    printf("========================================\n");
-    printf("  ASN.1 Time Test\n");
-    printf("========================================\n");
+    T_SUITE("ASN.1 Time Tests");
 
-    /* ============================================================
-       Test 1: Known timestamps
-       ============================================================ */
-    TEST_START("Known timestamps");
-
-    /* Unix epoch: 1970-01-01 00:00:00 */
+    T_SECTION("Known timestamps");
     ts = sdc_asn1_time_to_timestamp(1970, 1, 1, 0, 0, 0);
-    TEST_ASSERT(ts == 0, "1970-01-01 00:00:00 -> 0");
-
-    /* 2024-01-01 00:00:00 UTC */
+    T_CHECK(ts == 0, "1970-01-01 00:00:00 -> 0");
     ts = sdc_asn1_time_to_timestamp(2024, 1, 1, 0, 0, 0);
-    TEST_ASSERT(ts == 1704067200ULL, "2024-01-01 00:00:00 -> 1704067200");
-
-    /* 2025-01-01 00:00:00 UTC */
+    T_CHECK(ts == 1704067200ULL, "2024-01-01 00:00:00 -> 1704067200");
     ts = sdc_asn1_time_to_timestamp(2025, 1, 1, 0, 0, 0);
-    TEST_ASSERT(ts == 1735689600ULL, "2025-01-01 00:00:00 -> 1735689600");
-
-    /* 2026-08-15 12:34:56 UTC */
+    T_CHECK(ts == 1735689600ULL, "2025-01-01 00:00:00 -> 1735689600");
     ts = sdc_asn1_time_to_timestamp(2026, 8, 15, 12, 34, 56);
-    TEST_ASSERT(ts == 1786797296ULL, "2026-08-15 12:34:56 UTC -> 1786797296");
+    T_CHECK(ts == 1786797296ULL, "2026-08-15 12:34:56 -> 1786797296");
 
-    /* ============================================================
-       Test 2: Edge cases
-       ============================================================ */
-    TEST_START("Edge cases");
-
-    /* Leap year: 2024-02-29 */
+    T_SECTION("Edge cases");
     ts = sdc_asn1_time_to_timestamp(2024, 2, 29, 0, 0, 0);
-    TEST_ASSERT(ts == 1709164800ULL, "2024-02-29 -> 1709164800");
-
-    /* Non-leap year: 2025-02-29 should fail */
+    T_CHECK(ts == 1709164800ULL, "2024-02-29 leap day -> 1709164800");
     ts = sdc_asn1_time_to_timestamp(2025, 2, 29, 0, 0, 0);
-    TEST_ASSERT(ts == 0, "2025-02-29 -> 0 (invalid)");
-
-    /* Invalid month */
+    T_CHECK(ts == 0, "2025-02-29 invalid -> 0");
     ts = sdc_asn1_time_to_timestamp(2025, 13, 1, 0, 0, 0);
-    TEST_ASSERT(ts == 0, "Month 13 -> 0 (invalid)");
-
-    /* Invalid day */
+    T_CHECK(ts == 0, "Month 13 invalid -> 0");
     ts = sdc_asn1_time_to_timestamp(2025, 1, 32, 0, 0, 0);
-    TEST_ASSERT(ts == 0, "Day 32 -> 0 (invalid)");
-
-    /* Year before 1970 */
+    T_CHECK(ts == 0, "Day 32 invalid -> 0");
     ts = sdc_asn1_time_to_timestamp(1969, 12, 31, 0, 0, 0);
-    TEST_ASSERT(ts == 0, "Year 1969 -> 0 (invalid)");
-
-    /* Year 2038 (beyond 32-bit time_t) */
+    T_CHECK(ts == 0, "Year 1969 pre-epoch -> 0");
     ts = sdc_asn1_time_to_timestamp(2038, 1, 19, 3, 14, 7);
-    TEST_ASSERT(ts == 2147483647ULL, "2038-01-19 03:14:07 -> 2147483647");
+    T_CHECK(ts == 2147483647ULL, "2038-01-19 03:14:07 -> 2147483647");
 
-    /* ============================================================
-       Test 3: Cache refresh
-       ============================================================ */
-    TEST_START("Cache operations");
-
-    /* Set current time to a known value */
+    T_SECTION("Cache operations");
     sdc_asn1_time_set_current(1735689600ULL);
-
-    /* Get current time */
     ret = sdc_asn1_time_now(&ts);
-    TEST_ASSERT(ret == SDC_ERR_OK && ts == 1735689600ULL,
-                "sdc_asn1_time_now returns set time");
-
-    /* Refresh cache */
+    T_CHECK(ret == SDC_ERR_OK && ts == 1735689600ULL,
+            "sdc_asn1_time_now returns injected time");
     sdc_asn1_time_cache_refresh();
+    {
+        int start, end;
+        sdc_asn1_time_get_cache_range(&start, &end);
+        T_CHECK(start <= end, "cache range is valid");
+    }
 
-    /* Get cache range */
-    int start, end;
-    sdc_asn1_time_get_cache_range(&start, &end);
-    TEST_ASSERT(start <= end, "Cache range valid");
-
-    /* ============================================================
-       Test 4: Time parse failure
-       ============================================================ */
-    TEST_START("Time parse failure");
-
-    /* Clear user time to use system time */
+    T_SECTION("System time");
     sdc_asn1_time_set_current(0);
-
     ret = sdc_asn1_time_now(&ts);
-    /* Can't predict exact value, just check it's reasonable */
-    TEST_ASSERT(ret == SDC_ERR_OK && ts > 1700000000ULL,
-                "System time is reasonable (> 2023)");
+    T_CHECK(ret == SDC_ERR_OK && ts > 1700000000ULL,
+            "system time is reasonable (> 2023)");
 
-    /* ============================================================
-       Test 5: sdc_asn1_time_to_timestamp consistency
-       ============================================================ */
-    TEST_START("Round-trip consistency");
-
-    /* 2025-06-15 08:30:45 -> timestamp -> back to date (we just check it doesn't crash) */
+    T_SECTION("Round-trip consistency");
     ts = sdc_asn1_time_to_timestamp(2025, 6, 15, 8, 30, 45);
-    TEST_ASSERT(ts > 0, "2025-06-15 08:30:45 -> valid timestamp");
-
-    /* Edge: max year 9999 */
+    T_CHECK(ts > 0, "2025-06-15 08:30:45 -> valid timestamp");
     ts = sdc_asn1_time_to_timestamp(9999, 12, 31, 23, 59, 59);
-    TEST_ASSERT(ts == 253402300799ULL, "9999-12-31 23:59:59 -> 253402300799");
+    T_CHECK(ts == 253402300799ULL, "9999-12-31 23:59:59 -> 253402300799");
 
-    /* ============================================================
-       Final
-       ============================================================ */
-    printf("\n========================================\n");
-    printf("Result: %d/%d tests passed\n", test_passed, test_total);
-    printf("========================================\n");
-
-    return (test_passed == test_total) ? 0 : 1;
+    T_SUMMARY();
 }

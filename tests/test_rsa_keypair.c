@@ -24,22 +24,10 @@
 #include <sdcrypt/rng.h>
 #include <sdcrypt/integer.h>
 #include <sdcrypt/utils.h>
+#include "test_common.h"
 
-static int g_passed = 0;
-static int g_total = 0;
 static sdc_rng_ctx rng_ctx = {&sdc_system_rng_ops, {0}};
 
-#define TEST_START(name) printf("\n=== %s ===\n", name)
-#define TEST_ASSERT(cond, msg) \
-    do { \
-        g_total++; \
-        if (cond) { \
-            printf("  [PASS] %s\n", msg); \
-            g_passed++; \
-        } else { \
-            printf("  [FAIL] %s\n", msg); \
-        } \
-    } while (0)
 
 /* ============================================================
    Helper: allocate and zero memory
@@ -71,27 +59,27 @@ static void test_keygen(void) {
     sdc_rsa_pubkey_t pub;
     sdc_rsa_privkey_t priv;
 
-    TEST_START("sdc_rsa_keypair");
+    T_SECTION("sdc_rsa_keypair");
 
     /* 2048-bit */
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
     int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048, &rng_ctx);
-    TEST_ASSERT(ret == SDC_ERR_OK, "2048-bit key generation");
+    T_CHECK(ret == SDC_ERR_OK, "2048-bit key generation");
 
     if (ret == SDC_ERR_OK) {
-        TEST_ASSERT(pub.n != NULL, "pub.n != NULL");
-        TEST_ASSERT(pub.nlen == 2048 / SDC_WORD_BITS, "pub.nlen correct");
-        TEST_ASSERT(pub.e == 65537, "pub.e correct");
+        T_CHECK(pub.n != NULL, "pub.n != NULL");
+        T_CHECK(pub.nlen == 2048 / SDC_WORD_BITS, "pub.nlen correct");
+        T_CHECK(pub.e == 65537, "pub.e correct");
 
-        TEST_ASSERT(priv._block_start != NULL, "priv._block_start != NULL");
-        TEST_ASSERT(priv.p != NULL, "priv.p != NULL");
-        TEST_ASSERT(priv.q != NULL, "priv.q != NULL");
-        TEST_ASSERT(priv.d != NULL, "priv.d != NULL");
-        TEST_ASSERT(priv.n != NULL, "priv.n != NULL");
-        TEST_ASSERT(priv.len1 == 2048 / 2 / SDC_WORD_BITS, "priv.len1 correct");
-        TEST_ASSERT(priv.len2 == 2048 / SDC_WORD_BITS, "priv.len2 correct");
+        T_CHECK(priv._block_start != NULL, "priv._block_start != NULL");
+        T_CHECK(priv.p != NULL, "priv.p != NULL");
+        T_CHECK(priv.q != NULL, "priv.q != NULL");
+        T_CHECK(priv.d != NULL, "priv.d != NULL");
+        T_CHECK(priv.n != NULL, "priv.n != NULL");
+        T_CHECK(priv.len1 == 2048 / 2 / SDC_WORD_BITS, "priv.len1 correct");
+        T_CHECK(priv.len2 == 2048 / SDC_WORD_BITS, "priv.len2 correct");
 
         sdc_rsa_free_keypair(&pub, &priv);
     }
@@ -101,26 +89,26 @@ static void test_keygen(void) {
     memset(&priv, 0, sizeof(priv));
 
     ret = sdc_rsa_keypair(&pub, &priv, 3, 1024, &rng_ctx);
-    TEST_ASSERT(ret == SDC_ERR_OK, "1024-bit with e=3");
+    T_CHECK(ret == SDC_ERR_OK, "1024-bit with e=3");
 
     if (ret == SDC_ERR_OK) {
-        TEST_ASSERT(pub.e == 3, "pub.e == 3");
-        TEST_ASSERT(pub.nlen == 1024 / SDC_WORD_BITS, "1024-bit nlen correct");
+        T_CHECK(pub.e == 3, "pub.e == 3");
+        T_CHECK(pub.nlen == 1024 / SDC_WORD_BITS, "1024-bit nlen correct");
         sdc_rsa_free_keypair(&pub, &priv);
     }
 
     /* invalid params */
     ret = sdc_rsa_keypair(NULL, NULL, 65537, 2048, &rng_ctx);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL pubkey");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "NULL pubkey");
 
     ret = sdc_rsa_keypair(&pub, NULL, 65537, 2048, &rng_ctx);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL privkey");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "NULL privkey");
 
     ret = sdc_rsa_keypair(&pub, &priv, 65537, 0, &rng_ctx);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "bits == 0");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "bits == 0");
 
     ret = sdc_rsa_keypair(&pub, &priv, 65537, 2047, &rng_ctx);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "bits not word-aligned");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "bits not word-aligned");
 }
 
 /* ============================================================
@@ -130,14 +118,14 @@ static void test_math(void) {
     sdc_rsa_pubkey_t pub;
     sdc_rsa_privkey_t priv;
 
-    TEST_START("RSA math correctness");
+    T_SECTION("RSA math correctness");
 
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
     int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048, &rng_ctx);
     if (ret != SDC_ERR_OK) {
-        TEST_ASSERT(0, "keypair generation failed");
+        T_CHECK(0, "keypair generation failed");
         return;
     }
 
@@ -157,7 +145,7 @@ static void test_math(void) {
     size_t tmp_words = len1 + len1 + len2 + (len2 + 1) + (len1 * 2) + len1 + (len2 * 4);
     sdc_word_t *tmp = (sdc_word_t *)alloc_zero(tmp_words * SDC_WORD_SIZE);
     if (!tmp) {
-        TEST_ASSERT(0, "malloc failed");
+        T_CHECK(0, "malloc failed");
         sdc_rsa_free_keypair(&pub, &priv);
         return;
     }
@@ -172,10 +160,10 @@ static void test_math(void) {
 
     /* Test 1: n == p * q */
     sdc_int_mul(scratch, priv.p, priv.q, len1);
-    TEST_ASSERT(sdc_int_eq(scratch, priv.n, len2) == 1, "n == p * q");
+    T_CHECK(sdc_int_eq(scratch, priv.n, len2) == 1, "n == p * q");
 
     /* Test 2: public n == private n */
-    TEST_ASSERT(sdc_int_eq(pub.n, priv.n, len2) == 1, "public n == private n");
+    T_CHECK(sdc_int_eq(pub.n, priv.n, len2) == 1, "public n == private n");
 
     /* Test 3: phi = (p-1)*(q-1) */
     sdc_int_copy(p_minus_1, priv.p, len1);
@@ -187,24 +175,24 @@ static void test_math(void) {
     /* Test 4: e * d == 1 mod phi */
     sdc_int_mul_word(ed, priv.d, pub.e, len2);
     sdc_int_reduce(scratch, ed, len2 + 1, phi, len2);
-    TEST_ASSERT(sdc_int_eq_word(scratch, 1, len2) == 1, "e * d == 1 mod phi");
+    T_CHECK(sdc_int_eq_word(scratch, 1, len2) == 1, "e * d == 1 mod phi");
 
     /* Test 5: dp == d mod (p-1) */
     sdc_int_copy(p_minus_1, priv.p, len1);
     p_minus_1[0]--;
     sdc_int_reduce(scratch, priv.d, len2, p_minus_1, len1);
-    TEST_ASSERT(sdc_int_eq(scratch, priv.dp, len1) == 1, "dp == d mod (p-1)");
+    T_CHECK(sdc_int_eq(scratch, priv.dp, len1) == 1, "dp == d mod (p-1)");
 
     /* Test 6: dq == d mod (q-1) */
     sdc_int_copy(q_minus_1, priv.q, len1);
     q_minus_1[0]--;
     sdc_int_reduce(scratch, priv.d, len2, q_minus_1, len1);
-    TEST_ASSERT(sdc_int_eq(scratch, priv.dq, len1) == 1, "dq == d mod (q-1)");
+    T_CHECK(sdc_int_eq(scratch, priv.dq, len1) == 1, "dq == d mod (q-1)");
 
     /* Test 7: qinv == q^{-1} mod p */
     sdc_int_mul(mul_result, priv.q, priv.qinv, len1);
     sdc_int_reduce(reduce_result, mul_result, len1 * 2, priv.p, len1);
-    TEST_ASSERT(sdc_int_eq_word(reduce_result, 1, len1) == 1, "qinv == q^{-1} mod p");
+    T_CHECK(sdc_int_eq_word(reduce_result, 1, len1) == 1, "qinv == q^{-1} mod p");
 
     sdc_free(tmp);
     sdc_rsa_free_keypair(&pub, &priv);
@@ -217,14 +205,14 @@ static void test_roundtrip(void) {
     sdc_rsa_pubkey_t pub;
     sdc_rsa_privkey_t priv;
 
-    TEST_START("RSA encrypt/decrypt round-trip");
+    T_SECTION("RSA encrypt/decrypt round-trip");
 
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
 
     int ret = sdc_rsa_keypair(&pub, &priv, 65537, 2048, &rng_ctx);
     if (ret != SDC_ERR_OK) {
-        TEST_ASSERT(0, "keypair generation failed");
+        T_CHECK(0, "keypair generation failed");
         return;
     }
 
@@ -239,7 +227,7 @@ static void test_roundtrip(void) {
     sdc_word_t *tmp = (sdc_word_t *)alloc_zero(len2 * 4 * SDC_WORD_SIZE);
 
     if (!msg || !cipher || !decrypted || !verify || !tmp) {
-        TEST_ASSERT(0, "malloc failed");
+        T_CHECK(0, "malloc failed");
         goto cleanup;
     }
 
@@ -252,7 +240,7 @@ static void test_roundtrip(void) {
     sdc_int_mont_modexp_with_ebits_vartime(cipher, msg, pub.e, pub.e_bits, pub.n, tmp, len2, ninv);
     /* decrypt: m' = c^d mod n */
     sdc_int_mont_modexp_word(decrypted, cipher, priv.d, len2, pub.n, tmp, len2, ninv);
-    TEST_ASSERT(sdc_int_eq(msg, decrypted, len2) == 1, "round-trip: decrypt(encrypt(msg)) == msg");
+    T_CHECK(sdc_int_eq(msg, decrypted, len2) == 1, "round-trip: decrypt(encrypt(msg)) == msg");
 
 cleanup:
     sdc_free(msg);
@@ -271,13 +259,13 @@ static void test_crt(void) {
     sdc_rsa_privkey_t privkey;
     int ret;
 
-    TEST_START("CRT decryption");
+    T_SECTION("CRT decryption");
 
     memset(&pubkey, 0, sizeof(pubkey));
     memset(&privkey, 0, sizeof(privkey));
 
     ret = sdc_rsa_keypair(&pubkey, &privkey, 65537, 2048, &rng_ctx);
-    TEST_ASSERT(ret == SDC_ERR_OK, "Generate key for CRT test");
+    T_CHECK(ret == SDC_ERR_OK, "Generate key for CRT test");
     if (ret != SDC_ERR_OK) {
         return;
     }
@@ -294,7 +282,7 @@ static void test_crt(void) {
     sdc_word_t *tmp = sdc_malloc(len2 * 6 * SDC_WORD_SIZE);
 
     if (!msg || !cipher || !dec_direct || !dec_crt || !tmp) {
-        TEST_ASSERT(0, "Memory allocation failed");
+        T_CHECK(0, "Memory allocation failed");
         goto cleanup;
     }
 
@@ -352,11 +340,11 @@ static void test_crt(void) {
     sdc_int_add(dec_crt, dec_crt, qt, len2);
 
     /* Compare direct decryption and CRT decryption */
-    TEST_ASSERT(sdc_int_eq(dec_direct, dec_crt, len2) == 1,
+    T_CHECK(sdc_int_eq(dec_direct, dec_crt, len2) == 1,
                 "CRT decryption matches direct decryption");
 
     /* Verify decrypted message matches original message */
-    TEST_ASSERT(sdc_int_eq(msg, dec_direct, len2) == 1,
+    T_CHECK(sdc_int_eq(msg, dec_direct, len2) == 1,
                 "Decrypted message matches original");
 
 cleanup:
@@ -376,7 +364,7 @@ static void test_pubkey_init(void) {
     sdc_rsa_pubkey_t pub;
     int ret;
 
-    TEST_START("sdc_rsa_pubkey_init");
+    T_SECTION("sdc_rsa_pubkey_init");
 
     /* generate a key to get real modulus */
     sdc_rsa_privkey_t priv;
@@ -393,7 +381,7 @@ static void test_pubkey_init(void) {
         if (n_bytes) {
             sdc_int_tobytes_be(pub.n, pub.nlen, n_bytes);
             ret = sdc_rsa_pubkey_init(&pub2, n_bytes, nbytes, pub.e);
-            TEST_ASSERT(ret == SDC_ERR_OK, "init from bytes");
+            T_CHECK(ret == SDC_ERR_OK, "init from bytes");
             sdc_free(n_bytes);
             sdc_rsa_free_keypair(&pub2, NULL);
         }
@@ -402,19 +390,19 @@ static void test_pubkey_init(void) {
 
     /* error cases */
     ret = sdc_rsa_pubkey_init(NULL, NULL, 0, 0);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL pubkey");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "NULL pubkey");
 
     ret = sdc_rsa_pubkey_init(&pub, NULL, 32, 65537);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL n");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "NULL n");
 
     ret = sdc_rsa_pubkey_init(&pub, (uint8_t *)"\x01\x02", 2, 0);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "e == 0");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "e == 0");
 
     ret = sdc_rsa_pubkey_init(&pub, (uint8_t *)"\x01\x02", 3, 65537);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "misaligned nlen");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "misaligned nlen");
 
     ret = sdc_rsa_pubkey_init(&pub, (uint8_t *)"\x00\x00\x00\x00\x00\x00\x00\x00", 8, 65537);
-    TEST_ASSERT(ret == SDC_ERR_KEY_INVALID || ret == SDC_ERR_INVALID_PARAM, "zero modulus");
+    T_CHECK(ret == SDC_ERR_KEY_INVALID || ret == SDC_ERR_INVALID_PARAM, "zero modulus");
 }
 
 /* ============================================================
@@ -425,27 +413,27 @@ static void test_privkey_init(void) {
     sdc_rsa_privkey_t priv;
     int ret;
 
-    TEST_START("sdc_rsa_privkey_init");
+    T_SECTION("sdc_rsa_privkey_init");
 
     memset(&priv, 0, sizeof(priv));
 
     ret = sdc_rsa_privkey_init(NULL, NULL, NULL, NULL, NULL, 0, 0, NULL, NULL, 0);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "NULL privkey");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "NULL privkey");
 
     ret = sdc_rsa_privkey_init(&priv, (uint8_t *)"\x01", (uint8_t *)"\x02",
                                NULL, NULL, NULL, 1,
                                (uint8_t *)"\x03", (uint8_t *)"\x04", 2);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "misaligned len1");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "misaligned len1");
 
     ret = sdc_rsa_privkey_init(&priv, (uint8_t *)"\x01\x02", (uint8_t *)"\x03\x04",
                                NULL, NULL, NULL, 2,
                                (uint8_t *)"\x05\x06", (uint8_t *)"\x07\x08", 1);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "misaligned len2");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "misaligned len2");
 
     ret = sdc_rsa_privkey_init(&priv, (uint8_t *)"\x01\x02", (uint8_t *)"\x03\x04",
                                NULL, NULL, NULL, 2,
                                (uint8_t *)"\x05\x06", (uint8_t *)"\x07\x08", 8);
-    TEST_ASSERT(ret == SDC_ERR_INVALID_PARAM, "len2 != len1*2");
+    T_CHECK(ret == SDC_ERR_INVALID_PARAM, "len2 != len1*2");
 }
 
 /* ============================================================
@@ -456,10 +444,10 @@ static void test_free(void) {
     sdc_rsa_pubkey_t pub;
     sdc_rsa_privkey_t priv;
 
-    TEST_START("sdc_rsa_free_keypair");
+    T_SECTION("sdc_rsa_free_keypair");
 
     sdc_rsa_free_keypair(NULL, NULL);
-    TEST_ASSERT(1 == 1, "free(NULL, NULL) no crash");
+    T_CHECK(1 == 1, "free(NULL, NULL) no crash");
 
     memset(&pub, 0, sizeof(pub));
     memset(&priv, 0, sizeof(priv));
@@ -467,12 +455,12 @@ static void test_free(void) {
     int ret = sdc_rsa_keypair(&pub, &priv, 65537, 1024, &rng_ctx);
     if (ret == SDC_ERR_OK) {
         sdc_rsa_free_keypair(&pub, &priv);
-        TEST_ASSERT(pub.n == NULL, "pub.n == NULL");
-        TEST_ASSERT(priv._block_start == NULL, "priv._block_start == NULL");
-        TEST_ASSERT(priv.p == NULL, "priv.p == NULL");
-        TEST_ASSERT(priv.q == NULL, "priv.q == NULL");
-        TEST_ASSERT(priv.d == NULL, "priv.d == NULL");
-        TEST_ASSERT(priv.n == NULL, "priv.n == NULL");
+        T_CHECK(pub.n == NULL, "pub.n == NULL");
+        T_CHECK(priv._block_start == NULL, "priv._block_start == NULL");
+        T_CHECK(priv.p == NULL, "priv.p == NULL");
+        T_CHECK(priv.q == NULL, "priv.q == NULL");
+        T_CHECK(priv.d == NULL, "priv.d == NULL");
+        T_CHECK(priv.n == NULL, "priv.n == NULL");
     }
 }
 
@@ -484,14 +472,14 @@ static void test_crt_performance(void) {
     sdc_rsa_privkey_t privkey;
     int ret;
 
-    TEST_START("CRT performance");
+    T_SECTION("CRT performance");
 
     memset(&pubkey, 0, sizeof(pubkey));
     memset(&privkey, 0, sizeof(privkey));
 
     ret = sdc_rsa_keypair(&pubkey, &privkey, 65537, 2048, &rng_ctx);
     if (ret != SDC_ERR_OK) {
-        TEST_ASSERT(0, "keypair generation failed");
+        T_CHECK(0, "keypair generation failed");
         return;
     }
 
@@ -506,7 +494,7 @@ static void test_crt_performance(void) {
     sdc_word_t *tmp = sdc_malloc(len2 * 6 * SDC_WORD_SIZE);
 
     if (!msg || !cipher || !dec_direct || !dec_crt || !tmp) {
-        TEST_ASSERT(0, "Memory allocation failed");
+        T_CHECK(0, "Memory allocation failed");
         goto cleanup;
     }
 
@@ -577,10 +565,10 @@ static void test_crt_performance(void) {
     printf("  CRT decryption:    %.3f ms (avg of %d iterations)\n", crt_time, iterations);
     printf("  Speedup:           %.2fx\n", direct_time / crt_time);
 
-    TEST_ASSERT(sdc_int_eq(msg, dec_direct, len2) == 1,
+    T_CHECK(sdc_int_eq(msg, dec_direct, len2) == 1,
                 "Direct decryption correct");
 
-    TEST_ASSERT(sdc_int_eq(dec_direct, dec_crt, len2) == 1,
+    T_CHECK(sdc_int_eq(dec_direct, dec_crt, len2) == 1,
                 "CRT result matches direct");
 
 cleanup:
@@ -610,9 +598,5 @@ int main(void) {
     test_free();
     test_crt_performance();
 
-    printf("\n========================================\n");
-    printf("Result: %d/%d tests passed\n", g_passed, g_total);
-    printf("========================================\n");
-
-    return (g_passed == g_total) ? 0 : 1;
+    T_SUMMARY();
 }
