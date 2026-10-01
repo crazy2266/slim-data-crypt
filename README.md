@@ -13,6 +13,7 @@ Supported Algorithms and Functions:
 - ASN.1 parse and write
 - RSA key generation
 - RSA-PKCS#1 v1.5 (encryption/decryption, signing/verification)
+- SM4 (with ECB/CTR modes)
 
 How to build tests:
 - On Linux or Termux (Android), you can directly use "make".
