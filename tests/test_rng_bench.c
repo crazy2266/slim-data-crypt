@@ -6,6 +6,11 @@
  * Compares system RNG vs ChaCha20 DRBG.
  */
 
+/* clock_gettime / CLOCK_MONOTONIC need POSIX 199309L under -std=c99. */
+#ifndef _WIN32
+#  define _POSIX_C_SOURCE 199309L
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

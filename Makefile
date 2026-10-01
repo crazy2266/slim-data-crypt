@@ -1,61 +1,56 @@
+# slim-data-crypt top-level Makefile
+#
+# Detects the host platform and includes the matching rule set from mk/.
+#   Windows (MSYS2/MinGW): mk/rules.windows.mk
+#   Unix (Linux/macOS):    mk/rules.unix.mk
+
+ifeq ($(OS),Windows_NT)
+  PLATFORM := windows
+else
+  PLATFORM := unix
+endif
+
+.DEFAULT_GOAL := all
+
 CC = gcc
-CFLAGS = -Wall -Wextra -O3 -g -Iinclude -std=c99
-LDFLAGS = -lrt -lm
+CFLAGS = -Wall -Wextra -O2 -g -Iinclude -std=c99
 
 SRC_DIR = src
 TEST_DIR = tests
-BUILD_DIR = build
 BIN_DIR = bin
+# BUILD_DIR is defined per-platform in mk/rules.*.mk (build-win / build-unix)
 
+# Source discovery: nested wildcards, up to 7 directory levels.
 SRCS = $(wildcard $(SRC_DIR)/*.c) \
-       $(wildcard $(SRC_DIR)/**/*.c)
+       $(wildcard $(SRC_DIR)/*/*.c) \
+       $(wildcard $(SRC_DIR)/*/*/*.c) \
+       $(wildcard $(SRC_DIR)/*/*/*/*.c) \
+       $(wildcard $(SRC_DIR)/*/*/*/*/*.c) \
+       $(wildcard $(SRC_DIR)/*/*/*/*/*/*.c) \
+       $(wildcard $(SRC_DIR)/*/*/*/*/*/*/*.c)
 
 TEST_SRCS = $(wildcard $(TEST_DIR)/test_*.c)
-TEST_BINS = $(patsubst $(TEST_DIR)/%.c,$(BIN_DIR)/%.out,$(TEST_SRCS))
 
-OBJS = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SRCS))
+# platform-specific variables and rules
+include mk/rules.$(PLATFORM).mk
 
-all: $(BIN_DIR) $(TEST_BINS)
+# derived variables (need BUILD_DIR/EXE from the platform file)
+OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
+TEST_BINS = $(patsubst $(TEST_DIR)/%.c,$(BIN_DIR)/%$(EXE),$(TEST_SRCS))
+
+all: $(BIN_DIR) $(BUILD_DIR) $(TEST_BINS)
 
 $(BIN_DIR) $(BUILD_DIR):
-	mkdir -p $@
+	$(MKDIR_TARGET)
 
-$(BUILD_DIR)/%.o: %.c | $(BUILD_DIR)
-	@mkdir -p $(dir $@)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	$(MKDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BIN_DIR)/%.out: $(TEST_DIR)/%.c $(OBJS) | $(BIN_DIR)
+$(BIN_DIR)/%$(EXE): $(TEST_DIR)/%.c $(OBJS) | $(BIN_DIR)
 	$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(LDFLAGS)
 
-test-%: $(BIN_DIR)/%.out
-	@echo "=== Running $* ==="
-	@./$(BIN_DIR)/$*.out
-
 test: $(TEST_BINS)
-	@echo ""
-	@echo "========================================"
-	@echo "Running all tests..."
-	@echo "========================================"
-	@for test in $(TEST_BINS); do \
-		echo ""; \
-		echo "=== $$(basename $$test .out) ==="; \
-		./$$test || exit 1; \
-	done
-	@echo ""
-	@echo "========================================"
-	@echo "All tests passed!"
-	@echo "========================================"
+	$(RUN_TESTS)
 
-clean:
-	rm -rf $(BUILD_DIR) $(BIN_DIR)
-
-distclean: clean
-	rm -rf *.o *.exe
-
-list:
-	@echo "Available tests:"
-	@for test in $(TEST_BINS); do \
-		echo "  $$(basename $$test)"; \
-	done
-
-.PHONY: all clean distclean test list
+.PHONY: all test clean

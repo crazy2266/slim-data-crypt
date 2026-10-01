@@ -16,7 +16,6 @@ Supported Algorithms and Functions:
 - SM4 (with ECB/CTR modes)
 
 How to build tests:
-- On Linux or Termux (Android), you can directly use "make".
-- On Windows, you should use "make (or mingw32-make) -f Makefile.win".
+- Just use "make" to build tests.
 
 All test programs will be generated in ./bin directory.

@@ -19,6 +19,7 @@
 #define SDC_ENABLE_SM3                    1
 #define SDC_ENABLE_SM4                    1
 #define SDC_ENABLE_X25519                 1
+#define SDC_ENABLE_ED25519                1
 #define SDC_ENABLE_PBKDF2                 1
 #define SDC_ENABLE_CHACHA20               1
 #define SDC_ENABLE_CHACHA20RAW            1

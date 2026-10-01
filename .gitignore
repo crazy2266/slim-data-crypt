@@ -1,3 +1,10 @@
+# Build output directories
+build/
+bin/
+
+# Editor / IDE
+.vscode/
+
 # Prerequisites
 *.d
 
