@@ -34,14 +34,15 @@ typedef struct {
 } sdc_block_cipher_ctx;
 
 struct sdc_block_cipher_ops_t {
-    int  (*set_encrypt_key)(sdc_block_cipher_ctx *ctx, const uint8_t *user_key, size_t key_len);
-    int  (*set_decrypt_key)(sdc_block_cipher_ctx *ctx, const uint8_t *user_key, size_t key_len);
+    int  (*set_encrypt_key)(sdc_block_cipher_ctx *ctx, const uint8_t *user_key);
+    int  (*set_decrypt_key)(sdc_block_cipher_ctx *ctx, const uint8_t *user_key);
     void (*encrypt_block)(const sdc_block_cipher_ctx *ctx,
                           const uint8_t in[16], uint8_t out[16]);
     void (*decrypt_block)(const sdc_block_cipher_ctx *ctx,
                           const uint8_t in[16], uint8_t out[16]);
     void (*encrypt_blocks)(const sdc_block_cipher_ctx *ctx,
                            const uint8_t *in, size_t nblocks, uint8_t *out);
+    size_t key_len;         /* expected key size in bytes */
     const char *name;
 };
 

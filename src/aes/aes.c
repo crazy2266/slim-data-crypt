@@ -285,14 +285,12 @@ void sdc_aes_encrypt_blocks(const sdc_aes_key *key, const uint8_t *in, size_t nb
 
 /* ---------------- ops layer (for the generic block-cipher layer) ---------------- */
 
-static int aes_set_encrypt_key_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key,
-                                       size_t key_len) {
-    return sdc_aes_set_encrypt_key((sdc_aes_key *)ctx->inner_state, user_key, key_len);
+static int aes_set_encrypt_key_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key) {
+    return sdc_aes_set_encrypt_key((sdc_aes_key *)ctx->inner_state, user_key, ctx->ops->key_len);
 }
 
-static int aes_set_decrypt_key_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key,
-                                       size_t key_len) {
-    return sdc_aes_set_decrypt_key((sdc_aes_key *)ctx->inner_state, user_key, key_len);
+static int aes_set_decrypt_key_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key) {
+    return sdc_aes_set_decrypt_key((sdc_aes_key *)ctx->inner_state, user_key, ctx->ops->key_len);
 }
 
 static void aes_encrypt_block_wrapper(const sdc_block_cipher_ctx *ctx,
@@ -313,19 +311,19 @@ static void aes_encrypt_blocks_wrapper(const sdc_block_cipher_ctx *ctx,
 const sdc_block_cipher_ops_t sdc_aes128_ops = {
     aes_set_encrypt_key_wrapper, aes_set_decrypt_key_wrapper,
     aes_encrypt_block_wrapper, aes_decrypt_block_wrapper,
-    aes_encrypt_blocks_wrapper, "AES-128"
+    aes_encrypt_blocks_wrapper, 16, "AES-128"
 };
 
 const sdc_block_cipher_ops_t sdc_aes192_ops = {
     aes_set_encrypt_key_wrapper, aes_set_decrypt_key_wrapper,
     aes_encrypt_block_wrapper, aes_decrypt_block_wrapper,
-    aes_encrypt_blocks_wrapper, "AES-192"
+    aes_encrypt_blocks_wrapper, 24, "AES-192"
 };
 
 const sdc_block_cipher_ops_t sdc_aes256_ops = {
     aes_set_encrypt_key_wrapper, aes_set_decrypt_key_wrapper,
     aes_encrypt_block_wrapper, aes_decrypt_block_wrapper,
-    aes_encrypt_blocks_wrapper, "AES-256"
+    aes_encrypt_blocks_wrapper, 32, "AES-256"
 };
 
 #endif /* SDC_ENABLE_AES */

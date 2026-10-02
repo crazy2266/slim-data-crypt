@@ -190,15 +190,11 @@ static int sm4_set_decrypt_key_ct(sdc_sm4_ctx *ctx, const uint8_t user_key[16]) 
 
 /* ---------------- ops layer (wrappers) ---------------- */
 
-static int sm4_set_encrypt_key_ct_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key,
-                                          size_t key_len) {
-    if (key_len != SDC_SM4_KEY_SIZE) return SDC_ERR_KEY_SIZE_INVALID;
+static int sm4_set_encrypt_key_ct_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key) {
     return sm4_set_encrypt_key_ct((sdc_sm4_ctx *)ctx->inner_state, user_key);
 }
 
-static int sm4_set_decrypt_key_ct_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key,
-                                          size_t key_len) {
-    if (key_len != SDC_SM4_KEY_SIZE) return SDC_ERR_KEY_SIZE_INVALID;
+static int sm4_set_decrypt_key_ct_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key) {
     return sm4_set_decrypt_key_ct((sdc_sm4_ctx *)ctx->inner_state, user_key);
 }
 
@@ -220,6 +216,7 @@ const sdc_block_cipher_ops_t sdc_sm4_ct_ops = {
     sm4_encrypt_block_ct_wrapper,
     sm4_encrypt_block_ct_wrapper,   /* SM4 encrypt == decrypt with reversed key */
     sm4_encrypt_blocks_ct_wrapper,
+    SDC_SM4_KEY_SIZE,
     "SM4 constant-time"
 };
 
