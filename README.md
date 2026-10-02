@@ -13,7 +13,7 @@ Supported Algorithms and Functions:
 - ASN.1 parse and write
 - RSA key generation
 - RSA-PKCS#1 v1.5 (encryption/decryption, signing/verification)
-- SM4 (with ECB/CTR modes)
+- AES and SM4 (with ECB/CBC/CTR/GCM modes)
 
 How to build tests:
 - Just use "make" to build tests.
