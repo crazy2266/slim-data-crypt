@@ -1,2 +1,7 @@
 # GitHub Actions workflows must use LF line endings.
 .github/workflows/*.yml text eol=lf
+
+# C sources/headers use CRLF (project convention).
+*.c    text eol=crlf
+*.h    text eol=crlf
+*.md   text eol=crlf
