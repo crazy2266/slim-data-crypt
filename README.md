@@ -1,7 +1,7 @@
 # slim-data-crypt
 
 [![CI](https://github.com/crazy2266/slim-data-crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/crazy2266/slim-data-crypt/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/crazy2266/slim-data-crypt/actions/workflows/codeql.yml/badge.svg)](https://github.com/crazy2266/slim-data-crypt/actions/workflows/codeql.yml)
+[![CodeQL](https://github.com/crazy2266/slim-data-crypt/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/crazy2266/slim-data-crypt/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![C99](https://img.shields.io/badge/C-C99-blue.svg)](https://en.wikipedia.org/wiki/C99)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
