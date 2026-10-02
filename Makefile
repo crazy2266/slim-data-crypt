@@ -18,6 +18,7 @@ CFLAGS = -Wall -Wextra -O2 -g -Iinclude -std=c99 -MMD -MP
 SRC_DIR = src
 TEST_DIR = tests
 BIN_DIR = bin
+LIB_DIR = lib
 # BUILD_DIR is defined per-platform in mk/rules.*.mk (build-win / build-unix)
 
 # Source discovery: nested wildcards, up to 7 directory levels.
@@ -38,23 +39,38 @@ include mk/rules.$(PLATFORM).mk
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 TEST_BINS = $(patsubst $(TEST_DIR)/%.c,$(BIN_DIR)/%$(EXE),$(TEST_SRCS))
 
+LIB_A  = $(LIB_DIR)/libsdcrypt.a
+LIB_SO = $(LIB_DIR)/libsdcrypt$(SO_EXT)
+
 # Auto-generated header dependencies (-MMD -MP).  The leading '-' makes a
 # missing .d file (first build) a non-error.
 -include $(OBJS:.o=.d)
 
-all: $(BIN_DIR) $(BUILD_DIR) $(TEST_BINS)
+all: libs tests
 
-$(BIN_DIR) $(BUILD_DIR):
+# ---- library ----
+
+libs: $(LIB_A) $(LIB_SO)
+
+$(LIB_A): $(OBJS) | $(LIB_DIR)
+	$(AR) rcs $@ $^
+
+$(LIB_SO): $(OBJS) | $(LIB_DIR)
+	$(CC) -shared -o $@ $^ $(LDFLAGS)
+
+$(BIN_DIR) $(BUILD_DIR) $(LIB_DIR):
 	$(MKDIR_TARGET)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	$(MKDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BIN_DIR)/%$(EXE): $(TEST_DIR)/%.c $(OBJS) | $(BIN_DIR)
-	$(CC) $(CFLAGS) -o $@ $< $(OBJS) $(LDFLAGS)
+# ---- tests (link against the static library) ----
+
+$(BIN_DIR)/%$(EXE): $(TEST_DIR)/%.c $(LIB_A) | $(BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ $< $(LIB_A) $(LDFLAGS)
 
 test: $(TEST_BINS)
 	$(RUN_TESTS)
 
-.PHONY: all test clean
+.PHONY: all libs test clean
