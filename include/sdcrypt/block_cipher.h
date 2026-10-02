@@ -52,6 +52,11 @@ static inline void sdc_block_cipher_init(sdc_block_cipher_ctx *ctx,
     if (ctx) ctx->ops = ops;
 }
 
+/* Expected key size (bytes) of a backend, or 0 if ops is NULL. */
+static inline size_t sdc_block_cipher_get_key_len(const sdc_block_cipher_ops_t *ops) {
+    return ops ? ops->key_len : 0;
+}
+
 /* Generic CTR (12-byte nonce + 32-bit big-endian counter). */
 void sdc_block_cipher_ctr(const sdc_block_cipher_ctx *ctx, const uint8_t nonce[12],
                           const uint8_t *in, size_t len, uint8_t *out);
