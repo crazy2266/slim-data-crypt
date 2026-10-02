@@ -13,7 +13,7 @@ endif
 .DEFAULT_GOAL := all
 
 CC = gcc
-CFLAGS = -Wall -Wextra -O2 -g -Iinclude -std=c99 -MMD -MP
+CFLAGS = -Wall -Wextra -O2 -g -Iinclude -std=c99 -MMD -MP -fPIC
 
 SRC_DIR = src
 TEST_DIR = tests
