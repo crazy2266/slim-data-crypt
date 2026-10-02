@@ -18,6 +18,7 @@
 #define SDC_ENABLE_SHA3                   1
 #define SDC_ENABLE_SM3                    1
 #define SDC_ENABLE_SM4                    1
+#define SDC_ENABLE_SM4_CT                 1
 #define SDC_ENABLE_AES                    1
 #define SDC_ENABLE_GCM                    1
 #define SDC_ENABLE_AES_GCM                1
@@ -45,10 +46,10 @@
 #define SDC_SWAPPABLE_RNG_SEED            1
 #define SDC_RSA_ENABLE_BLINDING           1
 #define SDC_RSA_BLINDING_BITS             256
-#define SDC_SM4_CONSTANT_TIME             1
 
 // Other options
-#define SDC_HASH_STATE_MAX_SIZE 512
-#define SDC_RNG_STATE_MAX_SIZE  680
+#define SDC_HASH_STATE_MAX_SIZE           512
+#define SDC_RNG_STATE_MAX_SIZE            680
+#define SDC_BLOCK_CIPHER_STATE_MAX_SIZE   256
 
 #endif /* SDC_CONFIG_H */

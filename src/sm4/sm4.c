@@ -2,13 +2,14 @@
  * SPDX-License-Identifier: MIT
  * Copyright (c) 2026 crazy2266
  *
- * SM4 block cipher (GB/T 32907-2016).
+ * SM4 block cipher (GB/T 32907-2016) — table-driven implementation.
  */
 
 #include <string.h>
 #include <sdcrypt/config.h>
 #include <sdcrypt/errcode.h>
 #include <sdcrypt/sm4.h>
+#include <sdcrypt/block_cipher.h>
 #include <sdcrypt/utils.h>
 
 #if SDC_ENABLE_SM4
@@ -49,44 +50,46 @@ static const uint8_t SBOX[256] = {
     0x18,0xf0,0x7d,0xec,0x3a,0xdc,0x4d,0x20,0x79,0xee,0x5f,0x3e,0xd7,0xcb,0x39,0x48
 };
 
-// tau: S-box substitution.
+/* tau: S-box substitution. */
 #define TAU(x) ( \
     ((uint32_t)SBOX[((x) >> 24) & 0xff] << 24) | \
     ((uint32_t)SBOX[((x) >> 16) & 0xff] << 16) | \
     ((uint32_t)SBOX[((x) >>  8) & 0xff] <<  8) | \
     ((uint32_t)SBOX[ (x)        & 0xff]      ))
 
-// T: tau + L (encryption).
+/* T: tau + L (encryption). */
 #define SM4_T(x) ( \
     (TAU(x)) ^ ROTL32(TAU(x), 2) ^ ROTL32(TAU(x), 10) ^ \
     ROTL32(TAU(x), 18) ^ ROTL32(TAU(x), 24))
 
-// T': tau + L' (key schedule).
+/* T': tau + L' (key schedule). */
 #define SM4_Tp(x) ( \
     (TAU(x)) ^ ROTL32(TAU(x), 13) ^ ROTL32(TAU(x), 23))
 
-static int sm4_key_schedule(sdc_sm4_key *key, const uint8_t user_key[16], int decrypt) {
+/* ---------------- native API (table-driven) ---------------- */
+
+static int sm4_key_schedule(sdc_sm4_ctx *ctx, const uint8_t user_key[16], int decrypt) {
     uint32_t X[36];
 
     for (int i = 0; i < 4; i++) X[i] = load32_be(user_key + 4 * i) ^ FK[i];
     for (int i = 0; i < 32; i++) X[i + 4] = X[i] ^ SM4_Tp(X[i + 1] ^ X[i + 2] ^ X[i + 3] ^ CK[i]);
-    for (int i = 0; i < 32; i++) key->rk[i] = decrypt ? X[35 - i] : X[i + 4];
+    for (int i = 0; i < 32; i++) ctx->rk[i] = decrypt ? X[35 - i] : X[i + 4];
+    sdc_secure_memzero(X, sizeof(X));
     return SDC_ERR_OK;
 }
 
-int sdc_sm4_set_encrypt_key(sdc_sm4_key *key, const uint8_t user_key[16]) {
-    if (!key || !user_key) {
-        return SDC_ERR_INVALID_PARAM;
-    }
-    return sm4_key_schedule(key, user_key, 0);
+int sdc_sm4_set_encrypt_key(sdc_sm4_ctx *ctx, const uint8_t user_key[16]) {
+    if (!ctx || !user_key) return SDC_ERR_INVALID_PARAM;
+    return sm4_key_schedule(ctx, user_key, 0);
 }
 
-int sdc_sm4_set_decrypt_key(sdc_sm4_key *key, const uint8_t user_key[16]) {
-    if (!key || !user_key) return SDC_ERR_INVALID_PARAM;
-    return sm4_key_schedule(key, user_key, 1);
+int sdc_sm4_set_decrypt_key(sdc_sm4_ctx *ctx, const uint8_t user_key[16]) {
+    if (!ctx || !user_key) return SDC_ERR_INVALID_PARAM;
+    return sm4_key_schedule(ctx, user_key, 1);
 }
 
-static void sm4_crypt_block(const sdc_sm4_key *key, const uint8_t in[16], uint8_t out[16]) {
+static void sm4_crypt_block(const sdc_sm4_ctx *ctx,
+                            const uint8_t in[16], uint8_t out[16]) {
     uint32_t X0, X1, X2, X3, X4;
 
     X0 = load32_be(in);
@@ -95,7 +98,7 @@ static void sm4_crypt_block(const sdc_sm4_key *key, const uint8_t in[16], uint8_
     X3 = load32_be(in + 12);
 
     for (int i = 0; i < 32; i++) {
-        X4 = X0 ^ SM4_T(X1 ^ X2 ^ X3 ^ key->rk[i]);
+        X4 = X0 ^ SM4_T(X1 ^ X2 ^ X3 ^ ctx->rk[i]);
         X0 = X1;
         X1 = X2;
         X2 = X3;
@@ -108,46 +111,47 @@ static void sm4_crypt_block(const sdc_sm4_key *key, const uint8_t in[16], uint8_
     store32_be(out + 12, X0);
 }
 
-void sdc_sm4_encrypt_block(const sdc_sm4_key *key, const uint8_t in[16], uint8_t out[16]) {
-    sm4_crypt_block(key, in, out);
+void sdc_sm4_encrypt_block(const sdc_sm4_ctx *ctx, const uint8_t in[16], uint8_t out[16]) {
+    sm4_crypt_block(ctx, in, out);
 }
 
-void sdc_sm4_decrypt_block(const sdc_sm4_key *key, const uint8_t in[16], uint8_t out[16]) {
-    sm4_crypt_block(key, in, out);
+void sdc_sm4_decrypt_block(const sdc_sm4_ctx *ctx, const uint8_t in[16], uint8_t out[16]) {
+    sm4_crypt_block(ctx, in, out);
 }
 
-void sdc_sm4_encrypt_blocks(const sdc_sm4_key *key, const uint8_t *in, size_t nblocks, uint8_t *out) {
+void sdc_sm4_encrypt_blocks(const sdc_sm4_ctx *ctx, const uint8_t *in, size_t nblocks, uint8_t *out) {
     for (size_t i = 0; i < nblocks; i++) {
-        sdc_sm4_encrypt_block(key, in + 16 * i, out + 16 * i);
+        sm4_crypt_block(ctx, in + 16 * i, out + 16 * i);
     }
 }
 
-void sdc_sm4_ctr(const sdc_sm4_key *key, const uint8_t nonce[12],
-                 const uint8_t *in, size_t len, uint8_t *out) {
-    uint8_t counter[16];
-    uint8_t keystream[16];
-    uint32_t ctr = 0;
+/* ---------------- ops layer (wrappers over the native API) ---------------- */
 
-    memcpy(counter, nonce, 12);
-    counter[12] = counter[13] = counter[14] = counter[15] = 0;
-
-    for (size_t off = 0; off < len; off += 16) {
-        counter[12] = (uint8_t)(ctr >> 24);
-        counter[13] = (uint8_t)(ctr >> 16);
-        counter[14] = (uint8_t)(ctr >> 8);
-        counter[15] = (uint8_t)(ctr);
-        ctr++;
-
-        sdc_sm4_encrypt_block(key, counter, keystream);
-
-        size_t n = (len - off < 16) ? (len - off) : 16;
-        for (size_t i = 0; i < n; i++) {
-            out[off + i] = in[off + i] ^ keystream[i];
-        }
-    }
-
-    sdc_secure_memzero(counter, sizeof(counter));
-    sdc_secure_memzero(keystream, sizeof(keystream));
+static int sm4_set_encrypt_key_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key) {
+    return sdc_sm4_set_encrypt_key((sdc_sm4_ctx *)ctx->inner_state, user_key);
 }
+
+static int sm4_set_decrypt_key_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key) {
+    return sdc_sm4_set_decrypt_key((sdc_sm4_ctx *)ctx->inner_state, user_key);
+}
+
+static void sm4_encrypt_block_wrapper(const sdc_block_cipher_ctx *ctx,
+                                      const uint8_t in[16], uint8_t out[16]) {
+    sdc_sm4_encrypt_block((const sdc_sm4_ctx *)ctx->inner_state, in, out);
+}
+
+static void sm4_encrypt_blocks_wrapper(const sdc_block_cipher_ctx *ctx,
+                                       const uint8_t *in, size_t nblocks, uint8_t *out) {
+    sdc_sm4_encrypt_blocks((const sdc_sm4_ctx *)ctx->inner_state, in, nblocks, out);
+}
+
+const sdc_block_cipher_ops_t sdc_sm4_table_ops = {
+    sm4_set_encrypt_key_wrapper,
+    sm4_set_decrypt_key_wrapper,
+    sm4_encrypt_block_wrapper,
+    sm4_encrypt_block_wrapper,   /* SM4 encrypt == decrypt with reversed key */
+    sm4_encrypt_blocks_wrapper,
+    "SM4 table-driven"
+};
 
 #endif /* SDC_ENABLE_SM4 */
