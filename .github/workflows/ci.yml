@@ -16,19 +16,14 @@ jobs:
         os: [ ubuntu-latest, macos-latest ]
     steps:
       - uses: actions/checkout@v4
-      - name: Show toolchain
-        run: gcc --version
       - name: Build
         run: make
       - name: Test
         run: make test
 
   windows:
-    name: windows (msys2)
+    name: windows (mingw, cmd)
     runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
     steps:
       - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
@@ -39,6 +34,12 @@ jobs:
             mingw-w64-x86_64-gcc
             make
       - name: Build
-        run: make
+        shell: cmd
+        run: |
+          set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
+          make -f Makefile
       - name: Test
-        run: make test
+        shell: cmd
+        run: |
+          set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
+          make -f Makefile test
