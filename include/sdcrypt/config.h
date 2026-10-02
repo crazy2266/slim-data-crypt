@@ -50,6 +50,6 @@
 // Other options
 #define SDC_HASH_STATE_MAX_SIZE           512
 #define SDC_RNG_STATE_MAX_SIZE            680
-#define SDC_BLOCK_CIPHER_STATE_MAX_SIZE   256
+#define SDC_BLOCK_CIPHER_STATE_MAX_SIZE   512
 
 #endif /* SDC_CONFIG_H */

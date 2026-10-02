@@ -24,7 +24,6 @@ extern "C" {
 #endif
 
 #define SDC_BLOCK_CIPHER_BLOCK_SIZE      16
-#define SDC_BLOCK_CIPHER_STATE_MAX_SIZE 512
 
 typedef struct sdc_block_cipher_ops_t sdc_block_cipher_ops_t;
 
