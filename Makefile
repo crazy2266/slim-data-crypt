@@ -40,7 +40,13 @@ OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 TEST_BINS = $(patsubst $(TEST_DIR)/%.c,$(BIN_DIR)/%$(EXE),$(TEST_SRCS))
 
 LIB_A  = $(LIB_DIR)/libsdcrypt.a
-LIB_SO = $(LIB_DIR)/libsdcrypt$(SO_EXT)
+# Shared library goes next to the executables so the loader finds it at
+# runtime on both Windows (bin/*.dll) and Unix (bin/*.so).
+LIB_SO = $(BIN_DIR)/libsdcrypt$(SO_EXT)
+
+# Tests link against the static library; both static and shared
+# libraries are always built (like OpenSSL).
+TEST_LIB = $(LIB_A)
 
 # Auto-generated header dependencies (-MMD -MP).  The leading '-' makes a
 # missing .d file (first build) a non-error.
@@ -55,8 +61,8 @@ libs: $(LIB_A) $(LIB_SO)
 $(LIB_A): $(OBJS) | $(LIB_DIR)
 	$(AR) rcs $@ $^
 
-$(LIB_SO): $(OBJS) | $(LIB_DIR)
-	$(CC) -shared -o $@ $^ $(LDFLAGS)
+$(LIB_SO): $(OBJS) | $(BIN_DIR)
+	$(CC) -shared -o $@ $^ $(SO_LDFLAGS) $(LDFLAGS)
 
 $(BIN_DIR) $(BUILD_DIR) $(LIB_DIR):
 	$(MKDIR_TARGET)
