@@ -40,9 +40,10 @@ OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 TEST_BINS = $(patsubst $(TEST_DIR)/%.c,$(BIN_DIR)/%$(EXE),$(TEST_SRCS))
 
 LIB_A  = $(LIB_DIR)/libsdcrypt.a
-# Shared library goes next to the executables so the loader finds it at
-# runtime on both Windows (bin/*.dll) and Unix (bin/*.so).
-LIB_SO = $(BIN_DIR)/libsdcrypt$(SO_EXT)
+LIB_SO = $(LIB_DIR)/libsdcrypt$(SO_EXT)
+# Copy of the shared library next to the executables, so the loader finds
+# it at runtime (bin/*.dll on Windows, bin/*.so on Unix).
+BIN_SO = $(BIN_DIR)/libsdcrypt$(SO_EXT)
 
 # Tests link against the static library; both static and shared
 # libraries are always built (like OpenSSL).
@@ -56,13 +57,16 @@ all: libs tests
 
 # ---- library ----
 
-libs: $(LIB_A) $(LIB_SO)
+libs: $(LIB_A) $(LIB_SO) $(BIN_SO)
 
 $(LIB_A): $(OBJS) | $(LIB_DIR)
 	$(AR) rcs $@ $^
 
-$(LIB_SO): $(OBJS) | $(BIN_DIR)
+$(LIB_SO): $(OBJS) | $(LIB_DIR) $(BIN_DIR)
 	$(CC) -shared -o $@ $^ $(SO_LDFLAGS) $(LDFLAGS)
+
+$(BIN_SO): $(LIB_SO) | $(BIN_DIR)
+	$(COPY_LIB)
 
 $(BIN_DIR) $(BUILD_DIR) $(LIB_DIR):
 	$(MKDIR_TARGET)
