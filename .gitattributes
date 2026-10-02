@@ -1,0 +1,2 @@
+# GitHub Actions workflows must use LF line endings.
+.github/workflows/*.yml text eol=lf
