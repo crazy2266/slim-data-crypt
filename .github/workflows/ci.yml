@@ -22,8 +22,11 @@ jobs:
         run: make test
 
   windows:
-    name: windows (mingw, cmd)
+    name: windows (msys2)
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
     steps:
       - uses: actions/checkout@v4
       - uses: msys2/setup-msys2@v2
@@ -34,12 +37,6 @@ jobs:
             mingw-w64-x86_64-gcc
             make
       - name: Build
-        shell: cmd
-        run: |
-          set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
-          make -f Makefile
+        run: make
       - name: Test
-        shell: cmd
-        run: |
-          set PATH=C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
-          make -f Makefile test
+        run: make test

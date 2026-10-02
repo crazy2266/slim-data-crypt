@@ -4,8 +4,14 @@
 #   Windows (MSYS2/MinGW): mk/rules.windows.mk
 #   Unix (Linux/macOS):    mk/rules.unix.mk
 
+# MSYS2/MinGW run make under a POSIX shell, so they use the unix rules;
+# a native cmd.exe environment (OS=Windows_NT, no uname) uses the windows rules.
 ifeq ($(OS),Windows_NT)
-  PLATFORM := windows
+  ifeq ($(shell uname -o 2>NUL),Msys)
+    PLATFORM := msys2
+  else
+    PLATFORM := windows
+  endif
 else
   PLATFORM := unix
 endif
