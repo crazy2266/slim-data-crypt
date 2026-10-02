@@ -18,6 +18,11 @@
 #define SDC_ENABLE_SHA3                   1
 #define SDC_ENABLE_SM3                    1
 #define SDC_ENABLE_SM4                    1
+#define SDC_ENABLE_AES                    1
+#define SDC_ENABLE_GCM                    1
+#define SDC_ENABLE_AES_GCM                1
+#define SDC_ENABLE_AES_GCM_BULK           1
+#define SDC_ENABLE_SM4_GCM                1
 #define SDC_ENABLE_X25519                 1
 #define SDC_ENABLE_ED25519                1
 #define SDC_ENABLE_PBKDF2                 1

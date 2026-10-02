@@ -10,7 +10,7 @@ MKDIR = if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
 MKDIR_TARGET = if not exist $(subst /,\,$@) mkdir $(subst /,\,$@)
 
 clean:
-	if exist $(BUILD_DIR) rmdir /s /q $(BUILD_DIR)
+	if exist $(subst /,\,$(BUILD_DIR)) rmdir /s /q $(subst /,\,$(BUILD_DIR))
 	if exist $(BIN_DIR) rmdir /s /q $(BIN_DIR)
 
 RUN_TESTS = $(foreach t,$(TEST_BINS),echo === $(notdir $t) === && $(subst /,\,$t) &&) echo All tests passed!

@@ -13,7 +13,7 @@ endif
 .DEFAULT_GOAL := all
 
 CC = gcc
-CFLAGS = -Wall -Wextra -O2 -g -Iinclude -std=c99
+CFLAGS = -Wall -Wextra -O2 -g -Iinclude -std=c99 -MMD -MP
 
 SRC_DIR = src
 TEST_DIR = tests
@@ -37,6 +37,10 @@ include mk/rules.$(PLATFORM).mk
 # derived variables (need BUILD_DIR/EXE from the platform file)
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
 TEST_BINS = $(patsubst $(TEST_DIR)/%.c,$(BIN_DIR)/%$(EXE),$(TEST_SRCS))
+
+# Auto-generated header dependencies (-MMD -MP).  The leading '-' makes a
+# missing .d file (first build) a non-error.
+-include $(OBJS:.o=.d)
 
 all: $(BIN_DIR) $(BUILD_DIR) $(TEST_BINS)
 
