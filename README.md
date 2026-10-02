@@ -1,6 +1,13 @@
 # slim-data-crypt
 
 [![CI](https://github.com/crazy2266/slim-data-crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/crazy2266/slim-data-crypt/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/crazy2266/slim-data-crypt/actions/workflows/codeql.yml/badge.svg)](https://github.com/crazy2266/slim-data-crypt/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![C99](https://img.shields.io/badge/C-C99-blue.svg)](https://en.wikipedia.org/wiki/C99)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
+[![Last commit](https://img.shields.io/github/last-commit/crazy2266/slim-data-crypt)](https://github.com/crazy2266/slim-data-crypt/commits/main)
+[![GitHub stars](https://img.shields.io/github/stars/crazy2266/slim-data-crypt)](https://github.com/crazy2266/slim-data-crypt/stargazers)
+[![Repo size](https://img.shields.io/github/repo-size/crazy2266/slim-data-crypt)]()
 
 A small, self-contained cryptography library written in portable C99. It is
 optimised for ARM64 (using the Crypto Extensions when available) but builds
