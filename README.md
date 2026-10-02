@@ -1,5 +1,7 @@
 # slim-data-crypt
 
+[![CI](https://github.com/crazy2266/slim-data-crypt/actions/workflows/ci.yml/badge.svg)](https://github.com/crazy2266/slim-data-crypt/actions/workflows/ci.yml)
+
 A small, self-contained cryptography library written in portable C99. It is
 optimised for ARM64 (using the Crypto Extensions when available) but builds
 and runs on any platform, falling back to portable scalar code where there is

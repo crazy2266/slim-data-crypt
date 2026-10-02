@@ -4,7 +4,13 @@ BUILD_DIR = build/unix
 EXE =
 SO_EXT = .so
 AR = ar
-LDFLAGS = -lrt -lm
+# macOS has no separate librt (it is part of libc).
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+  LDFLAGS = -lm
+else
+  LDFLAGS = -lrt -lm
+endif
 SO_LDFLAGS =
 TEST_RUN_ENV = LD_LIBRARY_PATH=$(LIB_DIR)
 
