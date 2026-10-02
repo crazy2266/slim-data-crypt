@@ -23,6 +23,9 @@
 extern "C" {
 #endif
 
+#define SDC_BLOCK_CIPHER_BLOCK_SIZE      16
+#define SDC_BLOCK_CIPHER_STATE_MAX_SIZE 512
+
 typedef struct sdc_block_cipher_ops_t sdc_block_cipher_ops_t;
 
 typedef struct {
@@ -31,8 +34,8 @@ typedef struct {
 } sdc_block_cipher_ctx;
 
 struct sdc_block_cipher_ops_t {
-    int  (*set_encrypt_key)(sdc_block_cipher_ctx *ctx, const uint8_t *user_key);
-    int  (*set_decrypt_key)(sdc_block_cipher_ctx *ctx, const uint8_t *user_key);
+    int  (*set_encrypt_key)(sdc_block_cipher_ctx *ctx, const uint8_t *user_key, size_t key_len);
+    int  (*set_decrypt_key)(sdc_block_cipher_ctx *ctx, const uint8_t *user_key, size_t key_len);
     void (*encrypt_block)(const sdc_block_cipher_ctx *ctx,
                           const uint8_t in[16], uint8_t out[16]);
     void (*decrypt_block)(const sdc_block_cipher_ctx *ctx,
@@ -51,6 +54,12 @@ static inline void sdc_block_cipher_init(sdc_block_cipher_ctx *ctx,
 /* Generic CTR (12-byte nonce + 32-bit big-endian counter). */
 void sdc_block_cipher_ctr(const sdc_block_cipher_ctx *ctx, const uint8_t nonce[12],
                           const uint8_t *in, size_t len, uint8_t *out);
+
+/* Generic CBC (len must be a multiple of 16). */
+void sdc_block_cipher_cbc_encrypt(const sdc_block_cipher_ctx *ctx, const uint8_t iv[16],
+                                  const uint8_t *in, size_t len, uint8_t *out);
+void sdc_block_cipher_cbc_decrypt(const sdc_block_cipher_ctx *ctx, const uint8_t iv[16],
+                                  const uint8_t *in, size_t len, uint8_t *out);
 
 #ifdef __cplusplus
 }

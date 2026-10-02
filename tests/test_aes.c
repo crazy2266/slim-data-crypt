@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sdcrypt/aes.h>
+#include <sdcrypt/block_cipher.h>
 #include "test_common.h"
 
 /* Which backend is active? */
@@ -84,7 +85,12 @@ static void test_ctr(void) {
 
     sdc_aes_key k;
     sdc_aes_set_encrypt_key(&k, key, 16);
-    sdc_aes_ctr(&k, nonce, pt, 32, ct);
+
+    sdc_block_cipher_ctx bk;
+    sdc_block_cipher_init(&bk, &sdc_aes128_ops);
+    sdc_aes_set_encrypt_key((sdc_aes_key *)bk.inner_state, key, 16);
+
+    sdc_block_cipher_ctr(&bk, nonce, pt, 32, ct);
 
     /* keystream from ECB(nonce || counter_be32) */
     for (int blk = 0; blk < 2; blk++) {
@@ -101,7 +107,7 @@ static void test_ctr(void) {
     }
     T_CHECK(1, "CTR keystream matches ECB(nonce||counter)");
 
-    sdc_aes_ctr(&k, nonce, ct, 32, back);
+    sdc_block_cipher_ctr(&bk, nonce, ct, 32, back);
     T_CHECK_MEM(back, pt, 32, "CTR roundtrip");
 }
 

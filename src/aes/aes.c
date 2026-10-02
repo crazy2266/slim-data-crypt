@@ -283,67 +283,49 @@ void sdc_aes_encrypt_blocks(const sdc_aes_key *key, const uint8_t *in, size_t nb
         sdc_aes_scalar_encrypt(key, in + 16 * i, out + 16 * i);
 }
 
-void sdc_aes_cbc_encrypt(const sdc_aes_key *key, const uint8_t iv[16],
-                         const uint8_t *in, size_t len, uint8_t *out) {
-    uint8_t prev[16];
-    memcpy(prev, iv, 16);
-    for (size_t off = 0; off < len; off += 16) {
-        uint8_t blk[16];
-        for (int i = 0; i < 16; i++) blk[i] = in[off+i] ^ prev[i];
-        sdc_aes_encrypt_block(key, blk, out + off);
-        memcpy(prev, out + off, 16);
-    }
-    sdc_secure_memzero(prev, sizeof(prev));
+/* ---------------- ops layer (for the generic block-cipher layer) ---------------- */
+
+static int aes_set_encrypt_key_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key,
+                                       size_t key_len) {
+    return sdc_aes_set_encrypt_key((sdc_aes_key *)ctx->inner_state, user_key, key_len);
 }
 
-void sdc_aes_cbc_decrypt(const sdc_aes_key *key, const uint8_t iv[16],
-                         const uint8_t *in, size_t len, uint8_t *out) {
-    uint8_t prev[16];
-    memcpy(prev, iv, 16);
-    for (size_t off = 0; off < len; off += 16) {
-        uint8_t blk[16];
-        sdc_aes_decrypt_block(key, in + off, blk);
-        for (int i = 0; i < 16; i++) out[off+i] = blk[i] ^ prev[i];
-        memcpy(prev, in + off, 16);
-    }
-    sdc_secure_memzero(prev, sizeof(prev));
+static int aes_set_decrypt_key_wrapper(sdc_block_cipher_ctx *ctx, const uint8_t *user_key,
+                                       size_t key_len) {
+    return sdc_aes_set_decrypt_key((sdc_aes_key *)ctx->inner_state, user_key, key_len);
 }
 
-void sdc_aes_ctr(const sdc_aes_key *key, const uint8_t nonce[12],
-                 const uint8_t *in, size_t len, uint8_t *out) {
-    enum { BATCH = 8 };
-    uint8_t ctrblk[BATCH * 16];
-    uint8_t ks[BATCH * 16];
-    uint8_t base[12];
-    uint32_t ctr = 0;
-
-    memcpy(base, nonce, 12);
-
-    size_t off = 0;
-    while (off < len) {
-        size_t remain = len - off;
-        size_t nb = (remain + 15) / 16;
-        if (nb > BATCH) nb = BATCH;
-
-        for (size_t i = 0; i < nb; i++) {
-            uint32_t c = ctr + (uint32_t)i;
-            memcpy(ctrblk + 16 * i, base, 12);
-            ctrblk[16*i + 12] = (uint8_t)(c >> 24);
-            ctrblk[16*i + 13] = (uint8_t)(c >> 16);
-            ctrblk[16*i + 14] = (uint8_t)(c >> 8);
-            ctrblk[16*i + 15] = (uint8_t)(c);
-        }
-        sdc_aes_encrypt_blocks(key, ctrblk, nb, ks);
-
-        size_t bytes = (remain < nb * 16) ? remain : nb * 16;
-        for (size_t i = 0; i < bytes; i++) out[off + i] = in[off + i] ^ ks[i];
-
-        ctr += (uint32_t)nb;
-        off += bytes;
-    }
-    sdc_secure_memzero(ctrblk, sizeof(ctrblk));
-    sdc_secure_memzero(ks, sizeof(ks));
-    sdc_secure_memzero(base, sizeof(base));
+static void aes_encrypt_block_wrapper(const sdc_block_cipher_ctx *ctx,
+                                      const uint8_t in[16], uint8_t out[16]) {
+    sdc_aes_encrypt_block((const sdc_aes_key *)ctx->inner_state, in, out);
 }
+
+static void aes_decrypt_block_wrapper(const sdc_block_cipher_ctx *ctx,
+                                      const uint8_t in[16], uint8_t out[16]) {
+    sdc_aes_decrypt_block((const sdc_aes_key *)ctx->inner_state, in, out);
+}
+
+static void aes_encrypt_blocks_wrapper(const sdc_block_cipher_ctx *ctx,
+                                       const uint8_t *in, size_t nblocks, uint8_t *out) {
+    sdc_aes_encrypt_blocks((const sdc_aes_key *)ctx->inner_state, in, nblocks, out);
+}
+
+const sdc_block_cipher_ops_t sdc_aes128_ops = {
+    aes_set_encrypt_key_wrapper, aes_set_decrypt_key_wrapper,
+    aes_encrypt_block_wrapper, aes_decrypt_block_wrapper,
+    aes_encrypt_blocks_wrapper, "AES-128"
+};
+
+const sdc_block_cipher_ops_t sdc_aes192_ops = {
+    aes_set_encrypt_key_wrapper, aes_set_decrypt_key_wrapper,
+    aes_encrypt_block_wrapper, aes_decrypt_block_wrapper,
+    aes_encrypt_blocks_wrapper, "AES-192"
+};
+
+const sdc_block_cipher_ops_t sdc_aes256_ops = {
+    aes_set_encrypt_key_wrapper, aes_set_decrypt_key_wrapper,
+    aes_encrypt_block_wrapper, aes_decrypt_block_wrapper,
+    aes_encrypt_blocks_wrapper, "AES-256"
+};
 
 #endif /* SDC_ENABLE_AES */

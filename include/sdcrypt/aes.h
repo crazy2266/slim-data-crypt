@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sdcrypt/config.h>
+#include <sdcrypt/block_cipher.h>
 #ifndef __cplusplus
 #  include <stdalign.h>
 #endif
@@ -51,15 +52,14 @@ void sdc_aes_decrypt_block(const sdc_aes_key *key, const uint8_t in[16], uint8_t
 /* Encrypt nblocks independent blocks (used by CTR and bulk ECB). */
 void sdc_aes_encrypt_blocks(const sdc_aes_key *key, const uint8_t *in, size_t nblocks, uint8_t *out);
 
-/* CBC (len must be a multiple of 16). */
-void sdc_aes_cbc_encrypt(const sdc_aes_key *key, const uint8_t iv[16],
-                         const uint8_t *in, size_t len, uint8_t *out);
-void sdc_aes_cbc_decrypt(const sdc_aes_key *key, const uint8_t iv[16],
-                         const uint8_t *in, size_t len, uint8_t *out);
-
-/* CTR (12-byte nonce + 32-bit counter, big-endian). */
-void sdc_aes_ctr(const sdc_aes_key *key, const uint8_t nonce[12],
-                 const uint8_t *in, size_t len, uint8_t *out);
+/*
+ * Backend operation tables for the generic block-cipher layer (CBC / CTR).
+ * Select one with sdc_block_cipher_init(); the key state lives in
+ * sdc_block_cipher_ctx.inner_state as an sdc_aes_key.
+ */
+extern const sdc_block_cipher_ops_t sdc_aes128_ops;
+extern const sdc_block_cipher_ops_t sdc_aes192_ops;
+extern const sdc_block_cipher_ops_t sdc_aes256_ops;
 
 #endif /* SDC_ENABLE_AES */
 

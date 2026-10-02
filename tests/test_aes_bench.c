@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <sdcrypt/config.h>
 #include <sdcrypt/aes.h>
+#include <sdcrypt/block_cipher.h>
 #include <sdcrypt/gcm.h>
 #include <sdcrypt/ghash.h>
 #include <sdcrypt/aes_gcm.h>
@@ -82,15 +83,21 @@ static void bench_key(const uint8_t *key, size_t klen) {
         report("ECB block", 200000.0 * 64.0 * 16.0, t1 - t0);
     }
 
+    sdc_block_cipher_ctx bctx;
+    sdc_block_cipher_init(&bctx, (klen == 16) ? &sdc_aes128_ops
+                            : (klen == 24) ? &sdc_aes192_ops
+                                           : &sdc_aes256_ops);
+    sdc_aes_set_encrypt_key((sdc_aes_key *)bctx.inner_state, key, klen);
+
     t0 = now_sec();
     for (int r = 0; r < REPS; r++)
-        sdc_aes_cbc_encrypt(&k, iv, in, BENCH_LEN, out);
+        sdc_block_cipher_cbc_encrypt(&bctx, iv, in, BENCH_LEN, out);
     t1 = now_sec();
     report("CBC encrypt", (double)BENCH_LEN * REPS, t1 - t0);
 
     t0 = now_sec();
     for (int r = 0; r < REPS; r++)
-        sdc_aes_ctr(&k, nonce, in, BENCH_LEN, out);
+        sdc_block_cipher_ctr(&bctx, nonce, in, BENCH_LEN, out);
     t1 = now_sec();
     report("CTR", (double)BENCH_LEN * REPS, t1 - t0);
 

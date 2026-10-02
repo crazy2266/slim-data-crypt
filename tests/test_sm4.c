@@ -75,7 +75,7 @@ int main(void) {
             memcpy(k2, key, 16);
             k2[0] = (uint8_t)v;
             sdc_sm4_set_encrypt_key(&ek, k2);
-            bct.ops->set_encrypt_key(&bct, k2);
+            bct.ops->set_encrypt_key(&bct, k2, 16);
             const sdc_sm4_ctx *ckt = (const sdc_sm4_ctx *)bct.inner_state;
             if (memcmp(ek.rk, ckt->rk, 32 * sizeof(uint32_t)) != 0) { ks_ok = 0; break; }
         }
