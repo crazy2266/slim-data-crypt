@@ -12,8 +12,6 @@ TEST_RUN_ENV =
 
 # mkdir helper: ensure directory exists
 MKDIR = if not exist $(subst /,\,$(dir $@)) mkdir $(subst /,\,$(dir $@))
-# copy helper (cmd's copy; forward slashes -> backslashes)
-COPY_LIB = cmd /c copy /Y $(subst /,\,$(LIB_SO)) $(subst /,\,$(BIN_SO)) >nul
 
 # create a top-level directory (for order-only prerequisites)
 MKDIR_TARGET = if not exist $(subst /,\,$@) mkdir $(subst /,\,$@)

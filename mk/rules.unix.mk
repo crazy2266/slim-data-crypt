@@ -11,8 +11,6 @@ TEST_RUN_ENV = LD_LIBRARY_PATH=$(LIB_DIR)
 MKDIR = mkdir -p $(dir $@)
 MKDIR_TARGET = mkdir -p $@
 
-# copy helper
-COPY_LIB = cp -f $(LIB_SO) $(BIN_SO)
 
 clean:
 	rm -rf $(BUILD_DIR) $(BIN_DIR) $(LIB_DIR)
